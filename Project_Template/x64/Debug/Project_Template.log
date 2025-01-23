@@ -1,0 +1,237 @@
+﻿  glad.c
+  glslprogram.cpp
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.h(25,24): error C2065: 'GL_TESS_CONTROL_SHADER': undeclared identifier
+  (compiling source file 'helper/glslprogram.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.h(26,27): error C2065: 'GL_TESS_EVALUATION_SHADER': undeclared identifier
+  (compiling source file 'helper/glslprogram.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.h(27,19): error C2065: 'GL_COMPUTE_SHADER': undeclared identifier
+  (compiling source file 'helper/glslprogram.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(225,38): error C2065: 'GL_UNIFORM': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(225,50): error C2065: 'GL_ACTIVE_RESOURCES': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(225,5): error C3861: 'glGetProgramInterfaceiv': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(227,28): error C2065: 'GL_NAME_LENGTH': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(227,44): error C2065: 'GL_TYPE': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(227,53): error C2065: 'GL_LOCATION': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(227,66): error C2065: 'GL_BLOCK_INDEX': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(231,38): error C2065: 'GL_UNIFORM': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(231,7): error C3861: 'glGetProgramResourceiv': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(236,40): error C2065: 'GL_UNIFORM': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(236,7): error C3861: 'glGetProgramResourceName': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(339,38): error C2065: 'GL_UNIFORM': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(339,50): error C2065: 'GL_ACTIVE_RESOURCES': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(339,5): error C3861: 'glGetProgramInterfaceiv': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(341,28): error C2065: 'GL_NAME_LENGTH': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(341,44): error C2065: 'GL_TYPE': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(341,53): error C2065: 'GL_LOCATION': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(341,66): error C2065: 'GL_BLOCK_INDEX': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(346,38): error C2065: 'GL_UNIFORM': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(346,7): error C3861: 'glGetProgramResourceiv': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(351,40): error C2065: 'GL_UNIFORM': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(351,7): error C3861: 'glGetProgramResourceName': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(398,37): error C2065: 'GL_UNIFORM_BLOCK': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(398,55): error C2065: 'GL_ACTIVE_RESOURCES': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(398,5): error C3861: 'glGetProgramInterfaceiv': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(399,28): error C2065: 'GL_NUM_ACTIVE_VARIABLES': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(399,53): error C2065: 'GL_NAME_LENGTH': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(400,28): error C2065: 'GL_ACTIVE_VARIABLES': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(401,23): error C2065: 'GL_NAME_LENGTH': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(401,39): error C2065: 'GL_TYPE': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(401,48): error C2065: 'GL_BLOCK_INDEX': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(405,38): error C2065: 'GL_UNIFORM_BLOCK': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(405,7): error C3861: 'glGetProgramResourceiv': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(409,40): error C2065: 'GL_UNIFORM_BLOCK': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(409,7): error C3861: 'glGetProgramResourceName': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(414,38): error C2065: 'GL_UNIFORM_BLOCK': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(414,7): error C3861: 'glGetProgramResourceiv': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(419,40): error C2065: 'GL_UNIFORM': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(419,9): error C3861: 'glGetProgramResourceiv': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(423,42): error C2065: 'GL_UNIFORM': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(423,9): error C3861: 'glGetProgramResourceName': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(455,38): error C2065: 'GL_PROGRAM_INPUT': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(455,56): error C2065: 'GL_ACTIVE_RESOURCES': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(455,5): error C3861: 'glGetProgramInterfaceiv': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(457,28): error C2065: 'GL_NAME_LENGTH': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(457,44): error C2065: 'GL_TYPE': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(457,53): error C2065: 'GL_LOCATION': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(462,38): error C2065: 'GL_PROGRAM_INPUT': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(462,7): error C3861: 'glGetProgramResourceiv': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(466,40): error C2065: 'GL_PROGRAM_INPUT': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.cpp(466,7): error C3861: 'glGetProgramResourceName': identifier not found
+  glutils.cpp
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(16,7): error C2065: 'GL_DEBUG_SOURCE_WINDOW_SYSTEM': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(16,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(16,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(19,7): error C2065: 'GL_DEBUG_SOURCE_APPLICATION': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(19,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(19,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(22,7): error C2065: 'GL_DEBUG_SOURCE_API': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(22,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(22,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(25,7): error C2065: 'GL_DEBUG_SOURCE_SHADER_COMPILER': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(25,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(25,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(28,7): error C2065: 'GL_DEBUG_SOURCE_THIRD_PARTY': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(28,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(28,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(31,7): error C2065: 'GL_DEBUG_SOURCE_OTHER': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(31,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(31,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(40,7): error C2065: 'GL_DEBUG_TYPE_ERROR': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(40,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(40,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(43,7): error C2065: 'GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(43,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(43,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(46,7): error C2065: 'GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(46,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(46,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(49,7): error C2065: 'GL_DEBUG_TYPE_PORTABILITY': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(49,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(49,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(52,7): error C2065: 'GL_DEBUG_TYPE_PERFORMANCE': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(52,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(52,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(55,7): error C2065: 'GL_DEBUG_TYPE_MARKER': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(55,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(55,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(58,7): error C2065: 'GL_DEBUG_TYPE_PUSH_GROUP': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(58,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(58,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(61,7): error C2065: 'GL_DEBUG_TYPE_POP_GROUP': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(61,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(61,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(64,7): error C2065: 'GL_DEBUG_TYPE_OTHER': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(64,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(64,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(73,7): error C2065: 'GL_DEBUG_SEVERITY_HIGH': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(73,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(73,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(76,7): error C2065: 'GL_DEBUG_SEVERITY_MEDIUM': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(76,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(76,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(79,7): error C2065: 'GL_DEBUG_SEVERITY_LOW': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(79,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(79,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(82,7): error C2065: 'GL_DEBUG_SEVERITY_NOTIFICATION': undeclared identifier
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(82,7): error C2131: expression did not evaluate to a constant
+      C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(82,7):
+      a non-constant (sub-)expression was encountered
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(16,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(19,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(22,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(25,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(28,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(31,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(36,2): warning C4065: switch statement contains 'default' but no 'case' labels
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(40,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(43,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(46,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(49,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(52,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(55,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(58,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(61,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(64,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(69,2): warning C4065: switch statement contains 'default' but no 'case' labels
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(73,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(76,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(79,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(82,7): error C2051: case expression not constant
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glutils.cpp(87,2): warning C4065: switch statement contains 'default' but no 'case' labels
+  main.cpp
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\scenerunner.h(64,4): error C3861: 'glDebugMessageCallback': identifier not found
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\scenerunner.h(65,4): error C3861: 'glDebugMessageControl': identifier not found
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\scenerunner.h(66,25): error C2065: 'GL_DEBUG_SOURCE_APPLICATION': undeclared identifier
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\scenerunner.h(66,54): error C2065: 'GL_DEBUG_TYPE_MARKER': undeclared identifier
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\scenerunner.h(67,5): error C2065: 'GL_DEBUG_SEVERITY_NOTIFICATION': undeclared identifier
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\scenerunner.h(66,4): error C3861: 'glDebugMessageInsert': identifier not found
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\scenerunner.h(82,25): error C2065: 'GL_DEBUG_SOURCE_APPLICATION': undeclared identifier
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\scenerunner.h(82,54): error C2065: 'GL_DEBUG_TYPE_MARKER': undeclared identifier
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\scenerunner.h(83,5): error C2065: 'GL_DEBUG_SEVERITY_NOTIFICATION': undeclared identifier
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\scenerunner.h(82,4): error C3861: 'glDebugMessageInsert': identifier not found
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.h(25,24): error C2065: 'GL_TESS_CONTROL_SHADER': undeclared identifier
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.h(26,27): error C2065: 'GL_TESS_EVALUATION_SHADER': undeclared identifier
+  (compiling source file 'main.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.h(27,19): error C2065: 'GL_COMPUTE_SHADER': undeclared identifier
+  (compiling source file 'main.cpp')
+  
+  scenebasic_uniform.cpp
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.h(25,24): error C2065: 'GL_TESS_CONTROL_SHADER': undeclared identifier
+  (compiling source file 'scenebasic_uniform.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.h(26,27): error C2065: 'GL_TESS_EVALUATION_SHADER': undeclared identifier
+  (compiling source file 'scenebasic_uniform.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\helper\glslprogram.h(27,19): error C2065: 'GL_COMPUTE_SHADER': undeclared identifier
+  (compiling source file 'scenebasic_uniform.cpp')
+  
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\scenebasic_uniform.cpp(64,7): error C3861: 'glBindVertexBuffer': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\scenebasic_uniform.cpp(65,7): error C3861: 'glBindVertexBuffer': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\scenebasic_uniform.cpp(67,7): error C3861: 'glVertexAttribFormat': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\scenebasic_uniform.cpp(68,7): error C3861: 'glVertexAttribBinding': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\scenebasic_uniform.cpp(69,7): error C3861: 'glVertexAttribFormat': identifier not found
+C:\Projects\OpenGL\3015\Lecture Project\Lab 1\scenebasic_uniform.cpp(70,8): error C3861: 'glVertexAttribBinding': identifier not found
+  Generating Code...
