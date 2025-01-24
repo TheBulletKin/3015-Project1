@@ -6,6 +6,7 @@
 using std::string;
 #include <iostream>
 
+
 namespace GLUtils {
 
 void APIENTRY debugCallback( GLenum source, GLenum type, GLuint id,
