@@ -9,13 +9,17 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "helper/torus.h"
+
 class SceneBasic_Uniform : public Scene
 {
 private:
-    GLuint vaoHandle;
+    //GLuint vaoHandle;
     GLSLProgram prog;
-    float angle;
+    //float angle;
+    Torus torus;
 
+    void setMatrices();
     void compile();
 
 public:

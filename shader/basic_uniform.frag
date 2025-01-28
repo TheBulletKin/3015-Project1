@@ -1,8 +1,15 @@
 #version 460
 
-in vec3 Color;
+
 layout (location = 0) out vec4 FragColor;
 
+in vec3 LightIntensity;
+in vec3 AmbientLight;
+in vec3 DiffuseLight;
+in vec3 SpecularLight;
+
 void main() {
-    FragColor = vec4(Color, 1.0);
+    vec3 combined = AmbientLight + DiffuseLight + SpecularLight;
+
+    FragColor = vec4(combined, 1.0f);
 }
