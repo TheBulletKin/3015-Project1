@@ -34,18 +34,18 @@ void main()
     //What's being shown here is vertex lighting. Each vertex holds the lighting properties and other uniforms
     //  like the camera position and so on.
     //The light value for each component of the shading algorithm is calculated here
-
+    //https://github.com/ruange/Gouraud-Shading-and-Phong-Shading
   
     
-    //Positions and vectors need to be placed in view space. This is the coordinate space where the camera is at 0,0,0 and it faces down the -z axis
-    //Makes calculations easier
-    vec3 n = normalize(NormalMatrix * VertexNormal);
-    
-    
     vec4 ViewSpacePosition = ModelViewMatrix * vec4(VertexPosition, 1.0f);
-    FragPos = vec3(ViewSpacePosition);   
-
+    vec3 n = normalize(NormalMatrix * VertexNormal);
     vec3 LightDirEyeSpace = normalize(vec3(LightPosition) - vec3(ViewSpacePosition));
+    vec3 viewDir = normalize(-vec3(ViewSpacePosition));
+    vec3 reflectDir = normalize(-reflect(LightDirEyeSpace, n));
+   
+    
+
+   
 
     //Ambient
     //Light that hides an object on all sides, or only some depending on the environment. Such as bounce light.
@@ -71,8 +71,6 @@ void main()
     //  The reflected (r) vector of that light source to the vertex / fragment position (r=-s + 2(s.n)n)
     //Equation for specular is then Ks * Ls * (r.v)^f
     //F is a power coefficient, controlling the falloff value so when you move the eye away from that reflected vector how bright is it
-    vec3 viewDir = normalize(-FragPos);
-    vec3 reflectDir = reflect(-LightDirEyeSpace, n);
     float specular = pow(max(dot(viewDir, reflectDir), 0.0), Roughness);
     SpecularLight = Ks * Ld * specular;
 

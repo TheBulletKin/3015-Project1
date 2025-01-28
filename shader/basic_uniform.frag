@@ -3,7 +3,6 @@
 
 layout (location = 0) out vec4 FragColor;
 
-in vec3 LightIntensity;
 in vec3 AmbientLight;
 in vec3 DiffuseLight;
 in vec3 SpecularLight;
