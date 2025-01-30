@@ -43,10 +43,6 @@ void main()
     vec3 viewDir = normalize(-vec3(ViewSpacePosition));
     vec3 reflectDir = normalize(-reflect(LightDirEyeSpace, n));
    
-    
-
-   
-
     //Ambient
     //Light that hides an object on all sides, or only some depending on the environment. Such as bounce light.
     //Ka is a constant that determines how much of that ambient light is reflected off of the object.

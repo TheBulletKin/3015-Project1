@@ -28,7 +28,7 @@ void SceneBasic_Uniform::initScene()
 
     model = mat4(1.0f);
     model = glm::rotate(model, glm::radians(-35.0f), vec3(1.0f, 0.0f, 0.0f));
-    view = glm::lookAt(vec3(0.0f, 0.0f, 1.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+    view = glm::lookAt(vec3(0.0f, 0.0f, 2.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
     projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
     prog.setUniform("LightPosition", view * glm::vec4(5.0f, 5.0f, 2.0f, 1.0f));
@@ -79,14 +79,14 @@ void SceneBasic_Uniform::resize(int w, int h)
 void SceneBasic_Uniform::setMatrices() 
 {
     mat4 mv;
-    mv = model * view;
+    mv = view * model;
 
     prog.setUniform("ModelViewMatrix", mv);
-    prog.setUniform("MVP", mv * projection);
+    prog.setUniform("MVP", projection * mv);
 
     //glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mv)));
     
     //prog.setUniform("NormalMatrix", normalMatrix);
     prog.setUniform("NormalMatrix", glm::mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
-    prog.setUniform("ViewPos", vec3(0.0f, 0.0f, 2.0f));
+    prog.setUniform("ViewPos", vec3(0.0f, 0.0f, 0.0f));
 }
