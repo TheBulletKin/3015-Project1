@@ -5,26 +5,42 @@ layout (location = 0) in vec3 VertexPosition;
 layout (location = 1) in vec3 VertexNormal;
 //layout (location = 1) in vec3 VertexColor;
 
-out vec3 AmbientLight;
-out vec3 DiffuseLight;
-out vec3 SpecularLight;
+#define MAX_NUMBER_OF_LIGHTS 3
+
+struct LightInfo{
+    vec4 Position;
+    vec3 La; //Ambient light intensity
+    vec3 Ld; //Diffuse and spec light intensity
+};
+
+uniform LightInfo Lights[MAX_NUMBER_OF_LIGHTS];
+
+struct MaterialInfo {
+    vec3 Ka; //Ambient reflectivity
+    vec3 Kd; //Diffuse reflectivity
+    vec3 Ks; //Specular reflectivity
+    float Shininess; //Specular shininess factor
+};
+
+uniform MaterialInfo Material;
+
+out vec3 Colour;
+
+vec3 AmbientLight;
+vec3 DiffuseLight;
+vec3 SpecularLight;
 
 vec3 LightDir;
 vec3 ViewDir;
 vec3 FragPos;
-
-uniform vec3 Kd;  // Constant, diffuse reflectivity value
-uniform vec3 Ks;  // Constant, specular reflectivity value
-uniform vec3 Ka;  // Constant, ambient reflectivity value
-uniform vec3 Ld;  // diffuse light strength
-uniform vec3 La;  // ambient light strength
-uniform float Roughness;
 
 uniform vec4 LightPosition;
 uniform mat4 ModelViewMatrix;
 uniform mat4 MVP;
 uniform mat3 NormalMatrix;
 uniform vec3 ViewPos;
+
+vec3 phongModel(int light, vec3 position, vec3 n);
 
 void main()
 {
@@ -39,24 +55,48 @@ void main()
     
     vec4 ViewSpacePosition = ModelViewMatrix * vec4(VertexPosition, 1.0f);
     vec3 n = normalize(NormalMatrix * VertexNormal);
-    vec3 LightDirEyeSpace = normalize(vec3(LightPosition) - vec3(ViewSpacePosition));
-    vec3 viewDir = normalize(-vec3(ViewSpacePosition));
-    vec3 reflectDir = normalize(-reflect(LightDirEyeSpace, n));
-   
+    
+
+
+    //Attentuation
+    //The effect of a light's strength diminishing over distance
+    //For diffuse light, you would divide the intensity by a distance and constant value
+    //Diffuse = (Kd * Ld * (s.n)) / (r + k)
+    //Where r is distance, k is a constant. This isn't full on inverse square law however.
+
+     
+    
+    Colour = vec3(0.0);
+    for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
+    {
+        Colour += phongModel(i, vec3(ViewSpacePosition), n);
+    }
+
+    gl_Position = MVP * vec4(VertexPosition, 1.0);
+}
+
+vec3 phongModel(int light, vec3 position, vec3 n){
+    
     //Ambient
     //Light that hides an object on all sides, or only some depending on the environment. Such as bounce light.
     //Ka is a constant that determines how much of that ambient light is reflected off of the object.
     //La is the ambient light intensity, like how bright it might be outside for instance.
-    AmbientLight = Ka * La;
+    AmbientLight += Material.Ka * Lights[light].La;
+    
+    //Light direction (s)
+    vec3 LightDir = normalize(vec3(Lights[light].Position) - vec3(position));
 
-    //Diffuse
+     //Diffuse
     //The majority of the light we see. Essentially what is actually lit by a light source
     //Requires two vectors - normal (perpendicular to the plane) , s (direction vector from the vertex / fragment position to the light source)
     //Equation for diffuse is to multiply the diffuse reflectivity and light diffuse value, multiply it by the dot of the light direction and normal.
     //Uses dot so that the diffuse light visible varies from 0 to 1 based on angle to the light.
     //Could also multiply s and n by cos0;
-    float diffuse = max(dot(n, LightDirEyeSpace), 0.0);
-    DiffuseLight = Kd * Ld * diffuse;
+    float sDotN = max(dot(n, LightDir), 0.0);
+    DiffuseLight = Material.Kd * Lights[light].Ld * sDotN;
+
+    vec3 viewDir = normalize(-vec3(position));
+    vec3 reflectDir = normalize(-reflect(LightDir, n));
 
     //Specular
     //The harsh light you see when the reflection of the light source reaches the camera or eyes 
@@ -67,18 +107,14 @@ void main()
     //  The reflected (r) vector of that light source to the vertex / fragment position (r=-s + 2(s.n)n)
     //Equation for specular is then Ks * Ls * (r.v)^f
     //F is a power coefficient, controlling the falloff value so when you move the eye away from that reflected vector how bright is it
-    float specular = pow(max(dot(viewDir, reflectDir), 0.0), Roughness);
-    SpecularLight = Ks * Ld * specular;
+    float specular = pow(max(dot(viewDir, reflectDir), 0.0), Material.Shininess);
+    SpecularLight = Material.Ks * Lights[light].Ld * specular;
 
-    //Attentuation
-    //The effect of a light's strength diminishing over distance
-    //For diffuse light, you would divide the intensity by a distance and constant value
-    //Diffuse = (Kd * Ld * (s.n)) / (r + k)
-    //Where r is distance, k is a constant. This isn't full on inverse square law however.
+    return AmbientLight + Lights[light].Ld * (DiffuseLight + SpecularLight);
+}
 
-     gl_Position = MVP * vec4(VertexPosition, 1.0);
-    
-    // ---------------------------------
+
+// ---------------------------------
     //NOTES
     //LIGHT TYPES
 
@@ -131,5 +167,3 @@ void main()
     //Can then mix with resulting frag colour using
     // vec3 colour = mix(fog.colour, phongColour, fogFactor);
     //Then out put that final colour
-    
-}

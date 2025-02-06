@@ -3,12 +3,10 @@
 
 layout (location = 0) out vec4 FragColor;
 
-in vec3 AmbientLight;
-in vec3 DiffuseLight;
-in vec3 SpecularLight;
+in vec3 Colour;
 
 void main() {
-    vec3 combined = AmbientLight + DiffuseLight + SpecularLight;
+    
 
-    FragColor = vec4(combined, 1.0f);
+    FragColor = vec4(Colour, 1.0f);
 }

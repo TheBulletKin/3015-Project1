@@ -10,6 +10,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "helper/torus.h"
+#include "helper/plane.h"
+#include "helper/objmesh.h"
 
 class SceneBasic_Uniform : public Scene
 {
@@ -17,7 +19,9 @@ private:
     //GLuint vaoHandle;
     GLSLProgram prog;
     //float angle;
-    Torus torus;
+    //Torus torus;
+    Plane plane;
+    std::unique_ptr<ObjMesh> mesh;
 
     void setMatrices();
     void compile();
