@@ -48,7 +48,6 @@ vec3 phongModel(int light, vec3 position, vec3 n){
     //Light that hides an object on all sides, or only some depending on the environment. Such as bounce light.
     //Ka is a constant that determines how much of that ambient light is reflected off of the object.
     //La is the ambient light intensity, like how bright it might be outside for instance.
-  
     vec3 AmbientLight = Material.Ka * Lights[light].La;
     
     //Light direction (s)
@@ -61,7 +60,6 @@ vec3 phongModel(int light, vec3 position, vec3 n){
     //Uses dot so that the diffuse light visible varies from 0 to 1 based on angle to the light.
     //Could also multiply s and n by cos0;
     float sDotN = max(dot(n, LightDir), 0.0);
-   
     vec3 DiffuseLight = Material.Kd * Lights[light].Ld * sDotN;
 
     //View dir is usually cameraPos - FragPos. Camera pos is 0, so this becomes - pos
