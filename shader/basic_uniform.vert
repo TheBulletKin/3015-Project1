@@ -20,7 +20,11 @@ vec3 FragPos;
 uniform mat4 ModelViewMatrix;
 uniform mat4 MVP;
 uniform mat3 NormalMatrix;
-uniform vec3 ViewPos;
+
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 
 
 
@@ -30,7 +34,11 @@ void main()
     //Vertex lighting has been removed. But essentially calculations now done on the fragment is shader is done in the vertex shader
     //https://github.com/ruange/Gouraud-Shading-and-Phong-Shading
   
-    Position = vec3(ModelViewMatrix) * VertexPosition;
+    //Multiply by model and view to transform to view space
+    Position = vec3(ModelViewMatrix * vec4(VertexPosition, 1.0));
+    
+    //Normal Matrix is glm::transpose(glm::inverse(glm::mat3(mv))); in code.
+    //Model view to become view space
     Normal = normalize(NormalMatrix * VertexNormal);
     gl_Position = MVP * vec4(VertexPosition, 1.0);
 

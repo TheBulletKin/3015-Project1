@@ -45,19 +45,19 @@ void SceneBasic_Uniform::initScene()
     prog.setUniform("La", vec3(0.2f, 0.2f, 0.2f));
     prog.setUniform("Ld", vec3(1.0f, 1.0f, 1.0f));
 
-    float x, z;
 
-    for (int i = 0; i < 3; i++) {
-        std::stringstream name;
-        name << "lights[" << i << "].Position";
-        x = 2.0f * cosf((glm::two_pi<float>() / 3) * i * 3);
-        z = 2.0f * sinf((glm::two_pi<float>() / 3) * i);
-        prog.setUniform(name.str().c_str(), view * glm::vec4(x, 1.2f, z + 1.0f, 1.0f));
-    }
+    glm::vec4 light1Pos = glm::vec4(-3.0f, 0.0f, -0.5f, 1.0f); //Left rim 
+    glm::vec4 light2Pos = glm::vec4(0.4f, 0.8f, 1.4f, 1.0f); //Fill
+    glm::vec4 light3Pos = glm::vec4(0.5f, 1.6f, -0.8f, 1.0f); //Right rim
 
-    prog.setUniform("Lights[0].Ld", vec3(0.0f, 0.0f, 0.8f));
-    prog.setUniform("Lights[1].Ld", vec3(0.0f, 0.8f, 0.0f));
-    prog.setUniform("Lights[2].Ld", vec3(0.8f, 0.0f, 0.0f));
+    // Apply the view transformation to transform into view space
+    prog.setUniform("Lights[0].Position", view * light1Pos);
+    prog.setUniform("Lights[1].Position", view * light2Pos);
+    prog.setUniform("Lights[2].Position", view * light3Pos);
+
+    prog.setUniform("Lights[0].Ld", vec3(0.8f, 0.8f, 0.8f));  
+    prog.setUniform("Lights[1].Ld", vec3(0.8f, 0.8f, 0.8f));
+    prog.setUniform("Lights[2].Ld", vec3(0.8f, 0.8f, 0.8f));
 }
 
 void SceneBasic_Uniform::compile()
@@ -124,9 +124,9 @@ void SceneBasic_Uniform::setMatrices()
     prog.setUniform("ModelViewMatrix", mv);
     prog.setUniform("MVP", projection * mv);
 
-    //glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mv)));
+    glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mv)));
     
-    //prog.setUniform("NormalMatrix", normalMatrix);
-    prog.setUniform("NormalMatrix", glm::mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
+    prog.setUniform("NormalMatrix", normalMatrix);
+    //prog.setUniform("NormalMatrix", glm::mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
     prog.setUniform("ViewPos", vec3(0.0f, 0.0f, 0.0f));
 }

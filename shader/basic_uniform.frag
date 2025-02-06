@@ -23,8 +23,11 @@ uniform MaterialInfo Material;
 
 vec3 Colour;
 
+//position of fragment in view space
 in vec3 Position;
 in vec3 Normal;
+
+uniform vec3 ViewPos;
 
 vec3 phongModel(int light, vec3 position, vec3 n);
 
@@ -36,6 +39,7 @@ void main() {
         Colour += phongModel(i, Position, Normal);
     }
     FragColor = vec4(Colour, 1.0f);
+    
 }
 
 vec3 phongModel(int light, vec3 position, vec3 n){
@@ -44,11 +48,11 @@ vec3 phongModel(int light, vec3 position, vec3 n){
     //Light that hides an object on all sides, or only some depending on the environment. Such as bounce light.
     //Ka is a constant that determines how much of that ambient light is reflected off of the object.
     //La is the ambient light intensity, like how bright it might be outside for instance.
-    vec3 AmbientLight = vec3(0.0f);
-    AmbientLight += Material.Ka * Lights[light].La;
+  
+    vec3 AmbientLight = Material.Ka * Lights[light].La;
     
     //Light direction (s)
-    vec3 LightDir = normalize(vec3(Lights[light].Position) - vec3(position));
+    vec3 LightDir = normalize(vec3(Lights[light].Position) - position);
 
      //Diffuse
     //The majority of the light we see. Essentially what is actually lit by a light source
@@ -57,11 +61,12 @@ vec3 phongModel(int light, vec3 position, vec3 n){
     //Uses dot so that the diffuse light visible varies from 0 to 1 based on angle to the light.
     //Could also multiply s and n by cos0;
     float sDotN = max(dot(n, LightDir), 0.0);
-    vec3 DiffuseLight = vec3(0.0f);
-    DiffuseLight = Material.Kd * Lights[light].Ld * sDotN;
+   
+    vec3 DiffuseLight = Material.Kd * Lights[light].Ld * sDotN;
 
-    vec3 viewDir = normalize(-vec3(position));
-    vec3 reflectDir = normalize(-reflect(LightDir, n));
+    //View dir is usually cameraPos - FragPos. Camera pos is 0, so this becomes - pos
+    vec3 viewDir = normalize(-position);
+    vec3 reflectDir = reflect(-LightDir, n);
 
     //Specular
     //The harsh light you see when the reflection of the light source reaches the camera or eyes 
@@ -73,10 +78,10 @@ vec3 phongModel(int light, vec3 position, vec3 n){
     //Equation for specular is then Ks * Ls * (r.v)^f
     //F is a power coefficient, controlling the falloff value so when you move the eye away from that reflected vector how bright is it
     float specular = pow(max(dot(viewDir, reflectDir), 0.0), Material.Shininess);
-    vec3 SpecularLight = vec3(0.0f);
-    SpecularLight = Material.Ks * Lights[light].Ld * specular;
 
-    return AmbientLight + Lights[light].Ld * (DiffuseLight + SpecularLight);
+    vec3 SpecularLight = Material.Ks * Lights[light].Ld * specular;
+
+    return AmbientLight + DiffuseLight + SpecularLight;
 }
 
 
