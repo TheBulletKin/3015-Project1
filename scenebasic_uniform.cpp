@@ -8,6 +8,8 @@ using std::string;
 
 #include<sstream>
 
+#include<vector>
+
 #include <iostream>
 using std::cerr;
 using std::endl;
@@ -22,11 +24,23 @@ using glm::vec3;
 
 SceneBasic_Uniform::SceneBasic_Uniform() : plane(10.0f, 10.0f, 100, 100)
 {
-    mesh = ObjMesh::load("media/pig_triangulated.obj", true);
+    PigMesh = ObjMesh::load("media/pig_triangulated.obj", true);
+    TerrainMesh = ObjMesh::load("media/Terrain.obj", true);
 }
 
 void SceneBasic_Uniform::initScene()
 {
+    
+#pragma region height map
+    std::vector<float> vertices;
+    std::vector<unsigned int> indices;
+
+
+
+#pragma endregion
+
+    
+    
     compile();
 
     glEnable(GL_DEPTH_TEST);
@@ -92,7 +106,8 @@ void SceneBasic_Uniform::render()
     
     setMatrices();
     
-    mesh->render();
+    PigMesh->render();
+    TerrainMesh->render();
 
     prog.setUniform("Material.Kd", 0.1f, 0.1f, 0.1f);
     prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);

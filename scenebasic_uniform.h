@@ -21,7 +21,8 @@ private:
     //float angle;
     //Torus torus;
     Plane plane;
-    std::unique_ptr<ObjMesh> mesh;
+    std::unique_ptr<ObjMesh> PigMesh;
+    std::unique_ptr<ObjMesh> TerrainMesh;
 
     void setMatrices();
     void compile();
