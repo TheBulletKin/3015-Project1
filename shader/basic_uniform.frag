@@ -48,12 +48,17 @@ void main() {
         //discard;
     }
 
+    vec3 adjustedNormal = Normal;
+    if (!gl_FrontFacing) {
+        adjustedNormal = -Normal;
+    }
+
     vec3 texColour = mix(BrickTexColour.rgb, MossTexColour.rgb, MossTexColour.a);
     //Colour = texColour.rgb;
     Colour = vec3(0);
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {
-        Colour += phongModel(i, Position, Normal, texColour.rgb);
+        Colour += phongModel(i, Position, adjustedNormal, texColour.rgb);
     }
     FragColor = vec4(Colour, 1.0f);
     

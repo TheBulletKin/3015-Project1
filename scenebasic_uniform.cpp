@@ -107,9 +107,15 @@ void SceneBasic_Uniform::render()
     
     setMatrices();
     
-    PigMesh->render();
-    TerrainMesh->render();
+    PigMesh->render(); 
     cube.render();
+
+    model = mat4(1.0f);
+    model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
+    setMatrices();
+    TerrainMesh->render();
+
+   
 
     prog.setUniform("Material.Kd", 0.1f, 0.1f, 0.1f);
     prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
