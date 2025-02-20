@@ -28,33 +28,43 @@ in vec3 Position;
 in vec3 Normal;
 in vec2 TexCoord;
 
-layout(binding = 0) uniform sampler2D BrickTex;
-layout(binding = 1) uniform sampler2D MossTex;
+//layout(binding = 0) uniform sampler2D BrickTex;
+//layout(binding = 1) uniform sampler2D MossTex;
+layout(binding = 2) uniform sampler2D BaseTex;
+layout(binding = 3) uniform sampler2D AlphaTex;
 
 uniform vec3 ViewPos;
 
-vec3 phongModel(int light, vec3 position, vec3 n);
+vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour);
 
 void main() {
     
-    vec4 BrickTexColour = texture(BrickTex, TexCoord);
-    vec4 MossTexColour = texture(MossTex, TexCoord);
-    Colour = mix(BrickTexColour.rgb, MossTexColour.rgb, MossTexColour.a);
+   // vec4 BrickTexColour = texture(BrickTex, TexCoord);
+    //vec4 MossTexColour = texture(MossTex, TexCoord);
+
+    vec4 texColour = texture(BaseTex, TexCoord);
+    vec4 alphaMap = texture(AlphaTex, TexCoord);
+    if (alphaMap.a < 0.15) {
+        discard;
+    }
+
+    //Colour = mix(BrickTexColour.rgb, MossTexColour.rgb, MossTexColour.a);
+    Colour = texColour.rgb;
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {
-        Colour += phongModel(i, Position, Normal);
+        Colour += phongModel(i, Position, Normal, texColour.rgb);
     }
     FragColor = vec4(Colour, 1.0f);
     
 }
 
-vec3 phongModel(int light, vec3 position, vec3 n){
+vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     
     //Ambient
     //Light that hides an object on all sides, or only some depending on the environment. Such as bounce light.
     //Ka is a constant that determines how much of that ambient light is reflected off of the object.
     //La is the ambient light intensity, like how bright it might be outside for instance.
-    vec3 AmbientLight = Material.Ka * Lights[light].La;
+    vec3 AmbientLight = Material.Ka * Lights[light].La * texColour;
     
     //Light direction (s)
     vec3 LightDir = normalize(vec3(Lights[light].Position) - position);
@@ -66,7 +76,7 @@ vec3 phongModel(int light, vec3 position, vec3 n){
     //Uses dot so that the diffuse light visible varies from 0 to 1 based on angle to the light.
     //Could also multiply s and n by cos0;
     float sDotN = max(dot(n, LightDir), 0.0);
-    vec3 DiffuseLight = Material.Kd * Lights[light].Ld * sDotN;
+    vec3 DiffuseLight = Material.Kd * Lights[light].Ld * sDotN * texColour;
 
     //View dir is usually cameraPos - FragPos. Camera pos is 0, so this becomes - pos
     vec3 viewDir = normalize(-position);
