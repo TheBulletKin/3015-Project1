@@ -46,11 +46,11 @@ void SceneBasic_Uniform::initScene()
     projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
     GLuint brickID = Texture::loadTexture("media/texture/brick1.jpg");
-    glActiveTexture(GL_TEXTURE2);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, brickID);
 
     GLuint mossID = Texture::loadTexture("media/texture/moss.png");
-    glActiveTexture(GL_TEXTURE3);
+    glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, mossID);
    
     prog.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
