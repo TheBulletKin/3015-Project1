@@ -26,6 +26,9 @@ vec3 Colour;
 //position of fragment in view space
 in vec3 Position;
 in vec3 Normal;
+in vec2 TexCoord;
+
+layout(binding = 0) uniform sampler2D Tex1;
 
 uniform vec3 ViewPos;
 
@@ -33,7 +36,8 @@ vec3 phongModel(int light, vec3 position, vec3 n);
 
 void main() {
     
-    Colour = vec3(0.0);
+    vec3 texColour = texture(Tex1, TexCoord).rgb;
+    Colour = texColour;
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {
         Colour += phongModel(i, Position, Normal);

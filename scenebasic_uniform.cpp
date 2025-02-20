@@ -18,6 +18,7 @@ using glm::vec3;
 using glm::mat4;
 
 #include "helper/glutils.h"
+#include "helper/texture.h"
 
 
 using glm::vec3;
@@ -31,13 +32,7 @@ SceneBasic_Uniform::SceneBasic_Uniform() : plane(10.0f, 10.0f, 100, 100)
 void SceneBasic_Uniform::initScene()
 {
     
-#pragma region height map
-    std::vector<float> vertices;
-    std::vector<unsigned int> indices;
 
-
-
-#pragma endregion
 
     
     
@@ -50,7 +45,9 @@ void SceneBasic_Uniform::initScene()
     view = glm::lookAt(vec3(0.0f, 0.0f, 2.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
     projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
-   
+    GLuint texID = Texture::loadTexture("media/texture/brick1.jpg");
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texID);
    
     prog.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
     prog.setUniform("Ka", vec3(0.1f, 0.1f, 0.1f));
@@ -108,6 +105,7 @@ void SceneBasic_Uniform::render()
     
     PigMesh->render();
     TerrainMesh->render();
+    cube.render();
 
     prog.setUniform("Material.Kd", 0.1f, 0.1f, 0.1f);
     prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);

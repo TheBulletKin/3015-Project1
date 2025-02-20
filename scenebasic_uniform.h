@@ -12,6 +12,7 @@
 #include "helper/torus.h"
 #include "helper/plane.h"
 #include "helper/objmesh.h"
+#include "helper/cube.h"
 
 class SceneBasic_Uniform : public Scene
 {
@@ -23,6 +24,7 @@ private:
     Plane plane;
     std::unique_ptr<ObjMesh> PigMesh;
     std::unique_ptr<ObjMesh> TerrainMesh;
+    Cube cube;
 
     void setMatrices();
     void compile();
