@@ -28,7 +28,8 @@ in vec3 Position;
 in vec3 Normal;
 in vec2 TexCoord;
 
-layout(binding = 0) uniform sampler2D Tex1;
+layout(binding = 0) uniform sampler2D BrickTex;
+layout(binding = 1) uniform sampler2D MossTex;
 
 uniform vec3 ViewPos;
 
@@ -36,8 +37,9 @@ vec3 phongModel(int light, vec3 position, vec3 n);
 
 void main() {
     
-    vec3 texColour = texture(Tex1, TexCoord).rgb;
-    Colour = texColour;
+    vec4 BrickTexColour = texture(BrickTex, TexCoord);
+    vec4 MossTexColour = texture(MossTex, TexCoord);
+    Colour = mix(BrickTexColour.rgb, MossTexColour.rgb, MossTexColour.a);
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {
         Colour += phongModel(i, Position, Normal);
