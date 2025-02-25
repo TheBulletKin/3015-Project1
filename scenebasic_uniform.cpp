@@ -84,6 +84,18 @@ void SceneBasic_Uniform::initScene()
     maxFireFlyCount = 3;
     fireFlySpawnCooldown = 3.0f;
 
+    for (int i = numberOfStaticLights; i < maxFireFlyCount; i++)
+    {
+        
+        string lightUniformTag = "pointLights[" + std::to_string(i) + "]";
+
+
+        prog.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+        prog.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+
+
+    }
+
     gen = mt19937(rd());
     uniform_real_distribution<> dis(0.0, 1.0);
 
@@ -163,6 +175,9 @@ void SceneBasic_Uniform::update( float t )
                 fireFlies.erase(fireFlies.begin() + i);
                 currentFireFlyCount--;
 
+
+                
+
                 prog.setUniform("dynamicPointLights", currentFireFlyCount);
 
                 delete fireFly;
@@ -190,8 +205,9 @@ void SceneBasic_Uniform::render()
 
     int fireFlyLightIndex = numberOfStaticLights;
     string lightUniformTag;
-    for (FireFly* fireFly : fireFlies)
-    {
+    for (size_t i = 0; i < fireFlies.size(); i++) {
+        FireFly* fireFly = fireFlies[i];
+
        
         lightUniformTag = ("pointLights[" + to_string(fireFlyLightIndex) + "]");
 

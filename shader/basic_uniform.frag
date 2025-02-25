@@ -59,7 +59,7 @@ void main() {
     vec3 texColour = mix(BrickTexColour.rgb, MossTexColour.rgb, MossTexColour.a);
     //Colour = texColour.rgb;
     Colour = vec3(0);
-    for (int i = 0; i < staticPointLights + dynamicPointLights; i++)
+    for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {
         Colour += phongModel(i, Position, adjustedNormal, texColour.rgb);
     }
@@ -69,6 +69,10 @@ void main() {
 
 vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     
+    if (pointLights[light].Position == vec3(0.0f, 0.0f, 0.0f)) {        
+        return vec3(0.0f);
+    }
+
     //Ambient
     //Light that hides an object on all sides, or only some depending on the environment. Such as bounce light.
     //Ka is a constant that determines how much of that ambient light is reflected off of the object.
