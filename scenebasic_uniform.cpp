@@ -27,81 +27,81 @@ using glm::vec3;
 
 SceneBasic_Uniform::SceneBasic_Uniform() : plane(10.0f, 10.0f, 100, 100)
 {
-    PigMesh = ObjMesh::load("media/pig_triangulated.obj", true);
-    TerrainMesh = ObjMesh::load("media/Terrain.obj", true);
+	PigMesh = ObjMesh::load("media/pig_triangulated.obj", true);
+	TerrainMesh = ObjMesh::load("media/Terrain.obj", true);
 }
 
 void SceneBasic_Uniform::initScene()
 {
-    
-
-
-    
-    
-    compile();
-
-    glEnable(GL_DEPTH_TEST);
-
-    model = mat4(1.0f);
-    model = glm::rotate(model, glm::radians(-35.0f), vec3(1.0f, 0.0f, 0.0f));
-    view = glm::lookAt(vec3(0.0f, 0.0f, 2.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
-    projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
-
-    GLuint brickID = Texture::loadTexture("media/texture/brick1.jpg");
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, brickID);
-
-    GLuint mossID = Texture::loadTexture("media/texture/moss.png");
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, mossID);
-   
-    prog.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
-    prog.setUniform("Ka", vec3(0.1f, 0.1f, 0.1f));
-    prog.setUniform("Ks", vec3(1.0f, 1.0f, 1.0f));    
-    prog.setUniform("Roughness", 32.0f);    
-    prog.setUniform("La", vec3(0.2f, 0.2f, 0.2f));
-    prog.setUniform("Ld", vec3(1.0f, 1.0f, 1.0f));
-
-
-    glm::vec4 light1Pos = glm::vec4(-3.0f, 0.0f, -0.5f, 1.0f); //Left rim 
-    glm::vec4 light2Pos = glm::vec4(0.4f, 0.8f, 1.4f, 1.0f); //Fill
-    glm::vec4 light3Pos = glm::vec4(0.5f, 1.6f, -0.8f, 1.0f); //Right rim
-
-    // Apply the view transformation to transform into view space
-    prog.setUniform("pointLights[0].Position", view * light1Pos);
-    prog.setUniform("pointLights[1].Position", view * light2Pos);
-    prog.setUniform("pointLights[2].Position", view * light3Pos);
-
-    prog.setUniform("pointLights[0].Ld", vec3(0.8f, 0.8f, 0.8f));  
-    prog.setUniform("pointLights[1].Ld", vec3(0.8f, 0.8f, 0.8f));
-    prog.setUniform("pointLights[2].Ld", vec3(0.8f, 0.8f, 0.8f));
-
-
-    numberOfStaticLights = 0;
-
-    fireFlySpawnTimer = 0.0f; 
-    currentFireFlyCount = 0; 
-    maxFireFlyCount = 3;
-    fireFlySpawnCooldown = 3.0f;
-
-    for (int i = numberOfStaticLights; i < maxFireFlyCount; i++)
-    {
-        
-        string lightUniformTag = "pointLights[" + std::to_string(i) + "]";
-
-
-        prog.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
-        prog.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
-
-
-    }
-
-    gen = mt19937(rd());
-    uniform_real_distribution<> dis(0.0, 1.0);
 
 
 
-    
+
+
+	compile();
+
+	glEnable(GL_DEPTH_TEST);
+
+	model = mat4(1.0f);
+	model = glm::rotate(model, glm::radians(-35.0f), vec3(1.0f, 0.0f, 0.0f));
+	view = glm::lookAt(vec3(0.0f, 0.0f, 2.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
+
+	GLuint brickID = Texture::loadTexture("media/texture/brick1.jpg");
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, brickID);
+
+	GLuint mossID = Texture::loadTexture("media/texture/moss.png");
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, mossID);
+
+	prog.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
+	prog.setUniform("Ka", vec3(0.1f, 0.1f, 0.1f));
+	prog.setUniform("Ks", vec3(1.0f, 1.0f, 1.0f));
+	prog.setUniform("Roughness", 32.0f);
+	prog.setUniform("La", vec3(0.2f, 0.2f, 0.2f));
+	prog.setUniform("Ld", vec3(1.0f, 1.0f, 1.0f));
+
+
+	glm::vec4 light1Pos = glm::vec4(-3.0f, 0.0f, -0.5f, 1.0f); //Left rim 
+	glm::vec4 light2Pos = glm::vec4(0.4f, 0.8f, 1.4f, 1.0f); //Fill
+	glm::vec4 light3Pos = glm::vec4(0.5f, 1.6f, -0.8f, 1.0f); //Right rim
+
+	// Apply the view transformation to transform into view space
+	prog.setUniform("pointLights[0].Position", view * light1Pos);
+	prog.setUniform("pointLights[1].Position", view * light2Pos);
+	prog.setUniform("pointLights[2].Position", view * light3Pos);
+
+	prog.setUniform("pointLights[0].Ld", vec3(0.8f, 0.8f, 0.8f));
+	prog.setUniform("pointLights[1].Ld", vec3(0.8f, 0.8f, 0.8f));
+	prog.setUniform("pointLights[2].Ld", vec3(0.8f, 0.8f, 0.8f));
+
+
+	numberOfStaticLights = 0;
+
+	fireFlySpawnTimer = 0.0f;
+	currentFireFlyCount = 0;
+	maxFireFlyCount = 3;
+	fireFlySpawnCooldown = 3.0f;
+
+	for (int i = numberOfStaticLights; i < maxFireFlyCount; i++)
+	{
+
+		string lightUniformTag = "pointLights[" + std::to_string(i) + "]";
+
+
+		prog.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+		prog.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+
+
+	}
+
+	gen = mt19937(rd());
+	uniform_real_distribution<> dis(0.0, 1.0);
+
+
+
+
 }
 
 void SceneBasic_Uniform::compile()
@@ -111,179 +111,193 @@ void SceneBasic_Uniform::compile()
 		prog.compileShader("shader/basic_uniform.frag");
 		prog.link();
 		prog.use();
-	} catch (GLSLProgramException &e) {
+	}
+	catch (GLSLProgramException& e) {
 		cerr << e.what() << endl;
 		exit(EXIT_FAILURE);
 	}
 }
 
-void SceneBasic_Uniform::update( float t )
+void SceneBasic_Uniform::update(float t)
 {
-    fireFlySpawnTimer += t;
+	deltaTime = t - lastFrameTime;
+	lastFrameTime = t;
 
-    if (fireFlySpawnTimer >= fireFlySpawnCooldown && currentFireFlyCount < maxFireFlyCount)
-    {
-        PointLight* newLight = new PointLight(
-            1.0f,
-            0.09f,
-            0.032f,
-            ambientLightColour,
-            fireFlyLightColour,
-            fireFlyLightColour
-
-        );
-
-       
-        
-
-        float ySpawnValueMin = 1.5f;
-        float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
-
-        float randomX = topLeftSpawnBound.x + (bottomRightSpawnBound.x - topLeftSpawnBound.x) * dis(gen);
-        float randomY = ySpawnValue;
-        float randomZ = topLeftSpawnBound.z + (bottomRightSpawnBound.z - topLeftSpawnBound.z) * dis(gen);
-
-        vec3 spawnPosition = vec3(randomX, randomY, randomZ);
-
-        FireFly* newFireFly = new FireFly(newLight, spawnPosition, fireFlies.size());
-
-        fireFlies.push_back(newFireFly);
-        currentFireFlyCount++;
-
-        std::cout << "FireFly spawned\n";
-
-        fireFlySpawnTimer = 0.0f;
-    }
-
-    for (size_t i = 0; i < fireFlies.size(); i++)
-    {
-        FireFly* fireFly = fireFlies[i];
-        if (fireFly != NULL)
-        {
-            fireFly->Update(t /1000);
-            if (fireFly->ShouldDestroy())
-            {
-                int fireFlyLightIndex = i;
-
-                string lightUniformTag = "pointLights[" + std::to_string(fireFlyLightIndex) + "]";
-
-                
-                prog.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
-                prog.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
-                                
-
-                fireFlies.erase(fireFlies.begin() + i);
-                currentFireFlyCount--;
+	if (currentFireFlyCount < maxFireFlyCount)
+	{
+		fireFlySpawnTimer += deltaTime;
+	}
+	else {
+		fireFlySpawnTimer = 0.0f;
+	}
+	
 
 
-                
+	if (fireFlySpawnTimer >= fireFlySpawnCooldown && currentFireFlyCount < maxFireFlyCount)
+	{
+		PointLight* newLight = new PointLight(
+			1.0f,
+			0.09f,
+			0.032f,
+			ambientLightColour,
+			fireFlyLightColour,
+			fireFlyLightColour
 
-                prog.setUniform("dynamicPointLights", currentFireFlyCount);
-
-                delete fireFly;
-
-                std::cout << "FireFly deleted\n";
-
-                i--;
-            }
-        }
-    }
+		);
 
 
-    /* Make a collection for firelies
-    *  Timer that counts down
-    *  Max number of fireflies
-    *  Create new firefly within defined bounds
-    * Update all fireflies in this method
-    * Moves along random path
-    */
+
+
+		float ySpawnValueMin = 1.5f;
+		float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
+
+		float randomX = topLeftSpawnBound.x + (bottomRightSpawnBound.x - topLeftSpawnBound.x) * dis(gen);
+		float randomY = ySpawnValue;
+		float randomZ = topLeftSpawnBound.z + (bottomRightSpawnBound.z - topLeftSpawnBound.z) * dis(gen);
+
+		vec3 spawnPosition = vec3(randomX, randomY, randomZ);
+
+		FireFly* newFireFly = new FireFly(newLight, spawnPosition, fireFlies.size());
+
+		fireFlies.push_back(newFireFly);
+		currentFireFlyCount++;
+
+		std::cout << "FireFly spawned   Number of lights: " << currentFireFlyCount << "\n";
+
+		fireFlySpawnTimer = 0.0f;
+
+		fireFlySpawnCooldown = linearRand(3.0f, 6.0f);
+	}
+
+	for (size_t i = 0; i < fireFlies.size(); i++)
+	{
+		FireFly* fireFly = fireFlies[i];
+		if (fireFly != NULL)
+		{
+			fireFly->Update(deltaTime);
+			if (fireFly->ShouldDestroy())
+			{
+				int fireFlyLightIndex = i;
+
+				string lightUniformTag = "pointLights[" + std::to_string(fireFlyLightIndex) + "]";
+
+
+				prog.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+				prog.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+
+
+				fireFlies.erase(fireFlies.begin() + i);
+				currentFireFlyCount--;
+
+
+
+
+				prog.setUniform("dynamicPointLights", currentFireFlyCount);
+
+				delete fireFly;
+
+				std::cout << "FireFly deleted   Number of lights: " << currentFireFlyCount << "\n";
+
+				i--;
+			}
+		}
+	}
+
+
+	/* Make a collection for firelies
+	*  Timer that counts down
+	*  Max number of fireflies
+	*  Create new firefly within defined bounds
+	* Update all fireflies in this method
+	* Moves along random path
+	*/
 }
 
 void SceneBasic_Uniform::render()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    int fireFlyLightIndex = numberOfStaticLights;
-    string lightUniformTag;
-    for (size_t i = 0; i < fireFlies.size(); i++) {
-        FireFly* fireFly = fireFlies[i];
+	int fireFlyLightIndex = numberOfStaticLights;
+	string lightUniformTag;
+	for (size_t i = 0; i < fireFlies.size(); i++) {
+		FireFly* fireFly = fireFlies[i];
 
-       
-        lightUniformTag = ("pointLights[" + to_string(fireFlyLightIndex) + "]");
 
-        //prog.setUniform((lightUniformTag + ".position").c_str(), fireFly->pointLight->position);
-       // prog.setUniform((lightUniformTag + ".ambient").c_str(), fireFly->pointLight->ambient);
-       // prog.setUniform((lightUniformTag + ".diffuse").c_str(), fireFlyLightColour);
-       // prog.setUniform((lightUniformTag + ".specular").c_str(), fireFlyLightColour);
-        //prog.setUniform((lightUniformTag + ".constant").c_str(), fireFly->pointLight->constant);
-        //prog.setUniform((lightUniformTag + ".linear").c_str(), fireFly->pointLight->linear);
-        //prog.setUniform((lightUniformTag + ".quadratic").c_str(), fireFly->pointLight->quadratic);
+		lightUniformTag = ("pointLights[" + to_string(fireFlyLightIndex) + "]");
 
-        prog.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
-        //prog.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient);
-        //prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFlyLightColour);
-        prog.setUniform((lightUniformTag + ".Ld").c_str(), vec3(0.8f, 0.8f, 0.8f));
-       
+		//prog.setUniform((lightUniformTag + ".position").c_str(), fireFly->pointLight->position);
+	   // prog.setUniform((lightUniformTag + ".ambient").c_str(), fireFly->pointLight->ambient);
+	   // prog.setUniform((lightUniformTag + ".diffuse").c_str(), fireFlyLightColour);
+	   // prog.setUniform((lightUniformTag + ".specular").c_str(), fireFlyLightColour);
+		//prog.setUniform((lightUniformTag + ".constant").c_str(), fireFly->pointLight->constant);
+		//prog.setUniform((lightUniformTag + ".linear").c_str(), fireFly->pointLight->linear);
+		//prog.setUniform((lightUniformTag + ".quadratic").c_str(), fireFly->pointLight->quadratic);
 
-        fireFlyLightIndex++;
-    }
+		prog.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
+		//prog.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient);
+		//prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFlyLightColour);
+		prog.setUniform((lightUniformTag + ".Ld").c_str(), vec3(0.8f, 0.8f, 0.8f));
 
-    prog.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
-    prog.setUniform("staticPointLights", numberOfStaticLights);
-    
-    prog.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
-    prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
-    prog.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
-    prog.setUniform("Material.Shininess", 180.0f);
 
-    model = mat4(1.0f);
-    model = glm::rotate(model, glm::radians(90.0f), vec3(0.0f, 10.0f, 0.0f));
-    
-    setMatrices();
-    
-    PigMesh->render(); 
-    //cube.render();
+		fireFlyLightIndex++;
+	}
 
-    model = mat4(1.0f);
-    model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
-    setMatrices();
-    TerrainMesh->render();
+	prog.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
+	prog.setUniform("staticPointLights", numberOfStaticLights);
 
-   
+	prog.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
+	prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
+	prog.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
+	prog.setUniform("Material.Shininess", 180.0f);
 
-    prog.setUniform("Material.Kd", 0.1f, 0.1f, 0.1f);
-    prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
-    prog.setUniform("Material.Ka", 0.1f, 0.1f, 0.1f);
-    prog.setUniform("Material.Shininess", 180.0f);
+	model = mat4(1.0f);
+	model = glm::rotate(model, glm::radians(90.0f), vec3(0.0f, 10.0f, 0.0f));
 
-    model = mat4(1.0f);
-    model = glm::translate(model, vec3(0.0f, -0.45, 0.0f));
+	setMatrices();
 
-    setMatrices();
+	PigMesh->render();
+	//cube.render();
 
-    plane.render();
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
+	setMatrices();
+	TerrainMesh->render();
+
+
+
+	prog.setUniform("Material.Kd", 0.1f, 0.1f, 0.1f);
+	prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
+	prog.setUniform("Material.Ka", 0.1f, 0.1f, 0.1f);
+	prog.setUniform("Material.Shininess", 180.0f);
+
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(0.0f, -0.45, 0.0f));
+
+	setMatrices();
+
+	plane.render();
 
 }
 
 void SceneBasic_Uniform::resize(int w, int h)
 {
-    width = w;
-    height = h;
-    glViewport(0, 0, w, h);
-    projection = glm::perspective(glm::radians(70.0f), (float)w / h, 0.3f, 100.0f);
+	width = w;
+	height = h;
+	glViewport(0, 0, w, h);
+	projection = glm::perspective(glm::radians(70.0f), (float)w / h, 0.3f, 100.0f);
 };
 
-void SceneBasic_Uniform::setMatrices() 
+void SceneBasic_Uniform::setMatrices()
 {
-    mat4 mv;
-    mv = view * model;
+	mat4 mv;
+	mv = view * model;
 
-    prog.setUniform("ModelViewMatrix", mv);
-    prog.setUniform("MVP", projection * mv);
+	prog.setUniform("ModelViewMatrix", mv);
+	prog.setUniform("MVP", projection * mv);
 
-    glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mv)));
-    
-    prog.setUniform("NormalMatrix", normalMatrix);
-    //prog.setUniform("NormalMatrix", glm::mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
-    prog.setUniform("ViewPos", vec3(0.0f, 0.0f, 0.0f));
+	glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mv)));
+
+	prog.setUniform("NormalMatrix", normalMatrix);
+	//prog.setUniform("NormalMatrix", glm::mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
+	prog.setUniform("ViewPos", vec3(0.0f, 0.0f, 0.0f));
 }

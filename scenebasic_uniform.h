@@ -31,13 +31,13 @@ private:
     std::unique_ptr<ObjMesh> TerrainMesh;
     Cube cube;
     
-    int numberOfStaticLights = 3;
+    int numberOfStaticLights;
 
     std::vector<FireFly*> fireFlies;
-    float fireFlySpawnTimer = 0.0f;
-    int fireFlySpawnCooldown = 3.0f;
+    float fireFlySpawnTimer;
+    int fireFlySpawnCooldown;
     int currentFireFlyCount;
-    int maxFireFlyCount = 3;
+    int maxFireFlyCount;
     vec3 fireFlyLightColour = vec3(0.3f, 0.3f, 0.3f);
     vec3 ambientLightColour = vec3(0.3f, 0.6f, 0.2f);
 
@@ -51,6 +51,9 @@ private:
     std::random_device rd;  
     std::mt19937 gen;
     std::uniform_real_distribution<float> dis;
+
+    float deltaTime = 0.0f;
+    float lastFrameTime = 0.0f;
     
 
     void setMatrices();
