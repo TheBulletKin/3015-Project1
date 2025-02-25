@@ -44,7 +44,7 @@ void SceneBasic_Uniform::initScene()
 
 	model = mat4(1.0f);
 	model = glm::rotate(model, glm::radians(-35.0f), vec3(1.0f, 0.0f, 0.0f));
-	view = glm::lookAt(vec3(0.0f, 0.0f, 2.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+	view = glm::lookAt(vec3(0.0f, 10.0f, 2.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, -1.0f)); //First is where the eye is, second is the coordinate it is looking at, last is up vector
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
 	GLuint brickID = Texture::loadTexture("media/texture/brick1.jpg");
@@ -77,7 +77,7 @@ void SceneBasic_Uniform::initScene()
 	prog.setUniform("pointLights[2].Ld", vec3(0.8f, 0.8f, 0.8f));
 
 
-	numberOfStaticLights = 0;
+	numberOfStaticLights = 3;
 
 	fireFlySpawnTimer = 0.0f;
 	currentFireFlyCount = 0;
@@ -98,6 +98,48 @@ void SceneBasic_Uniform::initScene()
 
 	gen = mt19937(rd());
 	uniform_real_distribution<> dis(0.0, 1.0);
+
+	FastNoiseLite noise;
+	noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	noise.SetFrequency(16.0f);
+	noise.SetFractalType(FastNoiseLite::FractalType_FBm);
+	noise.SetFractalOctaves(4);
+	noise.SetFractalLacunarity(2.8f);
+	noise.SetFractalGain(0.5f);
+	
+	
+	
+	int textureWidth = 1024;
+	int textureHeight = 1024;
+	
+	std::vector<float> noiseData(textureWidth * textureHeight);
+	
+	for (int y = 0; y < textureHeight; ++y) {
+		for (int x = 0; x < textureWidth; ++x) {
+			float nx = float(x) / float(textureWidth);
+			float ny = float(y) / float(textureHeight);
+			noiseData[y * textureWidth + x] = noise.GetNoise(nx, ny);
+		}
+	}
+
+	GLuint noiseTexture;
+	glGenTextures(1, &noiseTexture);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, noiseTexture);
+
+	// Upload the noise data to the texture
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, textureWidth, textureHeight, 0, GL_RED, GL_FLOAT, &noiseData[0]);
+
+	// Set texture parameters for seamless tiling
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	
+	prog.setUniform("CloudTex", 4);
+	
+	
 
 
 
@@ -131,7 +173,7 @@ void SceneBasic_Uniform::update(float t)
 		fireFlySpawnTimer = 0.0f;
 	}
 	
-
+	prog.setUniform("time", t * 0.3f);
 
 	if (fireFlySpawnTimer >= fireFlySpawnCooldown && currentFireFlyCount < maxFireFlyCount)
 	{
@@ -221,6 +263,7 @@ void SceneBasic_Uniform::render()
 	string lightUniformTag;
 	for (size_t i = 0; i < fireFlies.size(); i++) {
 		FireFly* fireFly = fireFlies[i];
+		
 
 
 		lightUniformTag = ("pointLights[" + to_string(fireFlyLightIndex) + "]");

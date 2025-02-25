@@ -23,6 +23,8 @@ uniform MaterialInfo Material;
 
 uniform int staticPointLights = 3;
 uniform int dynamicPointLights = 0;
+uniform float time;
+
 
 vec3 Colour;
 
@@ -35,13 +37,26 @@ layout(binding = 0) uniform sampler2D BrickTex;
 layout(binding = 1) uniform sampler2D MossTex;
 layout(binding = 2) uniform sampler2D BaseTex;
 layout(binding = 3) uniform sampler2D AlphaTex;
+layout(binding = 4) uniform sampler2D CloudTex;
 
 uniform vec3 ViewPos;
 
 vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour);
 
 void main() {
+    float noiseScale = 0.05f;
+    float speed = 0.01f;
+    float animatedX = time * speed + sin(time * 0.1f) * 0.01f;
+    float animatedY = time * speed + cos(time * 0.12f) * 0.01f;
+
     
+    vec2 animatedCoord = TexCoord * noiseScale + vec2(animatedX, animatedY);
+    float noise = texture(CloudTex, animatedCoord).r;
+    //noise = (noise + 1.0) * 0.5; //Noise generates from -1 to 1, need to remap it to work with step
+    float shadow = smoothstep(0.0, 0.05f, noise); 
+    shadow = mix(shadow, 1.0, 0.6);
+    
+
     vec4 BrickTexColour = texture(BrickTex, TexCoord);
     vec4 MossTexColour = texture(MossTex, TexCoord);
 
@@ -63,7 +78,8 @@ void main() {
     {
         Colour += phongModel(i, Position, adjustedNormal, texColour.rgb);
     }
-    FragColor = vec4(Colour, 1.0f);
+    FragColor = vec4(clamp(Colour * shadow, 0.0, 1.0), 1.0);
+    //FragColor = vec4(vec3(shadow), 1.0f);
     
 }
 
