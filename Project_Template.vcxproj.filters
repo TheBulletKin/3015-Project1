@@ -66,6 +66,12 @@
     <ClCompile Include="helper\texture.cpp">
       <Filter>helper</Filter>
     </ClCompile>
+    <ClCompile Include="helper\PointLight.cpp">
+      <Filter>helper</Filter>
+    </ClCompile>
+    <ClCompile Include="helper\FireFly.cpp">
+      <Filter>helper</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shader\basic_uniform.frag">
@@ -128,6 +134,15 @@
       <Filter>helper</Filter>
     </ClInclude>
     <ClInclude Include="helper\texture.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\FastNoiseLite.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\PointLight.h">
+      <Filter>helper</Filter>
+    </ClInclude>
+    <ClInclude Include="helper\FireFly.h">
       <Filter>helper</Filter>
     </ClInclude>
   </ItemGroup>

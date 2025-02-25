@@ -13,6 +13,11 @@
 #include "helper/plane.h"
 #include "helper/objmesh.h"
 #include "helper/cube.h"
+#include "helper/FireFly.h"
+
+#include <random>
+#include <math.h>
+
 
 class SceneBasic_Uniform : public Scene
 {
@@ -25,6 +30,28 @@ private:
     std::unique_ptr<ObjMesh> PigMesh;
     std::unique_ptr<ObjMesh> TerrainMesh;
     Cube cube;
+    
+    int numberOfStaticLights = 3;
+
+    std::vector<FireFly*> fireFlies;
+    float fireFlySpawnTimer = 0.0f;
+    int fireFlySpawnCooldown = 3.0f;
+    int currentFireFlyCount;
+    int maxFireFlyCount = 3;
+    vec3 fireFlyLightColour = vec3(0.3f, 0.3f, 0.3f);
+    vec3 ambientLightColour = vec3(0.3f, 0.6f, 0.2f);
+
+    struct Point {
+        float x, y, z;
+    };
+    
+    Point topLeftSpawnBound = { -1.0f, -0.4f, -0.2f }; //-X means left  -Z means forward
+    Point bottomRightSpawnBound = { 1.0f, -0.4f, -0.2f };
+
+    std::random_device rd;  
+    std::mt19937 gen;
+    std::uniform_real_distribution<float> dis;
+    
 
     void setMatrices();
     void compile();

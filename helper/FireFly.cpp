@@ -1,0 +1,51 @@
+#include "FireFly.h"
+#include "glm/gtc/random.hpp"
+
+using namespace std;
+using namespace glm;
+
+FireFly::FireFly(PointLight* pointLight, vec3 spawnPosition, int index) {
+	this->pointLight = pointLight;
+	this->index = index;
+	currentLifeTime = 0.0f;
+	lifeTimeMax = linearRand(5.0f, 10.0f);
+	currentPosition = spawnPosition;
+	
+	noiseGen.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	noiseGen.SetFrequency(0.5f);
+
+
+	noiseOffsetX = linearRand(0.0f, 1000.0f);
+	noiseOffsetY = linearRand(0.0f, 1000.0f);
+	noiseOffsetZ = linearRand(0.0f, 1000.0f);
+
+	timeFactor = 0.0f;
+}
+
+FireFly::~FireFly() {
+	delete pointLight;
+}
+
+bool FireFly::ShouldDestroy() {
+
+	if (currentLifeTime >= lifeTimeMax)
+	{
+		return true;
+	}
+	return false;
+}
+
+void FireFly::Update(float deltaTime) {
+	currentLifeTime += deltaTime;
+	timeFactor += deltaTime * 0.5f;
+	
+	float noiseX = noiseGen.GetNoise(noiseOffsetX, timeFactor);
+	float noiseY = noiseGen.GetNoise(noiseOffsetY, timeFactor);
+	float noiseZ = noiseGen.GetNoise(noiseOffsetZ, timeFactor);
+
+	vec3 noiseOffset = vec3(noiseX, noiseY, noiseZ) * 0.2f;
+	velocity = mix(velocity, noiseOffset, 0.1f);
+	currentPosition += velocity * deltaTime;
+
+	//pointLight->SetPosition(currentPosition);
+}

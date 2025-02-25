@@ -147,10 +147,12 @@
   <ItemGroup>
     <ClCompile Include="glad.c" />
     <ClCompile Include="helper\cube.cpp" />
+    <ClCompile Include="helper\FireFly.cpp" />
     <ClCompile Include="helper\glslprogram.cpp" />
     <ClCompile Include="helper\glutils.cpp" />
     <ClCompile Include="helper\objmesh.cpp" />
     <ClCompile Include="helper\plane.cpp" />
+    <ClCompile Include="helper\PointLight.cpp" />
     <ClCompile Include="helper\stb\stb_image.cpp" />
     <ClCompile Include="helper\teapot.cpp" />
     <ClCompile Include="helper\texture.cpp" />
@@ -167,10 +169,13 @@
     <ClInclude Include="helper\aabb.h" />
     <ClInclude Include="helper\cube.h" />
     <ClInclude Include="helper\drawable.h" />
+    <ClInclude Include="helper\FastNoiseLite.h" />
+    <ClInclude Include="helper\FireFly.h" />
     <ClInclude Include="helper\glslprogram.h" />
     <ClInclude Include="helper\glutils.h" />
     <ClInclude Include="helper\objmesh.h" />
     <ClInclude Include="helper\plane.h" />
+    <ClInclude Include="helper\PointLight.h" />
     <ClInclude Include="helper\scene.h" />
     <ClInclude Include="helper\scenerunner.h" />
     <ClInclude Include="helper\stb\stb_image.h" />

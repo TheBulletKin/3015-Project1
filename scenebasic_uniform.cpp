@@ -20,6 +20,8 @@ using glm::mat4;
 #include "helper/glutils.h"
 #include "helper/texture.h"
 
+#include "glm/gtc/random.hpp"
+
 
 using glm::vec3;
 
@@ -66,13 +68,28 @@ void SceneBasic_Uniform::initScene()
     glm::vec4 light3Pos = glm::vec4(0.5f, 1.6f, -0.8f, 1.0f); //Right rim
 
     // Apply the view transformation to transform into view space
-    prog.setUniform("Lights[0].Position", view * light1Pos);
-    prog.setUniform("Lights[1].Position", view * light2Pos);
-    prog.setUniform("Lights[2].Position", view * light3Pos);
+    prog.setUniform("pointLights[0].Position", view * light1Pos);
+    prog.setUniform("pointLights[1].Position", view * light2Pos);
+    prog.setUniform("pointLights[2].Position", view * light3Pos);
 
-    prog.setUniform("Lights[0].Ld", vec3(0.8f, 0.8f, 0.8f));  
-    prog.setUniform("Lights[1].Ld", vec3(0.8f, 0.8f, 0.8f));
-    prog.setUniform("Lights[2].Ld", vec3(0.8f, 0.8f, 0.8f));
+    prog.setUniform("pointLights[0].Ld", vec3(0.8f, 0.8f, 0.8f));  
+    prog.setUniform("pointLights[1].Ld", vec3(0.8f, 0.8f, 0.8f));
+    prog.setUniform("pointLights[2].Ld", vec3(0.8f, 0.8f, 0.8f));
+
+
+    numberOfStaticLights = 0;
+
+    fireFlySpawnTimer = 0.0f; 
+    currentFireFlyCount = 0; 
+    maxFireFlyCount = 3;
+    fireFlySpawnCooldown = 3.0f;
+
+    gen = mt19937(rd());
+    uniform_real_distribution<> dis(0.0, 1.0);
+
+
+
+    
 }
 
 void SceneBasic_Uniform::compile()
@@ -90,13 +107,114 @@ void SceneBasic_Uniform::compile()
 
 void SceneBasic_Uniform::update( float t )
 {
-    
+    fireFlySpawnTimer += t;
+
+    if (fireFlySpawnTimer >= fireFlySpawnCooldown && currentFireFlyCount < maxFireFlyCount)
+    {
+        PointLight* newLight = new PointLight(
+            1.0f,
+            0.09f,
+            0.032f,
+            ambientLightColour,
+            fireFlyLightColour,
+            fireFlyLightColour
+
+        );
+
+       
+        
+
+        float ySpawnValueMin = 1.5f;
+        float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
+
+        float randomX = topLeftSpawnBound.x + (bottomRightSpawnBound.x - topLeftSpawnBound.x) * dis(gen);
+        float randomY = ySpawnValue;
+        float randomZ = topLeftSpawnBound.z + (bottomRightSpawnBound.z - topLeftSpawnBound.z) * dis(gen);
+
+        vec3 spawnPosition = vec3(randomX, randomY, randomZ);
+
+        FireFly* newFireFly = new FireFly(newLight, spawnPosition, fireFlies.size());
+
+        fireFlies.push_back(newFireFly);
+        currentFireFlyCount++;
+
+        std::cout << "FireFly spawned\n";
+
+        fireFlySpawnTimer = 0.0f;
+    }
+
+    for (size_t i = 0; i < fireFlies.size(); i++)
+    {
+        FireFly* fireFly = fireFlies[i];
+        if (fireFly != NULL)
+        {
+            fireFly->Update(t /1000);
+            if (fireFly->ShouldDestroy())
+            {
+                int fireFlyLightIndex = i;
+
+                string lightUniformTag = "pointLights[" + std::to_string(fireFlyLightIndex) + "]";
+
+                
+                prog.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+                prog.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+                                
+
+                fireFlies.erase(fireFlies.begin() + i);
+                currentFireFlyCount--;
+
+                prog.setUniform("dynamicPointLights", currentFireFlyCount);
+
+                delete fireFly;
+
+                std::cout << "FireFly deleted\n";
+
+                i--;
+            }
+        }
+    }
+
+
+    /* Make a collection for firelies
+    *  Timer that counts down
+    *  Max number of fireflies
+    *  Create new firefly within defined bounds
+    * Update all fireflies in this method
+    * Moves along random path
+    */
 }
 
 void SceneBasic_Uniform::render()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+    int fireFlyLightIndex = numberOfStaticLights;
+    string lightUniformTag;
+    for (FireFly* fireFly : fireFlies)
+    {
+       
+        lightUniformTag = ("pointLights[" + to_string(fireFlyLightIndex) + "]");
+
+        //prog.setUniform((lightUniformTag + ".position").c_str(), fireFly->pointLight->position);
+       // prog.setUniform((lightUniformTag + ".ambient").c_str(), fireFly->pointLight->ambient);
+       // prog.setUniform((lightUniformTag + ".diffuse").c_str(), fireFlyLightColour);
+       // prog.setUniform((lightUniformTag + ".specular").c_str(), fireFlyLightColour);
+        //prog.setUniform((lightUniformTag + ".constant").c_str(), fireFly->pointLight->constant);
+        //prog.setUniform((lightUniformTag + ".linear").c_str(), fireFly->pointLight->linear);
+        //prog.setUniform((lightUniformTag + ".quadratic").c_str(), fireFly->pointLight->quadratic);
+
+        prog.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
+        //prog.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient);
+        //prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFlyLightColour);
+        prog.setUniform((lightUniformTag + ".Ld").c_str(), vec3(0.8f, 0.8f, 0.8f));
+       
+
+        fireFlyLightIndex++;
+    }
+
+    prog.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
+    prog.setUniform("staticPointLights", numberOfStaticLights);
+    
     prog.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
     prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
     prog.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
@@ -108,7 +226,7 @@ void SceneBasic_Uniform::render()
     setMatrices();
     
     PigMesh->render(); 
-    cube.render();
+    //cube.render();
 
     model = mat4(1.0f);
     model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));

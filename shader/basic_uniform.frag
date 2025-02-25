@@ -2,15 +2,15 @@
 
 layout (location = 0) out vec4 FragColor;
 
-#define MAX_NUMBER_OF_LIGHTS 3
+#define MAX_NUMBER_OF_LIGHTS 6
 
 struct LightInfo{
-    vec4 Position;
+    vec3 Position;
     vec3 La; //Ambient light intensity
     vec3 Ld; //Diffuse and spec light intensity
 };
 
-uniform LightInfo Lights[MAX_NUMBER_OF_LIGHTS];
+uniform LightInfo pointLights[MAX_NUMBER_OF_LIGHTS];
 
 struct MaterialInfo {
     vec3 Ka; //Ambient reflectivity
@@ -20,6 +20,9 @@ struct MaterialInfo {
 };
 
 uniform MaterialInfo Material;
+
+uniform int staticPointLights = 3;
+uniform int dynamicPointLights = 0;
 
 vec3 Colour;
 
@@ -56,7 +59,7 @@ void main() {
     vec3 texColour = mix(BrickTexColour.rgb, MossTexColour.rgb, MossTexColour.a);
     //Colour = texColour.rgb;
     Colour = vec3(0);
-    for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
+    for (int i = 0; i < staticPointLights + dynamicPointLights; i++)
     {
         Colour += phongModel(i, Position, adjustedNormal, texColour.rgb);
     }
@@ -70,10 +73,10 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     //Light that hides an object on all sides, or only some depending on the environment. Such as bounce light.
     //Ka is a constant that determines how much of that ambient light is reflected off of the object.
     //La is the ambient light intensity, like how bright it might be outside for instance.
-    vec3 AmbientLight = Material.Ka * Lights[light].La * texColour;
+    vec3 AmbientLight = Material.Ka * pointLights[light].La * texColour;
     
     //Light direction (s)
-    vec3 LightDir = normalize(vec3(Lights[light].Position) - position);
+    vec3 LightDir = normalize(vec3(pointLights[light].Position) - position);
 
      //Diffuse
     //The majority of the light we see. Essentially what is actually lit by a light source
@@ -82,7 +85,7 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     //Uses dot so that the diffuse light visible varies from 0 to 1 based on angle to the light.
     //Could also multiply s and n by cos0;
     float sDotN = max(dot(n, LightDir), 0.0);
-    vec3 DiffuseLight = Material.Kd * Lights[light].Ld * sDotN * texColour;
+    vec3 DiffuseLight = Material.Kd * pointLights[light].Ld * sDotN * texColour;
 
     //View dir is usually cameraPos - FragPos. Camera pos is 0, so this becomes - pos
     vec3 viewDir = normalize(-position);
@@ -99,7 +102,7 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     //F is a power coefficient, controlling the falloff value so when you move the eye away from that reflected vector how bright is it
     float specular = pow(max(dot(viewDir, reflectDir), 0.0), Material.Shininess);
 
-    vec3 SpecularLight = Material.Ks * Lights[light].Ld * specular;
+    vec3 SpecularLight = Material.Ks * pointLights[light].Ld * specular;
 
     return AmbientLight + DiffuseLight + SpecularLight;
 }
