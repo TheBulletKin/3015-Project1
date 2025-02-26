@@ -7,6 +7,7 @@ layout (location = 2) in vec2 VertexTexCoord;
 
 
 out vec3 Position;
+out vec3 WorldPosition;
 out vec3 Normal;
 out vec2 TexCoord;
 
@@ -33,6 +34,7 @@ void main()
   
     //Multiply by model and view to transform to view space
     Position = vec3(ModelViewMatrix * vec4(VertexPosition, 1.0));
+    WorldPosition = vec3(model * vec4(VertexPosition, 1.0));
 
     TexCoord = VertexTexCoord;
     

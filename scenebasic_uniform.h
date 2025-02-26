@@ -18,6 +18,8 @@
 
 #include <random>
 #include <math.h>
+#include "Camera.h"
+#include <GLFW/glfw3.h>
 
 
 
@@ -27,12 +29,15 @@ private:
     //GLuint vaoHandle;
     GLSLProgram prog;
     GLSLProgram skyProg;
+    GLFWwindow* window;
     //float angle;
     //Torus torus;
     Plane plane;
     std::unique_ptr<ObjMesh> PigMesh;
     std::unique_ptr<ObjMesh> TerrainMesh;
     Cube cube;
+
+    Camera camera;
     
     SkyBox sky; 
 
@@ -63,12 +68,18 @@ private:
 
     void setMatrices(GLSLProgram &program);
     void compile();
+    static void mouseCallback(GLFWwindow* window, double xposIn, double yposIn);
+    float lastX;
+    float lastY;
+    bool firstMouse;
+    void processInput(GLFWwindow* window);
+    
 
 public:
     SceneBasic_Uniform();
 
     void initScene();
-    void update( float t );
+    void update(float t );
     void render();
     void resize(int, int);
 };

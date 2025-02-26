@@ -33,9 +33,15 @@ SceneBasic_Uniform::SceneBasic_Uniform() : plane(10.0f, 10.0f, 100, 100), sky(10
 
 void SceneBasic_Uniform::initScene()
 {
+	window = glfwGetCurrentContext();
+	glfwSetWindowUserPointer(window, this);
+	glfwSetCursorPosCallback(window, SceneBasic_Uniform::mouseCallback);
 
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-
+	lastX = width / 2.0f;
+	lastY = height / 2.0f;
+	firstMouse = true;
 
 
 	compile();
@@ -177,6 +183,8 @@ void SceneBasic_Uniform::update(float t)
 	deltaTime = t - lastFrameTime;
 	lastFrameTime = t;
 
+	processInput(window);
+
 	if (currentFireFlyCount < maxFireFlyCount)
 	{
 		fireFlySpawnTimer += deltaTime;
@@ -271,6 +279,8 @@ void SceneBasic_Uniform::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	view = camera.GetViewMatrix();
+
 	skyProg.use();
 	model = mat4(1.0f);
 	setMatrices(skyProg);
@@ -356,10 +366,54 @@ void SceneBasic_Uniform::setMatrices(GLSLProgram &program)
 	program.use();
 	program.setUniform("ModelViewMatrix", mv);
 	program.setUniform("MVP", projection * mv);
+	program.setUniform("model", model);
+	program.setUniform("view", view);
+	program.setUniform("viewPos", camera.Position);
+	program.setUniform("projection", projection);
 
 	glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mv)));
 
 	program.setUniform("NormalMatrix", normalMatrix);
 	//prog.setUniform("NormalMatrix", glm::mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
 	program.setUniform("ViewPos", vec3(0.0f, 0.0f, 0.0f));
+}
+
+void SceneBasic_Uniform::mouseCallback(GLFWwindow* window, double xposIn, double yposIn)
+{
+	SceneBasic_Uniform* instance = static_cast<SceneBasic_Uniform*>(glfwGetWindowUserPointer(window));
+
+	float xpos = static_cast<float>(xposIn);
+	float ypos = static_cast<float>(yposIn);
+
+	if (instance->firstMouse)
+	{
+		instance->lastX = xpos;
+		instance->lastY = ypos;
+		instance->firstMouse = false;
+	}
+
+	float xoffset = xpos - instance->lastX;
+	float yoffset = instance->lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+	instance->lastX = xpos;
+	instance->lastY = ypos;
+
+
+	instance->camera.ProcessMouseMovement(xoffset, yoffset);
+}
+
+void SceneBasic_Uniform::processInput(GLFWwindow* window)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		camera.ProcessKeyboard(FORWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		camera.ProcessKeyboard(BACKWARD, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		camera.ProcessKeyboard(LEFT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		camera.ProcessKeyboard(RIGHT, deltaTime);
+	
 }

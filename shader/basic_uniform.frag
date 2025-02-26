@@ -24,14 +24,17 @@ uniform MaterialInfo Material;
 uniform int staticPointLights = 3;
 uniform int dynamicPointLights = 0;
 uniform float time;
+uniform vec3 ViewPos;
 
 
 vec3 Colour;
 
 //position of fragment in view space
 in vec3 Position;
+in vec3 WorldPosition;
 in vec3 Normal;
 in vec2 TexCoord;
+
 
 layout(binding = 0) uniform sampler2D BrickTex;
 layout(binding = 1) uniform sampler2D MossTex;
@@ -40,17 +43,20 @@ layout(binding = 3) uniform sampler2D AlphaTex;
 layout(binding = 4) uniform sampler2D CloudTex;
 
 
-uniform vec3 ViewPos;
+
 
 vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour);
 
 void main() {
     float noiseScale = 0.002f;
     float speed = 0.5f;
+
+    
+
     float animatedX = time * speed + sin(time * 0.1f) * 0.1f;
     float animatedY = time * speed + cos(time * 0.12f) * 0.1f;
    
-    vec2 animatedCoord = Position.xz * noiseScale + vec2(animatedX, animatedY);
+    vec2 animatedCoord = WorldPosition.xz * noiseScale + vec2(animatedX, animatedY);
     float noise = texture(CloudTex, animatedCoord).r;  
 
 
@@ -109,7 +115,7 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     vec3 DiffuseLight = Material.Kd * pointLights[light].Ld * sDotN * texColour;
 
     //View dir is usually cameraPos - FragPos. Camera pos is 0, so this becomes - pos
-    vec3 viewDir = normalize(-position);
+    vec3 viewDir = normalize(ViewPos - position);
     vec3 reflectDir = reflect(-LightDir, n);
 
     //Specular
