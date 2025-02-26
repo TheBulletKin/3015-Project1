@@ -118,8 +118,8 @@ void SceneBasic_Uniform::initScene()
 	
 	
 	
-	int textureWidth = 1024;
-	int textureHeight = 1024;
+	int textureWidth = 2048;
+	int textureHeight = 2048;
 	
 	std::vector<float> noiseData(textureWidth * textureHeight);
 	
@@ -185,7 +185,7 @@ void SceneBasic_Uniform::update(float t)
 		fireFlySpawnTimer = 0.0f;
 	}
 	
-	prog.setUniform("time", t * 0.3f);
+	prog.setUniform("time", t / 1000);
 
 	if (fireFlySpawnTimer >= fireFlySpawnCooldown && currentFireFlyCount < maxFireFlyCount)
 	{

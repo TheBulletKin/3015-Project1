@@ -46,35 +46,12 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour);
 
 void main() {
     float noiseScale = 0.002f;
-    float speed = 0.01f;
-    float animatedX = time * speed + sin(time * 0.01f) * 0.01f;
-    float animatedY = time * speed + cos(time * 0.01f) * 0.01f;
-
-
-    /* Previously did this. But it meant that vertical surfaces or steep camera angles were stretched.
-    Would project as if going straight down, but given how the UVs are set up this distorted it.
-    Needed to use Triplanar mapping - https://gamedevelopment.tutsplus.com/use-tri-planar-texture-mapping-for-better-terrain--gamedev-13821a
-    */
-    //vec2 animatedCoord = Position.xz * noiseScale + vec2(animatedX, animatedY);
-    //float noise = texture(CloudTex, animatedCoord).r;
-
-    //Blending is then the normal vector without a sign. Meant to help discern weighting for the 3 axes
-    vec3 blending = abs(Normal);
-    blending = blending / (blending.x + blending.y + blending.z); //Normalise this blend vector
-
-    //Since UVs are the coordinate on a texture to sample from, get the world position instead of just the texture coord relative to the mesh 
-    //Do this for the 3 different axes
-    vec2 uvXZ = Position.xz * noiseScale + vec2(animatedX, animatedY);
-    vec2 uvXY = Position.xy * noiseScale + vec2(animatedX, animatedY);
-    vec2 uvYZ = Position.yz * noiseScale + vec2(animatedX, animatedY);
-
-    //Sample the noise texture from all three axes
-    float noiseXZ = texture(CloudTex, uvXZ).r;
-    float noiseXY = texture(CloudTex, uvXY).r;
-    float noiseYZ = texture(CloudTex, uvYZ).r;
-
-    //Use the blend value to determine which noise value from each projection needs to be added to the current fragment
-    float noise = noiseXZ * blending.y + noiseXY * blending.z + noiseYZ * blending.x;
+    float speed = 0.5f;
+    float animatedX = time * speed + sin(time * 0.1f) * 0.1f;
+    float animatedY = time * speed + cos(time * 0.12f) * 0.1f;
+   
+    vec2 animatedCoord = Position.xz * noiseScale + vec2(animatedX, animatedY);
+    float noise = texture(CloudTex, animatedCoord).r;  
 
 
     float shadow = smoothstep(0.0, 0.05f, noise); 
