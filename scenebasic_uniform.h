@@ -26,6 +26,7 @@ class SceneBasic_Uniform : public Scene
 private:
     //GLuint vaoHandle;
     GLSLProgram prog;
+    GLSLProgram skyProg;
     //float angle;
     //Torus torus;
     Plane plane;
@@ -60,7 +61,7 @@ private:
     float lastFrameTime = 0.0f;
     
 
-    void setMatrices();
+    void setMatrices(GLSLProgram &program);
     void compile();
 
 public:

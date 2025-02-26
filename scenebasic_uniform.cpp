@@ -44,7 +44,7 @@ void SceneBasic_Uniform::initScene()
 
 	model = mat4(1.0f);
 	model = glm::rotate(model, glm::radians(-35.0f), vec3(1.0f, 0.0f, 0.0f));
-	view = glm::lookAt(vec3(0.0f, 1.0f, 2.0f), vec3(0.0f, 0.0f, 3.0f), vec3(0.0f, 1.0f, 0.0f)); //First is where the eye is, second is the coordinate it is looking at, last is up vector
+	view = glm::lookAt(vec3(0.0f, 1.0f, 2.0f), vec3(0.0f, 1.0f, -4.0f), vec3(0.0f, 1.0f, 0.0f)); //First is where the eye is, second is the coordinate it is looking at, last is up vector
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
 	GLuint brickID = Texture::loadTexture("media/texture/brick1.jpg");
@@ -161,6 +161,9 @@ void SceneBasic_Uniform::compile()
 		prog.compileShader("shader/basic_uniform.vert");
 		prog.compileShader("shader/basic_uniform.frag");
 		prog.link();
+		skyProg.compileShader("shader/skybox.vert");
+		skyProg.compileShader("shader/skybox.frag");
+		skyProg.link();
 		prog.use();
 	}
 	catch (GLSLProgramException& e) {
@@ -268,6 +271,12 @@ void SceneBasic_Uniform::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	skyProg.use();
+	model = mat4(1.0f);
+	setMatrices(skyProg);
+	sky.render();
+
+	prog.use();
 	int fireFlyLightIndex = numberOfStaticLights;
 	string lightUniformTag;
 	for (size_t i = 0; i < fireFlies.size(); i++) {
@@ -293,7 +302,7 @@ void SceneBasic_Uniform::render()
 
 		fireFlyLightIndex++;
 	}
-
+	
 	prog.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
 	prog.setUniform("staticPointLights", numberOfStaticLights);
 
@@ -305,15 +314,15 @@ void SceneBasic_Uniform::render()
 	model = mat4(1.0f);
 	model = glm::rotate(model, glm::radians(90.0f), vec3(0.0f, 10.0f, 0.0f));
 
-	setMatrices();
+	setMatrices(prog);
 
-	//PigMesh->render();
+	PigMesh->render();
 	//cube.render();
 
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
-	setMatrices();
-	//TerrainMesh->render();
+	setMatrices(prog);
+	TerrainMesh->render();
 
 
 
@@ -325,13 +334,10 @@ void SceneBasic_Uniform::render()
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, -0.45, 0.0f));
 
-	setMatrices();
+	setMatrices(prog);
 
-	//plane.render();
-
-	model = mat4(1.0f);
-	setMatrices();
-	sky.render();
+	plane.render();
+	
 
 }
 
@@ -343,17 +349,17 @@ void SceneBasic_Uniform::resize(int w, int h)
 	projection = glm::perspective(glm::radians(70.0f), (float)w / h, 0.3f, 100.0f);
 };
 
-void SceneBasic_Uniform::setMatrices()
+void SceneBasic_Uniform::setMatrices(GLSLProgram &program)
 {
 	mat4 mv;
 	mv = view * model;
-
-	prog.setUniform("ModelViewMatrix", mv);
-	prog.setUniform("MVP", projection * mv);
+	program.use();
+	program.setUniform("ModelViewMatrix", mv);
+	program.setUniform("MVP", projection * mv);
 
 	glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mv)));
 
-	prog.setUniform("NormalMatrix", normalMatrix);
+	program.setUniform("NormalMatrix", normalMatrix);
 	//prog.setUniform("NormalMatrix", glm::mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
-	prog.setUniform("ViewPos", vec3(0.0f, 0.0f, 0.0f));
+	program.setUniform("ViewPos", vec3(0.0f, 0.0f, 0.0f));
 }
