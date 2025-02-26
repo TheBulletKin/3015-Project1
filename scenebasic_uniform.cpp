@@ -67,6 +67,38 @@ void SceneBasic_Uniform::initScene()
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyCubeTex);
 
 
+	setupFBO();
+
+	GLfloat verts[] = {
+		-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
+		-1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+	};
+
+	GLfloat tc[] = {
+		0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
+		0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+	};
+
+	unsigned int handle[2];
+	glGenBuffers(2, handle);
+	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
+	glBufferData(GL_ARRAY_BUFFER, 6 * 3 * sizeof(float), verts, GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
+	glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), tc, GL_STATIC_DRAW);
+
+	glGenVertexArrays(1, &fsQuad);
+	glBindVertexArray(fsQuad);
+	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
+	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0); //Vertex position
+	
+	glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
+	glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(2); //Texture coord
+	glBindVertexArray(0);
+
+	prog.setUniform("EdgeThreshold", 0.05f);
+	
 
 
 
@@ -164,8 +196,10 @@ void SceneBasic_Uniform::initScene()
 void SceneBasic_Uniform::compile()
 {
 	try {
-		prog.compileShader("shader/basic_uniform.vert");
-		prog.compileShader("shader/basic_uniform.frag");
+		//prog.compileShader("shader/basic_uniform.vert");
+		//prog.compileShader("shader/basic_uniform.frag");
+		prog.compileShader("shader/edge_detect.vert");
+		prog.compileShader("shader/edge_detect.frag");
 		prog.link();
 		skyProg.compileShader("shader/skybox.vert");
 		skyProg.compileShader("shader/skybox.frag");
@@ -286,69 +320,11 @@ void SceneBasic_Uniform::render()
 	setMatrices(skyProg);
 	sky.render();
 
-	view = camera.GetViewMatrix();
-
-	prog.use();
-	int fireFlyLightIndex = numberOfStaticLights;
-	string lightUniformTag;
-	for (size_t i = 0; i < fireFlies.size(); i++) {
-		FireFly* fireFly = fireFlies[i];
-		
-
-
-		lightUniformTag = ("pointLights[" + to_string(fireFlyLightIndex) + "]");
-
-		//prog.setUniform((lightUniformTag + ".position").c_str(), fireFly->pointLight->position);
-	   // prog.setUniform((lightUniformTag + ".ambient").c_str(), fireFly->pointLight->ambient);
-	   // prog.setUniform((lightUniformTag + ".diffuse").c_str(), fireFlyLightColour);
-	   // prog.setUniform((lightUniformTag + ".specular").c_str(), fireFlyLightColour);
-		//prog.setUniform((lightUniformTag + ".constant").c_str(), fireFly->pointLight->constant);
-		//prog.setUniform((lightUniformTag + ".linear").c_str(), fireFly->pointLight->linear);
-		//prog.setUniform((lightUniformTag + ".quadratic").c_str(), fireFly->pointLight->quadratic);
-
-		prog.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
-		//prog.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient);
-		//prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFlyLightColour);
-		prog.setUniform((lightUniformTag + ".Ld").c_str(), vec3(0.8f, 0.8f, 0.8f));
-
-
-		fireFlyLightIndex++;
-	}
 	
-	prog.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
-	prog.setUniform("staticPointLights", numberOfStaticLights);
 
-	prog.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
-	prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
-	prog.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
-	prog.setUniform("Material.Shininess", 180.0f);
-
-	model = mat4(1.0f);
-	model = glm::rotate(model, glm::radians(90.0f), vec3(0.0f, 10.0f, 0.0f));
-
-	setMatrices(prog);
-
-	PigMesh->render();
-	//cube.render();
-
-	model = mat4(1.0f);
-	model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
-	setMatrices(prog);
-	TerrainMesh->render();
-
-
-
-	prog.setUniform("Material.Kd", 0.1f, 0.1f, 0.1f);
-	prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
-	prog.setUniform("Material.Ka", 0.1f, 0.1f, 0.1f);
-	prog.setUniform("Material.Shininess", 180.0f);
-
-	model = mat4(1.0f);
-	model = glm::translate(model, vec3(0.0f, -0.45, 0.0f));
-
-	setMatrices(prog);
-
-	plane.render();
+	pass1();
+	glFlush();
+	pass2();
 	
 
 }
@@ -418,4 +394,147 @@ void SceneBasic_Uniform::processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
 	
+}
+
+void SceneBasic_Uniform::setupFBO() {
+	/* EXPLANATION
+	OpenGL usually renders to a default framebuffer which is the screen.
+	* Can alternatively render to a texture instead.
+	* That texture is used for a second pass where post processing is applied.
+	* 
+	* 1. Create the frame buffer object like regular texture or vertex buffers
+	* 2. Need to generate a texture that the rendered image will be projected onto. Same size as the window
+	* 3. Assigning renderTex as the framebuffer texture means anything rendered to the FBO will be stored in renderTex
+	* 4. Depth buffer is sort of like a texture, it holds data from the rendered scene, but cannot be sampled in the same way. Need to tell OpenGL to hold depth information in the buffer
+	* 5. Tell openGL that when rendering to the frame buffer, write colours into colour attachment 0.
+	*/
+
+
+	glGenFramebuffers(1, &fboHandle);
+	glBindFramebuffer(GL_FRAMEBUFFER, fboHandle);
+
+	glGenTextures(1, &renderTex);
+	glBindTexture(GL_TEXTURE_2D, renderTex);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0);
+
+	GLuint depthBuf;
+	glGenRenderbuffers(1, &depthBuf);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthBuf);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
+
+	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
+	glDrawBuffers(1, drawBuffers);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+}
+
+void SceneBasic_Uniform::pass1() {
+	/* First pass undergoes the old render process, simply draws all objects to the scene as was originally required
+	* 
+	*/
+	
+	//Binding the frame buffer to this target means it renders to renderTex, as defined in setupFBO
+	prog.setUniform("Pass", 1);
+	glBindFramebuffer(GL_FRAMEBUFFER, fboHandle);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	
+	view = camera.GetViewMatrix();
+	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
+
+	prog.use();
+	int fireFlyLightIndex = numberOfStaticLights;
+	string lightUniformTag;
+	for (size_t i = 0; i < fireFlies.size(); i++) {
+		FireFly* fireFly = fireFlies[i];
+
+
+
+		lightUniformTag = ("pointLights[" + to_string(fireFlyLightIndex) + "]");
+
+		//prog.setUniform((lightUniformTag + ".position").c_str(), fireFly->pointLight->position);
+	   // prog.setUniform((lightUniformTag + ".ambient").c_str(), fireFly->pointLight->ambient);
+	   // prog.setUniform((lightUniformTag + ".diffuse").c_str(), fireFlyLightColour);
+	   // prog.setUniform((lightUniformTag + ".specular").c_str(), fireFlyLightColour);
+		//prog.setUniform((lightUniformTag + ".constant").c_str(), fireFly->pointLight->constant);
+		//prog.setUniform((lightUniformTag + ".linear").c_str(), fireFly->pointLight->linear);
+		//prog.setUniform((lightUniformTag + ".quadratic").c_str(), fireFly->pointLight->quadratic);
+
+		prog.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
+		//prog.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient);
+		//prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFlyLightColour);
+		prog.setUniform((lightUniformTag + ".Ld").c_str(), vec3(0.8f, 0.8f, 0.8f));
+
+
+		fireFlyLightIndex++;
+	}
+
+	prog.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
+	prog.setUniform("staticPointLights", numberOfStaticLights);
+
+	prog.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
+	prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
+	prog.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
+	prog.setUniform("Material.Shininess", 180.0f);
+
+	model = mat4(1.0f);
+	model = glm::rotate(model, glm::radians(90.0f), vec3(0.0f, 10.0f, 0.0f));
+
+	setMatrices(prog);
+
+	PigMesh->render();
+	//cube.render();
+
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
+	setMatrices(prog);
+	TerrainMesh->render();
+
+
+
+	prog.setUniform("Material.Kd", 0.1f, 0.1f, 0.1f);
+	prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
+	prog.setUniform("Material.Ka", 0.1f, 0.1f, 0.1f);
+	prog.setUniform("Material.Shininess", 180.0f);
+
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(0.0f, -0.45, 0.0f));
+
+	setMatrices(prog);
+
+	plane.render();
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void SceneBasic_Uniform::pass2()
+{
+	/* The render content is now saved as a texture
+	* Bind it to the texture unit that the base sampler is expecting in the shader
+	* Now just displaying what is a 2D texture of a quad, so depth testing isn't needed
+	* fsQuad is a VAO for 2 triangles that fill the whole screen. It therefore draws a quad with that render texture applied to it
+	* Other objects' .render method calls draw arrays, so does this for the VAO full screen quad
+	*/
+
+	prog.use();
+	prog.setUniform("Pass", 2);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, renderTex);
+	glDisable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT);
+	model = mat4(1.0f);
+	view = mat4(1.0f);
+	projection = mat4(1.0f);
+	setMatrices(prog);
+	glBindVertexArray(fsQuad);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
 }

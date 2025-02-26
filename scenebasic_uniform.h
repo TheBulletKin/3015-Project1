@@ -37,6 +37,8 @@ private:
     std::unique_ptr<ObjMesh> TerrainMesh;
     Cube cube;
 
+    GLuint fsQuad, fboHandle, renderTex;
+
     Camera camera;
     
     SkyBox sky; 
@@ -74,7 +76,9 @@ private:
     bool firstMouse;
     void processInput(GLFWwindow* window);
     
-
+    void pass1();
+    void pass2();
+    void setupFBO();
 public:
     SceneBasic_Uniform();
 
@@ -82,6 +86,7 @@ public:
     void update(float t );
     void render();
     void resize(int, int);
+    
 };
 
 #endif // SCENEBASIC_UNIFORM_H
