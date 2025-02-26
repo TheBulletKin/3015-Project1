@@ -279,12 +279,14 @@ void SceneBasic_Uniform::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	view = camera.GetViewMatrix();
+	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);;
 
 	skyProg.use();
 	model = mat4(1.0f);
 	setMatrices(skyProg);
 	sky.render();
+
+	view = camera.GetViewMatrix();
 
 	prog.use();
 	int fireFlyLightIndex = numberOfStaticLights;
