@@ -14,9 +14,11 @@
 #include "helper/objmesh.h"
 #include "helper/cube.h"
 #include "helper/FireFly.h"
+#include "helper/skybox.h"
 
 #include <random>
 #include <math.h>
+
 
 
 class SceneBasic_Uniform : public Scene
@@ -31,6 +33,8 @@ private:
     std::unique_ptr<ObjMesh> TerrainMesh;
     Cube cube;
     
+    SkyBox sky; 
+
     int numberOfStaticLights;
 
     std::vector<FireFly*> fireFlies;

@@ -25,7 +25,7 @@ using glm::mat4;
 
 using glm::vec3;
 
-SceneBasic_Uniform::SceneBasic_Uniform() : plane(10.0f, 10.0f, 100, 100)
+SceneBasic_Uniform::SceneBasic_Uniform() : plane(10.0f, 10.0f, 100, 100), sky(100.0f)
 {
 	PigMesh = ObjMesh::load("media/pig_triangulated.obj", true);
 	TerrainMesh = ObjMesh::load("media/Terrain.obj", true);
@@ -44,7 +44,7 @@ void SceneBasic_Uniform::initScene()
 
 	model = mat4(1.0f);
 	model = glm::rotate(model, glm::radians(-35.0f), vec3(1.0f, 0.0f, 0.0f));
-	view = glm::lookAt(vec3(0.0f, 10.0f, 2.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, -1.0f)); //First is where the eye is, second is the coordinate it is looking at, last is up vector
+	view = glm::lookAt(vec3(0.0f, 1.0f, 2.0f), vec3(0.0f, 0.0f, 3.0f), vec3(0.0f, 1.0f, 0.0f)); //First is where the eye is, second is the coordinate it is looking at, last is up vector
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
 	GLuint brickID = Texture::loadTexture("media/texture/brick1.jpg");
@@ -54,6 +54,15 @@ void SceneBasic_Uniform::initScene()
 	GLuint mossID = Texture::loadTexture("media/texture/moss.png");
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, mossID);
+
+	GLuint skyCubeTex = Texture::loadHdrCubeMap("media/texture/cube/pisa-hdr/pisa");
+	
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyCubeTex);
+
+
+
+
 
 	prog.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
 	prog.setUniform("Ka", vec3(0.1f, 0.1f, 0.1f));
@@ -298,13 +307,13 @@ void SceneBasic_Uniform::render()
 
 	setMatrices();
 
-	PigMesh->render();
+	//PigMesh->render();
 	//cube.render();
 
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
 	setMatrices();
-	TerrainMesh->render();
+	//TerrainMesh->render();
 
 
 
@@ -318,7 +327,11 @@ void SceneBasic_Uniform::render()
 
 	setMatrices();
 
-	plane.render();
+	//plane.render();
+
+	model = mat4(1.0f);
+	setMatrices();
+	sky.render();
 
 }
 

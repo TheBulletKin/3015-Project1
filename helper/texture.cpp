@@ -72,6 +72,8 @@ GLuint Texture::loadHdrCubeMap(const std::string &baseName) {
     glGenTextures(1, &texID);
     glBindTexture(GL_TEXTURE_CUBE_MAP, texID);
 
+    stbi_set_flip_vertically_on_load(false);
+
     const char * suffixes[] = { "posx", "negx", "posy", "negy", "posz", "negz" };
     GLint w, h;
 
