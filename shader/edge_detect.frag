@@ -52,7 +52,7 @@ float luminence(vec3 colour){
 
 
 vec4 pass1(){
-    //Like in the CPP file, pass 1 performs regular rendering processes
+    //Like in the CPP file, pass 1 performs regular rendering processes. As set up there it will render this to a frame buffer, then into RenderTex which is read here
 
     vec3 adjustedNormal = Normal;
     if (!gl_FrontFacing) {
@@ -67,7 +67,8 @@ vec4 pass1(){
 }
 
 vec4 pass2(){
-    /* Pass 1 rendered the scene and created a render texture. Pass two post processes it
+    /* Pass 1 rendered the scene and created a render texture. Pass two post processes it. 
+    * RenderTex is a texture defined in CPP in the same location, so it can be sampled.
     * The various S## values are different parts of a 3x3 convolution filter (sobel filter)
     * Will look at neighbouring pixels to the current with the texelFetchOffset method, so the ivec2 is the pixel to look at
     * The brightness of these pixels are held in this 3x3 grid.
@@ -91,7 +92,8 @@ vec4 pass2(){
         return vec4(1.0);
     }
     else {
-        return vec4(0.0,0.0,0.0,1.0);
+        return texelFetch(RenderTex, pix, 0); //Render the pixel as normal
+        //vec4(0.0,0.0,0.0,1.0);
     }
 }
 

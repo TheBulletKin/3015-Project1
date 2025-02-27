@@ -143,7 +143,7 @@ void SceneBasic_Uniform::initScene()
 
 	fireFlySpawnTimer = 0.0f;
 	currentFireFlyCount = 0;
-	maxFireFlyCount = 0;
+	maxFireFlyCount = 1;
 	fireFlySpawnCooldown = 3.0f;
 
 	for (int i = numberOfStaticLights; i < maxFireFlyCount; i++)
