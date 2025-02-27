@@ -60,6 +60,8 @@ in vec3 WorldPosition;
 in vec3 Normal;
 in vec2 TexCoord;
 
+uniform mat4 view;
+
 
 layout(binding = 0) uniform sampler2D BrickTex;
 layout(binding = 1) uniform sampler2D MossTex;
@@ -144,8 +146,8 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
 
     vec3 AmbientLight = Material.Ka * pointLights[light].La;
     
-   
-    vec3 LightDir = normalize(vec3(pointLights[light].Position) - position);
+    vec3 lightPosView = vec3(view * vec4(pointLights[light].Position, 1.0));
+    vec3 LightDir = normalize(lightPosView - position);
 
     
     float sDotN = max(dot(n, LightDir), 0.0);
