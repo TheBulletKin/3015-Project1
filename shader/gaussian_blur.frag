@@ -25,6 +25,7 @@ uniform MaterialInfo Material;
 uniform float EdgeThreshold;
 uniform int Pass;
 uniform vec3 ViewPos;
+uniform float Weight[5];
 
 const vec3 lum = vec3(0.2126, 0.7152, 0.0722);
 
@@ -45,6 +46,7 @@ in vec2 TexCoord;
 layout(binding = 0) uniform sampler2D BrickTex;
 layout(binding = 1) uniform sampler2D MossTex;
 layout(binding = 6) uniform sampler2D RenderTex;
+layout(binding = 7) uniform sampler2D IntermediateTex;
 
 float luminence(vec3 colour){
     return dot(lum, colour);
@@ -61,7 +63,7 @@ vec4 pass1(){
     Colour = vec3(0);
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {
-        Colour += phongModel(i, Position, adjustedNormal, texture(BrickTex, TexCoord).rgb);
+        Colour += phongModel(i, Position, adjustedNormal, texture(MossTex, TexCoord).rgb);
     }
     return vec4(Colour, 1.0f);
 }
@@ -76,6 +78,22 @@ vec4 pass2(){
     * Edge threshold is the sx / y value which means an edge is detected
     */
 
+    /* Gaussian Blur 
+    * This pass2 method applies a vertical blur as seen by the wvalues in the ivec2    
+    */
+    ivec2 pix = ivec2(gl_FragCoord.xy);
+    vec4 sum = texelFetch(RenderTex, pix, 0) * Weight[0];
+    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,1)) * Weight[1];
+    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,-1)) * Weight[1];
+    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,2)) * Weight[2];
+    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,-2)) * Weight[2];
+    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,3)) * Weight[3];
+    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,-3)) * Weight[3];
+    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,4)) * Weight[4];
+    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,-4)) * Weight[4];
+    return sum;
+
+    /*Edge detection
     ivec2 pix = ivec2(gl_FragCoord.xy); //Get the pixel currently being looked at
     float s00 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(-1, 1)).rgb); //Ivec2 is integer vec2. -1,1 means one step left and one up from current texel
     float s10 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(-1, 0)).rgb);
@@ -95,22 +113,35 @@ vec4 pass2(){
         return texelFetch(RenderTex, pix, 0); //Render the pixel as normal
         //vec4(0.0,0.0,0.0,1.0);
     }
+    */
+}
+
+vec4 pass3(){
+
+    /* Gaussian Blur 
+    * This pass3 method applies a horizontal blur as seen by the wvalues in the ivec2
+    Done as a third pass to split up vertical and horizontal blurring
+    */
+    ivec2 pix = ivec2(gl_FragCoord.xy);
+    vec4 sum = texelFetch(RenderTex, pix, 0) * Weight[0];
+    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(1, 0)) * Weight[1];
+    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(-1, 0)) * Weight[1];
+    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(2, 0)) * Weight[2];
+    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(-2, 0)) * Weight[2];
+    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(3, 0)) * Weight[3];
+    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(-3, 0)) * Weight[3];
+    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(4, 0)) * Weight[4];
+    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(-4, 0)) * Weight[4];
+    return sum;
 }
 
 
 
 
 void main() {
-    
-
-
-    
-    
-
-
     if (Pass == 1) FragColour = pass1();
-    if (Pass == 2) FragColour = pass2();
-    
+    else if (Pass == 2) FragColour = pass2();
+    else if (Pass == 3) FragColour = pass3();
 }
 
 vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){

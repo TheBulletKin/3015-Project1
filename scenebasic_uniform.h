@@ -27,8 +27,8 @@ class SceneBasic_Uniform : public Scene
 {
 private:
     //GLuint vaoHandle;
-    GLSLProgram prog;
-    GLSLProgram skyProg;
+    GLSLProgram prog, skyProg;
+    
     GLFWwindow* window;
     //float angle;
     //Torus torus;
@@ -36,8 +36,10 @@ private:
     std::unique_ptr<ObjMesh> PigMesh;
     std::unique_ptr<ObjMesh> TerrainMesh;
     Cube cube;
+    GLuint fsQuad;
+    GLuint renderFBO, intermediateFBO;
+    GLuint renderTex, intermediateTex;
 
-    GLuint fsQuad, fboHandle, renderTex;
 
     Camera camera;
     
@@ -78,7 +80,9 @@ private:
     
     void pass1();
     void pass2();
+    void pass3();
     void setupFBO();
+    float gauss(float, float);
 public:
     SceneBasic_Uniform();
 

@@ -66,7 +66,7 @@ void SceneBasic_Uniform::initScene()
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyCubeTex);
 
-
+	setupFBO();
 	
 
 	//Define the vertices for the full screen quad, two triangles that cover the whole screen
@@ -104,17 +104,37 @@ void SceneBasic_Uniform::initScene()
 	glBindVertexArray(fsQuad);
 	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
 	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(0); //Vertex position
+	glEnableVertexAttribArray(0); //Vertex position as in shader
 	
 	glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
 	glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(2); //Texture coord
+	glEnableVertexAttribArray(2); //Texture coord as in shader
 	glBindVertexArray(0);
 
 	prog.use();
 	prog.setUniform("EdgeThreshold", 0.05f);
+
+	//Gaussian blur
+	/* Weights follow a gaussian distribution, falling off the further it gets from the centre
+	* In the shader this is used to determine how much a neighbouring pixel contributes to blur
+	*/
+	float weights[5], sum, sigma2 = 8.0f;
+	weights[0] = gauss(0, sigma2);
+	sum = weights[0];
+
+	for (int i = 1; i < 5; i++)
+	{
+		weights[i] = gauss(float(i), sigma2); 
+		sum += 2 * weights[i];
+	}
+	for (int i = 0; i < 5; i++)
+	{
+		stringstream uniName;
+		uniName << "Weight[" << i << "]";
+		float val = weights[i] / sum;
+		prog.setUniform(uniName.str().c_str(), val);
+	}
 	
-	setupFBO();
 
 
 	prog.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
@@ -213,8 +233,8 @@ void SceneBasic_Uniform::compile()
 	try {
 		//prog.compileShader("shader/basic_uniform.vert");
 		//prog.compileShader("shader/basic_uniform.frag");
-		prog.compileShader("shader/edge_detect.vert");
-		prog.compileShader("shader/edge_detect.frag");
+		prog.compileShader("shader/gaussian_blur.vert");
+		prog.compileShader("shader/gaussian_blur.frag");
 		prog.link();
 		skyProg.compileShader("shader/skybox.vert");
 		skyProg.compileShader("shader/skybox.frag");
@@ -338,9 +358,9 @@ void SceneBasic_Uniform::render()
 
 	
 
-	pass1();
-	glFlush();
+	pass1();	
 	pass2();
+	pass3();
 	
 
 }
@@ -426,10 +446,11 @@ void SceneBasic_Uniform::setupFBO() {
 	*/
 
 
-	glGenFramebuffers(1, &fboHandle);
-	glBindFramebuffer(GL_FRAMEBUFFER, fboHandle);
+	glGenFramebuffers(1, &renderFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFBO);
 
 	glGenTextures(1, &renderTex);
+	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, renderTex);
 	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -448,6 +469,22 @@ void SceneBasic_Uniform::setupFBO() {
 	glDrawBuffers(1, drawBuffers);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+	//New for gaussian blur. Creates a second frame buffer to render to in the second pass
+	glGenFramebuffers(1, &intermediateFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
+
+	glGenTextures(1, &intermediateTex);
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_2D, intermediateTex);	
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, intermediateTex, 0);
+
+	glDrawBuffers(1, drawBuffers);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void SceneBasic_Uniform::pass1() {
@@ -458,7 +495,7 @@ void SceneBasic_Uniform::pass1() {
 	//Binding the frame buffer to this target means it renders to renderTex, as defined in setupFBO
 	prog.use();
 	prog.setUniform("Pass", 1);
-	glBindFramebuffer(GL_FRAMEBUFFER, fboHandle);
+	glBindFramebuffer(GL_FRAMEBUFFER, renderFBO);
 	glEnable(GL_DEPTH_TEST);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -538,11 +575,15 @@ void SceneBasic_Uniform::pass2()
 	* Now just displaying what is a 2D texture of a quad, so depth testing isn't needed
 	* fsQuad is a VAO for 2 triangles that fill the whole screen. It therefore draws a quad with that render texture applied to it
 	* Other objects' .render method calls draw arrays, so does this for the VAO full screen quad
+	* 
+	* Now renders to the intermediate FBO instead of the default screen framebuffer for rendering
+	* First pass rendered to renderFBO and 'saved' the rendered image to the renderTex
+	* So now it renders again with that render tex while using the intermediateFBO, which 'saves' the newly blurred texture (done in the shader) to intermediateTex
 	*/
 
 	prog.use();
 	prog.setUniform("Pass", 2);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
 	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, renderTex);
 	glDisable(GL_DEPTH_TEST);
@@ -554,4 +595,30 @@ void SceneBasic_Uniform::pass2()
 	glBindVertexArray(fsQuad);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	glBindVertexArray(0);
+}
+
+void SceneBasic_Uniform::pass3()
+{
+	/* intermediateTex contains the image with vertical and horizontal blur
+	* Bind the default frame buffer then render to screen
+	*/
+	prog.use();
+	prog.setUniform("Pass", 3);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_2D, intermediateTex);	
+	glClear(GL_COLOR_BUFFER_BIT);
+	model = mat4(1.0f);
+	view = mat4(1.0f);
+	projection = mat4(1.0f);
+	setMatrices(prog);
+	glBindVertexArray(fsQuad);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
+}
+
+float SceneBasic_Uniform::gauss(float x, float sigma2) {
+	double coeff = 1.0 / (two_pi<double>() * sigma2);
+	double expon = -(x * x) / (2.0 * sigma2);
+	return (float)(coeff * exp(expon));
 }
