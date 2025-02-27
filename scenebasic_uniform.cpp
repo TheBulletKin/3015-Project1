@@ -62,12 +62,12 @@ void SceneBasic_Uniform::initScene()
 	glBindTexture(GL_TEXTURE_2D, mossID);
 
 	GLuint skyCubeTex = Texture::loadHdrCubeMap("media/texture/cube/pisa-hdr/pisa");
-	
+
 	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyCubeTex);
 
 	setupFBO();
-	
+
 
 	//Define the vertices for the full screen quad, two triangles that cover the whole screen
 	GLfloat verts[] = {
@@ -84,7 +84,7 @@ void SceneBasic_Uniform::initScene()
 		0.0f, 0.0f,
 		1.0f, 0.0f,
 
-		1.0f, 1.0f,		
+		1.0f, 1.0f,
 		0.0f, 0.0f,
 
 		1.0f, 1.0f,
@@ -105,7 +105,7 @@ void SceneBasic_Uniform::initScene()
 	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
 	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(0); //Vertex position as in shader
-	
+
 	glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
 	glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(2); //Texture coord as in shader
@@ -122,27 +122,62 @@ void SceneBasic_Uniform::initScene()
 	/* Weights follow a gaussian distribution, falling off the further it gets from the centre
 	* In the shader this is used to determine how much a neighbouring pixel contributes to blur
 	*/
-	float weights[5], sum, sigma2 = 8.0f;
+
+
+
+	//HDR
+	vec3 intense = vec3(5.0f);
+
+
+	//Bloom
+	prog.setUniform("LumThresh", 1.2f);
+	float weights[10], sum, sigma2 = 25.0f;
+
+	//Compute and sum weights
+	
 	weights[0] = gauss(0, sigma2);
 	sum = weights[0];
 
-	for (int i = 1; i < 5; i++)
+	for (int i = 1; i < 10; i++)
 	{
-		weights[i] = gauss(float(i), sigma2); 
+		weights[i] = gauss(float(i), sigma2);
 		sum += 2 * weights[i];
 	}
-	for (int i = 0; i < 5; i++)
+
+	//Normalise and set uniform
+	for (int i = 0; i < 10; i++)
 	{
 		stringstream uniName;
 		uniName << "Weight[" << i << "]";
 		float val = weights[i] / sum;
 		prog.setUniform(uniName.str().c_str(), val);
 	}
-	
 
-	//HDR
-	vec3 intense = vec3(5.0f);
+	//Set up sampler objects for linear and nearest filtering
+	GLuint samplers[2];
+	glGenSamplers(2, samplers);
+	linearSampler = samplers[0];
+	nearestSampler = samplers[1];
+	GLfloat border[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 
+	//Nearest sampler
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glSamplerParameteri(nearestSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glSamplerParameterfv(nearestSampler, GL_TEXTURE_BORDER_COLOR, border);
+
+	//Linear sampler
+	glSamplerParameteri(linearSampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glSamplerParameteri(linearSampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glSamplerParameteri(linearSampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glSamplerParameterfv(linearSampler, GL_TEXTURE_BORDER_COLOR, border);
+
+	//Means that when sampling from each of these texture units, it uses nearest
+	glBindSampler(8, nearestSampler);
+	glBindSampler(9, nearestSampler);
+	glBindSampler(10, nearestSampler);
 
 	prog.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
 	prog.setUniform("Ka", vec3(0.1f, 0.1f, 0.1f));
@@ -195,14 +230,14 @@ void SceneBasic_Uniform::initScene()
 	noise.SetFractalOctaves(4);
 	noise.SetFractalLacunarity(2.8f);
 	noise.SetFractalGain(0.5f);
-	
-	
-	
+
+
+
 	int textureWidth = 2048;
 	int textureHeight = 2048;
-	
+
 	std::vector<float> noiseData(textureWidth * textureHeight);
-	
+
 	for (int y = 0; y < textureHeight; ++y) {
 		for (int x = 0; x < textureWidth; ++x) {
 			float nx = float(x) / float(textureWidth);
@@ -225,10 +260,10 @@ void SceneBasic_Uniform::initScene()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	
+
 	prog.setUniform("CloudTex", 4);
-	
-	
+
+
 
 
 
@@ -246,7 +281,7 @@ void SceneBasic_Uniform::compile()
 		skyProg.compileShader("shader/skybox.vert");
 		skyProg.compileShader("shader/skybox.frag");
 		skyProg.link();
-		
+
 	}
 	catch (GLSLProgramException& e) {
 		cerr << e.what() << endl;
@@ -268,7 +303,7 @@ void SceneBasic_Uniform::update(float t)
 	else {
 		fireFlySpawnTimer = 0.0f;
 	}
-	
+
 	prog.use();
 	prog.setUniform("time", t / 1000);
 
@@ -363,13 +398,15 @@ void SceneBasic_Uniform::render()
 	setMatrices(skyProg);
 	sky.render();
 
-	
 
-	pass1();	
+
+	pass1();
 	computeLogAveLuminance();
 	pass2();
-	//pass3();
-	
+	pass3();
+	pass4();
+	pass5();
+
 
 }
 
@@ -381,7 +418,7 @@ void SceneBasic_Uniform::resize(int w, int h)
 	projection = glm::perspective(glm::radians(70.0f), (float)w / h, 0.3f, 100.0f);
 };
 
-void SceneBasic_Uniform::setMatrices(GLSLProgram &program)
+void SceneBasic_Uniform::setMatrices(GLSLProgram& program)
 {
 	mat4 mv;
 	mv = view * model;
@@ -437,7 +474,7 @@ void SceneBasic_Uniform::processInput(GLFWwindow* window)
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
-	
+
 }
 
 void SceneBasic_Uniform::setupFBO() {
@@ -445,7 +482,7 @@ void SceneBasic_Uniform::setupFBO() {
 	OpenGL usually renders to a default framebuffer which is the screen.
 	* Can alternatively render to a texture instead.
 	* That texture is used for a second pass where post processing is applied.
-	* 
+	*
 	* 1. Create the frame buffer object like regular texture or vertex buffers
 	* 2. Need to generate a texture that the rendered image will be projected onto. Same size as the window
 	* 3. Assigning renderTex as the framebuffer texture means anything rendered to the FBO will be stored in renderTex
@@ -471,7 +508,14 @@ void SceneBasic_Uniform::setupFBO() {
 	glGenRenderbuffers(1, &depthBuf);
 	glBindRenderbuffer(GL_RENDERBUFFER, depthBuf);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-	
+
+	//GLenum drawBuffers[] = { GL_NONE, GL_COLOR_ATTACHMENT0 };
+	//glDrawBuffers(2, drawBuffers);
+	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
+	glDrawBuffers(1, drawBuffers);
+
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	//GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
 	//glDrawBuffers(1, drawBuffers);
@@ -483,7 +527,7 @@ void SceneBasic_Uniform::setupFBO() {
 
 	glGenTextures(1, &intermediateTex);
 	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, intermediateTex);	
+	glBindTexture(GL_TEXTURE_2D, intermediateTex);
 	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -492,14 +536,39 @@ void SceneBasic_Uniform::setupFBO() {
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, intermediateTex, 0);
 
 	//glDrawBuffers(1, drawBuffers);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
+
+	/* Bloom explained
+	* 
+	*/
+
+	//Create bright pass filter and blur FBO
+	glGenFramebuffers(1, &blurFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, blurFBO);
+
+	//Two textures to ping pong for bright pass filter
+	bloomBufWidth = width / 8;
+	bloomBufHeight = height / 8;
+	glGenTextures(1, &tex1);
+	glActiveTexture(GL_TEXTURE9);
+	glBindTexture(GL_TEXTURE_2D, tex1);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, bloomBufWidth, bloomBufHeight);
+	glGenTextures(1, &tex2);
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_2D, tex2);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, bloomBufWidth, bloomBufHeight);
+
+	//Bind tex1 to FBO
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
+	glDrawBuffers(1, drawBuffers);
+
 
 	//New for HDR
 	glGenFramebuffers(1, &hdrFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
 	glActiveTexture(GL_TEXTURE8);
-	glGenTextures(1, &hdrTex);	
+	glGenTextures(1, &hdrTex);
 	glBindTexture(GL_TEXTURE_2D, hdrTex);
 	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, width, height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -509,17 +578,15 @@ void SceneBasic_Uniform::setupFBO() {
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrTex, 0);
 
-	GLenum drawBuffers[] = { GL_NONE, GL_COLOR_ATTACHMENT0 };
-	glDrawBuffers(2, drawBuffers);
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
 }
 
 void SceneBasic_Uniform::pass1() {
 	/* First pass undergoes the old render process, simply draws all objects to the scene as was originally required
-	* 
+	*
 	*/
-	
+
 	//Binding the frame buffer to this target means it renders to renderTex, as defined in setupFBO
 	prog.use();
 	prog.setUniform("Pass", 1);
@@ -528,11 +595,11 @@ void SceneBasic_Uniform::pass1() {
 	glEnable(GL_DEPTH_TEST);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	
+
 	view = camera.GetViewMatrix();
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
-	
+
 	int fireFlyLightIndex = numberOfStaticLights;
 	string lightUniformTag;
 	for (size_t i = 0; i < fireFlies.size(); i++) {
@@ -585,7 +652,7 @@ void SceneBasic_Uniform::pass1() {
 	prog.setUniform("Material.Kd", 0.1f, 0.1f, 0.1f);
 	prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
 	prog.setUniform("Material.Ka", 0.1f, 0.1f, 0.1f);
-	prog.setUniform("Material.Shininess", 180.0f);
+	prog.setUniform("Material.Shininess", 64.0f);
 
 	model = mat4(1.0f);
 	model = glm::translate(model, vec3(0.0f, -0.45, 0.0f));
@@ -594,48 +661,28 @@ void SceneBasic_Uniform::pass1() {
 
 	plane.render();
 
-	
+
 }
 
 void SceneBasic_Uniform::pass2()
 {
 	/* The render content is now saved as a texture
-	* Bind it to the texture unit that the base sampler is expecting in the shader
-	* Now just displaying what is a 2D texture of a quad, so depth testing isn't needed
-	* fsQuad is a VAO for 2 triangles that fill the whole screen. It therefore draws a quad with that render texture applied to it
-	* Other objects' .render method calls draw arrays, so does this for the VAO full screen quad
-	* 
-	* Now renders to the intermediate FBO instead of the default screen framebuffer for rendering
-	* First pass rendered to renderFBO and 'saved' the rendered image to the renderTex
-	* So now it renders again with that render tex while using the intermediateFBO, which 'saves' the newly blurred texture (done in the shader) to intermediateTex
+	* Pass 2 in the shader checks luminance values and returns pixels beyond a certain value.
+	* This is saved in tex1 when draw arrays is called.
+	* Intentionally lowers the viewport resolution to help with blur
 	*/
 
 	prog.use();
 	prog.setUniform("Pass", 2);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, hdrTex);
-	glDisable(GL_DEPTH_TEST);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	model = mat4(1.0f);
-	view = mat4(1.0f);
-	projection = mat4(1.0f);
-	setMatrices(prog);
-	glBindVertexArray(fsQuad);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	glBindVertexArray(0);
-}
+	glBindFramebuffer(GL_FRAMEBUFFER, blurFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
+	glViewport(0, 0, bloomBufWidth, bloomBufHeight);
 
-void SceneBasic_Uniform::pass3()
-{
-	/* intermediateTex contains the image with vertical and horizontal blur
-	* Bind the default frame buffer then render to screen
-	*/
-	prog.use();
-	prog.setUniform("Pass", 3);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, intermediateTex);	
+	
+	
+	
+	glDisable(GL_DEPTH_TEST);
+	glClearColor(0, 0, 0, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	model = mat4(1.0f);
 	view = mat4(1.0f);
@@ -643,6 +690,69 @@ void SceneBasic_Uniform::pass3()
 	setMatrices(prog);
 	glBindVertexArray(fsQuad);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+	//glBindVertexArray(0);
+}
+
+void SceneBasic_Uniform::pass3()
+{
+	/* Tex1 now holds brightest pixels only
+	* This applies a vertical gaussian blur effect and saves it to tex2 with the same FBO
+	*/
+	prog.use();
+	prog.setUniform("Pass", 3);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2, 0);
+	
+	model = mat4(1.0f);
+	view = mat4(1.0f);
+	projection = mat4(1.0f);
+	setMatrices(prog);
+	glBindVertexArray(fsQuad);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	//glBindVertexArray(0);
+}
+
+void SceneBasic_Uniform::pass4()
+{
+	/* Tex 2 is now vertically blurred
+	* Pass 4 in the shader does horizontal blurring
+	* Renders to the fbo then saves to tex1
+	*/
+	prog.use();
+	prog.setUniform("Pass", 4);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
+
+	model = mat4(1.0f);
+	view = mat4(1.0f);
+	projection = mat4(1.0f);
+	setMatrices(prog);
+	glBindVertexArray(fsQuad);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+	//glBindVertexArray(0);
+}
+
+void SceneBasic_Uniform::pass5()
+{
+	/* Tex1 holds the blurred lights only. 
+	* In the shader pass 5 performs tonemapping using stuff from HDR section. Gets the colour of the original render
+	* Then samples the blurred texture and overlays it on the first render
+	* 
+	*/
+	prog.use();
+	prog.setUniform("Pass", 5);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glViewport(0, 0, width, height);
+	glBindSampler(9, linearSampler);
+	
+
+	model = mat4(1.0f);
+	view = mat4(1.0f);
+	projection = mat4(1.0f);
+	setMatrices(prog);
+	glBindVertexArray(fsQuad);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
+
+	glBindSampler(9, nearestSampler);
 	glBindVertexArray(0);
 }
 

@@ -26,7 +26,7 @@ uniform MaterialInfo Material;
 uniform float EdgeThreshold;
 uniform int Pass;
 uniform vec3 ViewPos;
-uniform float Weight[5];
+
 uniform float AveLum;
 uniform mat3 rgb2xyz = mat3(
     0.4124564, 0.2126729, 0.0193339,
@@ -46,6 +46,10 @@ uniform bool DoToneMap = true;
 uniform float FogStart;
 uniform float FogEnd;
 uniform vec3 FogColour;
+uniform float LumThresh;
+uniform float PixOffset[10] = float[](0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
+uniform float Weight[10];
+
 
 
 const vec3 lum = vec3(0.2126, 0.7152, 0.0722);
@@ -71,41 +75,68 @@ layout(binding = 1) uniform sampler2D MossTex;
 layout(binding = 6) uniform sampler2D RenderTex;
 layout(binding = 7) uniform sampler2D IntermediateTex;
 layout(binding = 8) uniform sampler2D HdrTex;
+layout(binding = 9) uniform sampler2D BlurTex1;
+layout(binding = 10) uniform sampler2D BlurTex2;
 
 float luminence(vec3 colour){
-    return dot(lum, colour);
+    return 0.2126 * colour.r + 0.7152 * colour.g + 0.0722 * colour.b;
 }
 
 
-void pass1(){
+vec4 pass1(){
     //Like in the CPP file, pass 1 performs regular rendering processes. As set up there it will render this to a frame buffer, then into RenderTex which is read here
 
     
     
-vec3 adjustedNormal = Normal;
+    vec3 adjustedNormal = Normal;
     if (!gl_FrontFacing) {
         adjustedNormal = -Normal;
     }
     //vec3 n = normalize(adjustedNormal);
-
-    HdrColour = vec3(0.0);
+    vec3 colour = vec3(0.0);    
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
-    {
-        
-        HdrColour += phongModel(i, Position, adjustedNormal, texture(MossTex, TexCoord).rgb);
+    {        
+        colour += phongModel(i, Position, adjustedNormal, texture(MossTex, TexCoord).rgb);
     }
-
-    float distance = length(Position - ViewPos);    
-    // Linear fog factor (clamped between 0 and 1)
-    float fogFactor = clamp((FogEnd - distance) / (FogEnd - FogStart), 0.0, 1.0);
-
-
-    HdrColour = mix(FogColour, HdrColour, fogFactor);
-   
+    
+    return vec4(colour, 1.0);
 }
 
-void pass2(){
-    /* HDR and Tonemapping explanation
+vec4 pass2(){
+    
+    vec4 val = texture(HdrTex, TexCoord);
+    if (luminence(val.rgb) > LumThresh){
+        return val;
+    } else {
+        return vec4(0.0);
+    }
+}
+
+vec4 pass3(){
+
+    float dy = 1.0 / (textureSize(BlurTex1, 0)).y;
+    vec4 sum = texture(BlurTex1, TexCoord) * Weight[0];
+    for (int i = 1; i < 10; i++){
+        sum += texture(BlurTex1, TexCoord + vec2(0.0, PixOffset[i]) * dy) * Weight[i];
+        sum += texture(BlurTex1, TexCoord - vec2(0.0, PixOffset[i]) * dy) * Weight[i];
+    }
+    return sum;
+}
+
+vec4 pass4(){
+
+    float dx = 1.0 / (textureSize(BlurTex2, 0)).x;
+    vec4 sum = texture(BlurTex2, TexCoord) * Weight[0];
+    for (int i = 1; i < 10; i++){
+        sum += texture(BlurTex2, TexCoord + vec2(PixOffset[i], 0.0) * dx) * Weight[i];
+        sum += texture(BlurTex2, TexCoord - vec2(PixOffset[i], 0.0) * dx) * Weight[i];
+    }
+    return sum;
+}
+
+vec4 pass5(){
+
+     /* HDR and Tonemapping explanation
     * Most monitors have a limited colour range, with colours clamped from 0 - 1.
     * Tone mapping compresses the high dynamic range of a scene to a lower dynamic range of the display
     * HDR represents colours as infinitely large floating points. So a colour could be 10.0, 0.3, 3.4 and not limited by 0-1
@@ -113,47 +144,45 @@ void pass2(){
     */
 
     vec4 colour = texture(HdrTex, TexCoord);
+
+    // xyz colour space is x (red sensitivity), y (percieved brightness), z (blue sensitivity)
     vec3 xyzCol = rgb2xyz * vec3(colour);
     float xyzSum = xyzCol.x + xyzCol.y + xyzCol.z;
+
+    //xyY colour space is x and y (chromaticity) and Y (percieved brightness)
     vec3 xyYCol = vec3(xyzCol.x / xyzSum, xyzCol.y / xyzSum, xyzCol.y);
+
+    //Since the z part of xyY is Y, brightness, divide by average luminance to introduce auto exposure
     float L = (Exposure * xyYCol.z) / AveLum;
-    //float L = (Exposure * xyYCol.z);
+    
+    //This now uses tone mapping to compress the extreme HDR values into ones that can be displayed
     L = (L * ( 1 + L / (White * White))) / (1 + L);
+
+    //Convery back to xyz space from xyY
     xyzCol.x = (L * xyYCol.x) / (xyYCol.y);
     xyzCol.y = L;
     xyzCol.z = (L * ( 1 - xyYCol.x - xyYCol.y)) / xyYCol.y;
-    if  (DoToneMap){
-        FragColour = vec4(xyz2rgb * xyzCol, 1.0);
-    } else {
-        FragColour = colour;
-    }
-}
 
-vec4 pass3(){
+    //Then to RGB space for display
+    vec4 toneMapColour = vec4(xyz2rgb * xyzCol, 1.0);
+    
+    //Combine with blurred texture
+    vec4 blurTex = texture(BlurTex1, TexCoord);
+    return toneMapColour + blurTex;
 
-    /* Gaussian Blur 
-    * This pass3 method applies a horizontal blur as seen by the wvalues in the ivec2
-    Done as a third pass to split up vertical and horizontal blurring
-    */
-    ivec2 pix = ivec2(gl_FragCoord.xy);
-    vec4 sum = texelFetch(RenderTex, pix, 0) * Weight[0];
-    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(1, 0)) * Weight[1];
-    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(-1, 0)) * Weight[1];
-    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(2, 0)) * Weight[2];
-    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(-2, 0)) * Weight[2];
-    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(3, 0)) * Weight[3];
-    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(-3, 0)) * Weight[3];
-    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(4, 0)) * Weight[4];
-    sum += texelFetchOffset(IntermediateTex, pix, 0, ivec2(-4, 0)) * Weight[4];
-    return sum;
+    
 }
 
 
 
 
 void main() {
-    if (Pass == 1) pass1();
-    else if (Pass == 2) pass2();
+    if (Pass == 1) FragColour = pass1();
+    else if (Pass == 2) FragColour = pass2();
+    else if (Pass == 3) FragColour = pass3();
+    else if (Pass == 4) FragColour = pass4();
+    else if (Pass == 5) FragColour = pass5();
+
    
 }
 

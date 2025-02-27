@@ -37,9 +37,12 @@ private:
     std::unique_ptr<ObjMesh> TerrainMesh;
     Cube cube;
     GLuint fsQuad;
-    GLuint renderFBO, intermediateFBO, hdrFBO;
+    GLuint renderFBO, intermediateFBO, hdrFBO, blurFBO;
     GLuint renderTex, intermediateTex;
-    GLuint hdrTex, avgTex;
+    GLuint hdrTex, avgTex, tex1, tex2;
+    GLuint linearSampler, nearestSampler;
+
+    int bloomBufWidth, bloomBufHeight;
 
 
     Camera camera;
@@ -82,6 +85,8 @@ private:
     void pass1();
     void pass2();
     void pass3();
+    void pass4();
+    void pass5();
     void setupFBO();
     float gauss(float, float);
     void computeLogAveLuminance();
