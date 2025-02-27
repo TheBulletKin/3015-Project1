@@ -136,6 +136,9 @@ void SceneBasic_Uniform::initScene()
 	}
 	
 
+	//HDR
+	vec3 intense = vec3(5.0f);
+
 
 	prog.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
 	prog.setUniform("Ka", vec3(0.1f, 0.1f, 0.1f));
@@ -233,8 +236,8 @@ void SceneBasic_Uniform::compile()
 	try {
 		//prog.compileShader("shader/basic_uniform.vert");
 		//prog.compileShader("shader/basic_uniform.frag");
-		prog.compileShader("shader/gaussian_blur.vert");
-		prog.compileShader("shader/gaussian_blur.frag");
+		prog.compileShader("shader/HDR.vert");
+		prog.compileShader("shader/HDR.frag");
 		prog.link();
 		skyProg.compileShader("shader/skybox.vert");
 		skyProg.compileShader("shader/skybox.frag");
@@ -359,8 +362,9 @@ void SceneBasic_Uniform::render()
 	
 
 	pass1();	
+	computeLogAveLuminance();
 	pass2();
-	pass3();
+	//pass3();
 	
 
 }
@@ -463,10 +467,10 @@ void SceneBasic_Uniform::setupFBO() {
 	glGenRenderbuffers(1, &depthBuf);
 	glBindRenderbuffer(GL_RENDERBUFFER, depthBuf);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
+	
 
-	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
-	glDrawBuffers(1, drawBuffers);
+	//GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
+	//glDrawBuffers(1, drawBuffers);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	//New for gaussian blur. Creates a second frame buffer to render to in the second pass
@@ -483,8 +487,28 @@ void SceneBasic_Uniform::setupFBO() {
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, intermediateTex, 0);
 
-	glDrawBuffers(1, drawBuffers);
+	//glDrawBuffers(1, drawBuffers);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	//New for HDR
+	glGenFramebuffers(1, &hdrFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+
+	glActiveTexture(GL_TEXTURE8);
+	glGenTextures(1, &hdrTex);	
+	glBindTexture(GL_TEXTURE_2D, hdrTex);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, width, height);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrTex, 0);
+
+	GLenum drawBuffers[] = { GL_NONE, GL_COLOR_ATTACHMENT0 };
+	glDrawBuffers(2, drawBuffers);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 }
 
 void SceneBasic_Uniform::pass1() {
@@ -495,7 +519,8 @@ void SceneBasic_Uniform::pass1() {
 	//Binding the frame buffer to this target means it renders to renderTex, as defined in setupFBO
 	prog.use();
 	prog.setUniform("Pass", 1);
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFBO);
+	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 	glEnable(GL_DEPTH_TEST);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -565,7 +590,7 @@ void SceneBasic_Uniform::pass1() {
 
 	plane.render();
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
 }
 
 void SceneBasic_Uniform::pass2()
@@ -583,11 +608,11 @@ void SceneBasic_Uniform::pass2()
 
 	prog.use();
 	prog.setUniform("Pass", 2);
-	glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
-	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, renderTex);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, hdrTex);
 	glDisable(GL_DEPTH_TEST);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	model = mat4(1.0f);
 	view = mat4(1.0f);
 	projection = mat4(1.0f);
@@ -621,4 +646,21 @@ float SceneBasic_Uniform::gauss(float x, float sigma2) {
 	double coeff = 1.0 / (two_pi<double>() * sigma2);
 	double expon = -(x * x) / (2.0 * sigma2);
 	return (float)(coeff * exp(expon));
+}
+
+void SceneBasic_Uniform::computeLogAveLuminance() {
+	int size = width * height;
+	vector<GLfloat> texData(size * 3);
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, hdrTex);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, texData.data());
+	float sum = 0.0f;
+	for (int i = 0; i < size; i++)
+	{
+		float lum = dot(vec3(texData[i * 3 + 0], texData[i * 3 + 1], texData[i * 3 + 2]),
+			vec3(0.2126f, 0.7152f, 0.0722f));
+		sum += logf(lum + 0.00001f);
+	}
+
+	prog.setUniform("AveLum", expf(sum / size));
 }

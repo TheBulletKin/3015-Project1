@@ -1,6 +1,7 @@
 #version 460
 
 layout (location = 0) out vec4 FragColour;
+layout (location = 1) out vec3 HdrColour;
 
 #define MAX_NUMBER_OF_LIGHTS 6
 
@@ -26,6 +27,23 @@ uniform float EdgeThreshold;
 uniform int Pass;
 uniform vec3 ViewPos;
 uniform float Weight[5];
+uniform float AveLum;
+uniform mat3 rgb2xyz = mat3(
+    0.4124564, 0.2126728, 0.0193339,
+    0.3575761, 0.7151522, 0.1191920,
+    0.1804375, 0.0721750, 0.9503041
+);
+
+uniform mat3 xyz2rgb = mat3(
+    3.2404542, -0.9692660, 0.0556434,
+    -1.5371385, 1.8760108, -0.2040259,
+    -0.4985314, 0.0415560, 1.0572252
+);
+
+uniform float Exposure = 0.35;
+uniform float White = 0.928;
+uniform bool DoToneMap = true;
+
 
 const vec3 lum = vec3(0.2126, 0.7152, 0.0722);
 
@@ -47,73 +65,46 @@ layout(binding = 0) uniform sampler2D BrickTex;
 layout(binding = 1) uniform sampler2D MossTex;
 layout(binding = 6) uniform sampler2D RenderTex;
 layout(binding = 7) uniform sampler2D IntermediateTex;
+layout(binding = 8) uniform sampler2D HdrTex;
 
 float luminence(vec3 colour){
     return dot(lum, colour);
 }
 
 
-vec4 pass1(){
+void pass1(){
     //Like in the CPP file, pass 1 performs regular rendering processes. As set up there it will render this to a frame buffer, then into RenderTex which is read here
 
-    vec3 adjustedNormal = Normal;
+    
+vec3 adjustedNormal = Normal;
     if (!gl_FrontFacing) {
         adjustedNormal = -Normal;
     }
-    Colour = vec3(0);
+    vec3 n = normalize(adjustedNormal);
+
+    HdrColour = vec3(0.0);
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {
-        Colour += phongModel(i, Position, adjustedNormal, texture(MossTex, TexCoord).rgb);
+        HdrColour += phongModel(i, Position, n, texture(MossTex, TexCoord).rgb);
     }
-    return vec4(Colour, 1.0f);
+   
 }
 
-vec4 pass2(){
-    /* Pass 1 rendered the scene and created a render texture. Pass two post processes it. 
-    * RenderTex is a texture defined in CPP in the same location, so it can be sampled.
-    * The various S## values are different parts of a 3x3 convolution filter (sobel filter)
-    * Will look at neighbouring pixels to the current with the texelFetchOffset method, so the ivec2 is the pixel to look at
-    * The brightness of these pixels are held in this 3x3 grid.
-    * sx will look at this grid from left to right and compute a gradient value like -1.6 or 5. Where -1.6 indicates a slight decrease, 5 is a sharp increase
-    * Edge threshold is the sx / y value which means an edge is detected
-    */
-
-    /* Gaussian Blur 
-    * This pass2 method applies a vertical blur as seen by the wvalues in the ivec2    
-    */
-    ivec2 pix = ivec2(gl_FragCoord.xy);
-    vec4 sum = texelFetch(RenderTex, pix, 0) * Weight[0];
-    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,1)) * Weight[1];
-    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,-1)) * Weight[1];
-    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,2)) * Weight[2];
-    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,-2)) * Weight[2];
-    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,3)) * Weight[3];
-    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,-3)) * Weight[3];
-    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,4)) * Weight[4];
-    sum += texelFetchOffset(RenderTex, pix, 0, ivec2(0,-4)) * Weight[4];
-    return sum;
-
-    /*Edge detection
-    ivec2 pix = ivec2(gl_FragCoord.xy); //Get the pixel currently being looked at
-    float s00 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(-1, 1)).rgb); //Ivec2 is integer vec2. -1,1 means one step left and one up from current texel
-    float s10 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(-1, 0)).rgb);
-    float s20 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(-1, -1)).rgb);
-    float s01 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(0, 1)).rgb);
-    float s21 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(0, -1)).rgb);
-    float s02 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(1, 1)).rgb);
-    float s12 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(1, 0)).rgb);
-    float s22 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(1, -1)).rgb);
-    float sx = s00 + 2 * s10 + s20 - (s02 + 2 * s12 + s22);
-    float sy = s00 + 2 * s01 + s02 - (s20 + 2 * s21 + s22);
-    float g = sx * sx + sy * sy;
-    if (g > EdgeThreshold){
-        return vec4(1.0);
+void pass2(){
+    vec4 colour = texture(HdrTex, TexCoord);
+    vec3 xyzCol = rgb2xyz * vec3(colour);
+    float xyzSum = xyzCol.x + xyzCol.y + xyzCol.z;
+    vec3 xyYCol = vec3(xyzCol.x / xyzSum, xyzCol.y / xyzSum, xyzCol.y);
+    float L = (Exposure * xyYCol.z) / AveLum;
+    L = (L * ( 1 + L / (White * White))) / (1 + L);
+    xyzCol.x = (L * xyYCol.x) / (xyYCol.y);
+    xyzCol.y = L;
+    xyzCol.z = (L * ( 1 - xyYCol.x - xyYCol.y)) / xyYCol.y;
+    if  (DoToneMap){
+        FragColour = vec4(xyz2rgb * xyzCol, 1.0);
+    } else {
+        FragColour = colour;
     }
-    else {
-        return texelFetch(RenderTex, pix, 0); //Render the pixel as normal
-        //vec4(0.0,0.0,0.0,1.0);
-    }
-    */
 }
 
 vec4 pass3(){
@@ -139,9 +130,9 @@ vec4 pass3(){
 
 
 void main() {
-    if (Pass == 1) FragColour = pass1();
-    else if (Pass == 2) FragColour = pass2();
-    else if (Pass == 3) FragColour = pass3();
+    if (Pass == 1) pass1();
+    else if (Pass == 2) pass2();
+   
 }
 
 vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
