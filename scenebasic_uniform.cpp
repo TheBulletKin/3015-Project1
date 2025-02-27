@@ -394,10 +394,11 @@ void SceneBasic_Uniform::render()
 	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);;
 
 	skyProg.use();
+	glDepthMask(GL_FALSE);
 	model = mat4(1.0f);
 	setMatrices(skyProg);
 	sky.render();
-
+	glDepthMask(GL_TRUE);
 
 
 	pass1();
@@ -509,8 +510,7 @@ void SceneBasic_Uniform::setupFBO() {
 	glBindRenderbuffer(GL_RENDERBUFFER, depthBuf);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
 
-	//GLenum drawBuffers[] = { GL_NONE, GL_COLOR_ATTACHMENT0 };
-	//glDrawBuffers(2, drawBuffers);
+	
 	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
 	glDrawBuffers(1, drawBuffers);
 
