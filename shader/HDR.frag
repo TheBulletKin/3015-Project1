@@ -29,7 +29,7 @@ uniform vec3 ViewPos;
 uniform float Weight[5];
 uniform float AveLum;
 uniform mat3 rgb2xyz = mat3(
-    0.4124564, 0.2126728, 0.0193339,
+    0.4124564, 0.2126729, 0.0193339,
     0.3575761, 0.7151522, 0.1191920,
     0.1804375, 0.0721750, 0.9503041
 );
@@ -40,9 +40,12 @@ uniform mat3 xyz2rgb = mat3(
     -0.4985314, 0.0415560, 1.0572252
 );
 
-uniform float Exposure = 0.7;
+uniform float Exposure = 0.35;
 uniform float White = 0.928;
 uniform bool DoToneMap = true;
+uniform float FogStart;
+uniform float FogEnd;
+uniform vec3 FogColour;
 
 
 const vec3 lum = vec3(0.2126, 0.7152, 0.0722);
@@ -78,27 +81,43 @@ void pass1(){
     //Like in the CPP file, pass 1 performs regular rendering processes. As set up there it will render this to a frame buffer, then into RenderTex which is read here
 
     
+    
 vec3 adjustedNormal = Normal;
     if (!gl_FrontFacing) {
         adjustedNormal = -Normal;
     }
-    vec3 n = normalize(adjustedNormal);
+    //vec3 n = normalize(adjustedNormal);
 
     HdrColour = vec3(0.0);
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {
-        HdrColour += phongModel(i, Position, n, texture(MossTex, TexCoord).rgb);
+        
+        HdrColour += phongModel(i, Position, adjustedNormal, texture(MossTex, TexCoord).rgb);
     }
+
+    float distance = length(Position - ViewPos);    
+    // Linear fog factor (clamped between 0 and 1)
+    float fogFactor = clamp((FogEnd - distance) / (FogEnd - FogStart), 0.0, 1.0);
+
+
+    HdrColour = mix(FogColour, HdrColour, fogFactor);
    
 }
 
 void pass2(){
+    /* HDR and Tonemapping explanation
+    * Most monitors have a limited colour range, with colours clamped from 0 - 1.
+    * Tone mapping compresses the high dynamic range of a scene to a lower dynamic range of the display
+    * HDR represents colours as infinitely large floating points. So a colour could be 10.0, 0.3, 3.4 and not limited by 0-1
+    * 
+    */
+
     vec4 colour = texture(HdrTex, TexCoord);
     vec3 xyzCol = rgb2xyz * vec3(colour);
     float xyzSum = xyzCol.x + xyzCol.y + xyzCol.z;
     vec3 xyYCol = vec3(xyzCol.x / xyzSum, xyzCol.y / xyzSum, xyzCol.y);
-    //float L = (Exposure * xyYCol.z) / AveLum;
-    float L = (Exposure * xyYCol.z);
+    float L = (Exposure * xyYCol.z) / AveLum;
+    //float L = (Exposure * xyYCol.z);
     L = (L * ( 1 + L / (White * White))) / (1 + L);
     xyzCol.x = (L * xyYCol.x) / (xyYCol.y);
     xyzCol.y = L;

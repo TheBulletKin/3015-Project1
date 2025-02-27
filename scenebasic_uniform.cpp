@@ -114,6 +114,10 @@ void SceneBasic_Uniform::initScene()
 	prog.use();
 	prog.setUniform("EdgeThreshold", 0.05f);
 
+	prog.setUniform("FogStart", 10.0f);
+	prog.setUniform("FogEnd", 20.0f);
+	prog.setUniform("FogColour", 0.0f, 0.5f, 0.0f);
+
 	//Gaussian blur
 	/* Weights follow a gaussian distribution, falling off the further it gets from the centre
 	* In the shader this is used to determine how much a neighbouring pixel contributes to blur
