@@ -52,7 +52,8 @@ float luminence(vec3 colour){
 
 
 vec4 pass1(){
-    
+    //Like in the CPP file, pass 1 performs regular rendering processes
+
     vec3 adjustedNormal = Normal;
     if (!gl_FrontFacing) {
         adjustedNormal = -Normal;
@@ -60,21 +61,29 @@ vec4 pass1(){
     Colour = vec3(0);
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {
-        Colour += phongModel(i, Position, adjustedNormal, texture(RenderTex, TexCoord).rgb);
+        Colour += phongModel(i, Position, adjustedNormal, texture(BrickTex, TexCoord).rgb);
     }
     return vec4(Colour, 1.0f);
 }
 
 vec4 pass2(){
+    /* Pass 1 rendered the scene and created a render texture. Pass two post processes it
+    * The various S## values are different parts of a 3x3 convolution filter (sobel filter)
+    * Will look at neighbouring pixels to the current with the texelFetchOffset method, so the ivec2 is the pixel to look at
+    * The brightness of these pixels are held in this 3x3 grid.
+    * sx will look at this grid from left to right and compute a gradient value like -1.6 or 5. Where -1.6 indicates a slight decrease, 5 is a sharp increase
+    * Edge threshold is the sx / y value which means an edge is detected
+    */
+
     ivec2 pix = ivec2(gl_FragCoord.xy); //Get the pixel currently being looked at
-    float s00 = luminence(texelFetchOffset(MossTex, pix, 0, ivec2(-1, 1)).rgb);
-    float s10 = luminence(texelFetchOffset(MossTex, pix, 0, ivec2(-1, 0)).rgb);
-    float s20 = luminence(texelFetchOffset(MossTex, pix, 0, ivec2(-1, -1)).rgb);
-    float s01 = luminence(texelFetchOffset(MossTex, pix, 0, ivec2(0, 1)).rgb);
-    float s21 = luminence(texelFetchOffset(MossTex, pix, 0, ivec2(0, -1)).rgb);
-    float s02 = luminence(texelFetchOffset(MossTex, pix, 0, ivec2(1, 1)).rgb);
-    float s12 = luminence(texelFetchOffset(MossTex, pix, 0, ivec2(1, 0)).rgb);
-    float s22 = luminence(texelFetchOffset(MossTex, pix, 0, ivec2(1, -1)).rgb);
+    float s00 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(-1, 1)).rgb); //Ivec2 is integer vec2. -1,1 means one step left and one up from current texel
+    float s10 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(-1, 0)).rgb);
+    float s20 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(-1, -1)).rgb);
+    float s01 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(0, 1)).rgb);
+    float s21 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(0, -1)).rgb);
+    float s02 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(1, 1)).rgb);
+    float s12 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(1, 0)).rgb);
+    float s22 = luminence(texelFetchOffset(RenderTex, pix, 0, ivec2(1, -1)).rgb);
     float sx = s00 + 2 * s10 + s20 - (s02 + 2 * s12 + s22);
     float sy = s00 + 2 * s01 + s02 - (s20 + 2 * s21 + s22);
     float g = sx * sx + sy * sy;

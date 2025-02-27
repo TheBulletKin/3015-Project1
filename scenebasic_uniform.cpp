@@ -67,18 +67,31 @@ void SceneBasic_Uniform::initScene()
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyCubeTex);
 
 
-	setupFBO();
+	
 
+	//Define the vertices for the full screen quad, two triangles that cover the whole screen
 	GLfloat verts[] = {
-		-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f,
-		-1.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f,
+		-1.0f, -1.0f, 0.0f,
+		1.0f, -1.0f, 0.0f,
+		1.0f, 1.0f, 0.0f,
+		-1.0f, -1.0f, 0.0f,
+		1.0f, 1.0f, 0.0f,
+		-1.0f, 1.0f, 0.0f,
 	};
 
+	//Texture coordinates for that full screen quad
 	GLfloat tc[] = {
-		0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f,
-		0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,
+		0.0f, 0.0f,
+		1.0f, 0.0f,
+
+		1.0f, 1.0f,		
+		0.0f, 0.0f,
+
+		1.0f, 1.0f,
+		0.0f, 1.0f,
 	};
 
+	//Creates a VBOs for this quad. Vertex positions and then texture coords passed in
 	unsigned int handle[2];
 	glGenBuffers(2, handle);
 	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
@@ -86,6 +99,7 @@ void SceneBasic_Uniform::initScene()
 	glBindBuffer(GL_ARRAY_BUFFER, handle[1]);
 	glBufferData(GL_ARRAY_BUFFER, 6 * 2 * sizeof(float), tc, GL_STATIC_DRAW);
 
+	//Creates VAO for the quad. Sets up attribute pointers for vertex position and texture coord, mapped to shader
 	glGenVertexArrays(1, &fsQuad);
 	glBindVertexArray(fsQuad);
 	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
@@ -97,9 +111,10 @@ void SceneBasic_Uniform::initScene()
 	glEnableVertexAttribArray(2); //Texture coord
 	glBindVertexArray(0);
 
+	prog.use();
 	prog.setUniform("EdgeThreshold", 0.05f);
 	
-
+	setupFBO();
 
 
 	prog.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
@@ -128,7 +143,7 @@ void SceneBasic_Uniform::initScene()
 
 	fireFlySpawnTimer = 0.0f;
 	currentFireFlyCount = 0;
-	maxFireFlyCount = 2;
+	maxFireFlyCount = 0;
 	fireFlySpawnCooldown = 3.0f;
 
 	for (int i = numberOfStaticLights; i < maxFireFlyCount; i++)
@@ -204,7 +219,7 @@ void SceneBasic_Uniform::compile()
 		skyProg.compileShader("shader/skybox.vert");
 		skyProg.compileShader("shader/skybox.frag");
 		skyProg.link();
-		prog.use();
+		
 	}
 	catch (GLSLProgramException& e) {
 		cerr << e.what() << endl;
@@ -227,6 +242,7 @@ void SceneBasic_Uniform::update(float t)
 		fireFlySpawnTimer = 0.0f;
 	}
 	
+	prog.use();
 	prog.setUniform("time", t / 1000);
 
 	if (fireFlySpawnTimer >= fireFlySpawnCooldown && currentFireFlyCount < maxFireFlyCount)
@@ -440,6 +456,7 @@ void SceneBasic_Uniform::pass1() {
 	*/
 	
 	//Binding the frame buffer to this target means it renders to renderTex, as defined in setupFBO
+	prog.use();
 	prog.setUniform("Pass", 1);
 	glBindFramebuffer(GL_FRAMEBUFFER, fboHandle);
 	glEnable(GL_DEPTH_TEST);
@@ -449,7 +466,7 @@ void SceneBasic_Uniform::pass1() {
 	view = camera.GetViewMatrix();
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
-	prog.use();
+	
 	int fireFlyLightIndex = numberOfStaticLights;
 	string lightUniformTag;
 	for (size_t i = 0; i < fireFlies.size(); i++) {
