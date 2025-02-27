@@ -40,7 +40,7 @@ uniform mat3 xyz2rgb = mat3(
     -0.4985314, 0.0415560, 1.0572252
 );
 
-uniform float Exposure = 0.35;
+uniform float Exposure = 0.7;
 uniform float White = 0.928;
 uniform bool DoToneMap = true;
 
@@ -95,7 +95,8 @@ void pass2(){
     vec3 xyzCol = rgb2xyz * vec3(colour);
     float xyzSum = xyzCol.x + xyzCol.y + xyzCol.z;
     vec3 xyYCol = vec3(xyzCol.x / xyzSum, xyzCol.y / xyzSum, xyzCol.y);
-    float L = (Exposure * xyYCol.z) / AveLum;
+    //float L = (Exposure * xyYCol.z) / AveLum;
+    float L = (Exposure * xyYCol.z);
     L = (L * ( 1 + L / (White * White))) / (1 + L);
     xyzCol.x = (L * xyYCol.x) / (xyYCol.y);
     xyzCol.y = L;
