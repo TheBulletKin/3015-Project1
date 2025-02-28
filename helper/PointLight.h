@@ -21,7 +21,9 @@ public:
     float quadratic;     // Quadratic attenuation factor
     vec3 ambient;        // Ambient color of the light
     vec3 diffuse;        // Diffuse color of the light
-    vec3 specular;       // Specular color of the light
+    vec3 specular;  
+    float brightness;
+    // Specular color of the light
 
     // Constructor to initialize all members
     PointLight(float constant, float linear, float quadratic,
@@ -35,6 +37,9 @@ public:
     {
     }
 
+    void SetIntensity(float brightness) {
+        this->brightness = brightness;
+    }
     
 };
 

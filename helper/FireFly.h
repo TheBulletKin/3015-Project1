@@ -21,8 +21,10 @@ public:
 private:
 	int index;
 	float lifeTimeMax;
-	float currentLifeTime;
-	float easeTime;
+	float currentLifeTime;	
+	float easeInOutDuration;
+	float brightness;
+	
 	vec3 currentPosition;
 	vec3 velocity;
 	FastNoiseLite noiseGen;

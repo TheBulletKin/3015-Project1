@@ -20,6 +20,8 @@ FireFly::FireFly(PointLight* pointLight, vec3 spawnPosition, int index) {
 	noiseOffsetZ = linearRand(0.0f, 1000.0f);
 
 	timeFactor = 0.0f;
+	brightness = 0.0f;
+	easeInOutDuration = 2.0f;
 }
 
 FireFly::~FireFly() {
@@ -47,5 +49,21 @@ void FireFly::Update(float deltaTime) {
 	velocity = mix(velocity, noiseOffset, 0.1f);
 	currentPosition += velocity * deltaTime;
 
-	//pointLight->SetPosition(currentPosition);
+	
+	if (currentLifeTime < easeInOutDuration) {		
+		brightness = smoothstep(0.0f, 1.0f, currentLifeTime / easeInOutDuration);
+	}
+	else if (currentLifeTime > lifeTimeMax - easeInOutDuration) {
+		brightness = smoothstep(1.0f, 0.0f, (currentLifeTime - (lifeTimeMax - easeInOutDuration)) / easeInOutDuration);
+	}
+	else {		
+		brightness = 1.0f;
+	}
+
+	
+	if (pointLight) {
+		pointLight->SetIntensity(brightness);
+	}
+
+	
 }

@@ -205,7 +205,7 @@ void SceneBasic_Uniform::initScene()
 
 	fireFlySpawnTimer = 0.0f;
 	currentFireFlyCount = 0;
-	maxFireFlyCount = 1;
+	maxFireFlyCount = 3;
 	fireFlySpawnCooldown = 3.0f;
 
 	for (int i = numberOfStaticLights; i < maxFireFlyCount; i++)
@@ -275,8 +275,8 @@ void SceneBasic_Uniform::compile()
 	try {
 		//prog.compileShader("shader/basic_uniform.vert");
 		//prog.compileShader("shader/basic_uniform.frag");
-		prog.compileShader("shader/HDR.vert");
-		prog.compileShader("shader/HDR.frag");
+		prog.compileShader("shader/object.vert");
+		prog.compileShader("shader/object.frag");
 		prog.link();
 		skyProg.compileShader("shader/skybox.vert");
 		skyProg.compileShader("shader/skybox.frag");
@@ -577,9 +577,9 @@ void SceneBasic_Uniform::pass1() {
 		//prog.setUniform((lightUniformTag + ".quadratic").c_str(), fireFly->pointLight->quadratic);
 
 		prog.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
-		prog.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient);
+		prog.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
 		//prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFlyLightColour);
-		prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse);
+		prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
 
 
 		fireFlyLightIndex++;
