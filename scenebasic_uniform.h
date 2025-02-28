@@ -27,7 +27,7 @@ class SceneBasic_Uniform : public Scene
 {
 private:
     //GLuint vaoHandle;
-    GLSLProgram prog, skyProg;
+    GLSLProgram prog, skyProg, screenShaderProg;
     
     GLFWwindow* window;
     //float angle;
@@ -41,6 +41,7 @@ private:
     GLuint renderTex, intermediateTex;
     GLuint hdrTex, avgTex, tex1, tex2;
     GLuint linearSampler, nearestSampler;
+    GLuint rbo;
 
     int bloomBufWidth, bloomBufHeight;
 

@@ -281,6 +281,9 @@ void SceneBasic_Uniform::compile()
 		skyProg.compileShader("shader/skybox.vert");
 		skyProg.compileShader("shader/skybox.frag");
 		skyProg.link();
+		screenShaderProg.compileShader("shader/screenShader.vert");
+		screenShaderProg.compileShader("shader/screenShader.frag");
+		screenShaderProg.link();
 
 	}
 	catch (GLSLProgramException& e) {
@@ -402,11 +405,7 @@ void SceneBasic_Uniform::render()
 
 
 	pass1();
-	computeLogAveLuminance();
-	pass2();
-	pass3();
-	pass4();
-	pass5();
+	
 
 
 }
@@ -491,82 +490,18 @@ void SceneBasic_Uniform::setupFBO() {
 	* 5. Tell openGL that when rendering to the frame buffer, write colours into colour attachment 0.
 	*/
 
-
-	glGenFramebuffers(1, &renderFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, renderFBO);
-
-	glGenTextures(1, &renderTex);
-	glActiveTexture(GL_TEXTURE6);
-	glBindTexture(GL_TEXTURE_2D, renderTex);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0);
-
-	GLuint depthBuf;
-	glGenRenderbuffers(1, &depthBuf);
-	glBindRenderbuffer(GL_RENDERBUFFER, depthBuf);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
-
-	
-	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
-	glDrawBuffers(1, drawBuffers);
-
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	//GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
-	//glDrawBuffers(1, drawBuffers);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	//New for gaussian blur. Creates a second frame buffer to render to in the second pass
-	glGenFramebuffers(1, &intermediateFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, intermediateFBO);
-
-	glGenTextures(1, &intermediateTex);
-	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_2D, intermediateTex);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, intermediateTex, 0);
-
-	//glDrawBuffers(1, drawBuffers);
-	
-
-	/* Bloom explained
-	* 
+	/* Refactor plan:
+	* Generate the HDR frame buffer
+	* Generate hdr texture (where base scene is first rendered to
+	* First render to a screen texture without any editing
+	* Use two shaders for this. Just to prove base functionality
 	*/
 
-	//Create bright pass filter and blur FBO
-	glGenFramebuffers(1, &blurFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, blurFBO);
-
-	//Two textures to ping pong for bright pass filter
-	bloomBufWidth = width / 8;
-	bloomBufHeight = height / 8;
-	glGenTextures(1, &tex1);
-	glActiveTexture(GL_TEXTURE9);
-	glBindTexture(GL_TEXTURE_2D, tex1);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, bloomBufWidth, bloomBufHeight);
-	glGenTextures(1, &tex2);
-	glActiveTexture(GL_TEXTURE10);
-	glBindTexture(GL_TEXTURE_2D, tex2);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, bloomBufWidth, bloomBufHeight);
-
-	//Bind tex1 to FBO
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
-	glDrawBuffers(1, drawBuffers);
-
-
-	//New for HDR
+	//Create FBO for first render pass
 	glGenFramebuffers(1, &hdrFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
+	//HDR texture to render to on first pass
 	glActiveTexture(GL_TEXTURE8);
 	glGenTextures(1, &hdrTex);
 	glBindTexture(GL_TEXTURE_2D, hdrTex);
@@ -575,10 +510,18 @@ void SceneBasic_Uniform::setupFBO() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuf);
+	//Attach this texture to the frame buffer
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrTex, 0);
-
 	
+	//Render buffer object for depth and stencil attachments that won't be sampled by me
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+	//Error checking
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << endl;
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -587,7 +530,7 @@ void SceneBasic_Uniform::pass1() {
 	*
 	*/
 
-	//Binding the frame buffer to this target means it renders to renderTex, as defined in setupFBO
+	//Bind HDR framebuffer to render to hdrTex;
 	prog.use();
 	prog.setUniform("Pass", 1);
 	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
@@ -661,100 +604,25 @@ void SceneBasic_Uniform::pass1() {
 
 	plane.render();
 
-
-}
-
-void SceneBasic_Uniform::pass2()
-{
-	/* The render content is now saved as a texture
-	* Pass 2 in the shader checks luminance values and returns pixels beyond a certain value.
-	* This is saved in tex1 when draw arrays is called.
-	* Intentionally lowers the viewport resolution to help with blur
-	*/
-
-	prog.use();
-	prog.setUniform("Pass", 2);
-	glBindFramebuffer(GL_FRAMEBUFFER, blurFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
-	glViewport(0, 0, bloomBufWidth, bloomBufHeight);
-
-	
-	
-	
-	glDisable(GL_DEPTH_TEST);
-	glClearColor(0, 0, 0, 0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	model = mat4(1.0f);
-	view = mat4(1.0f);
-	projection = mat4(1.0f);
-	setMatrices(prog);
-	glBindVertexArray(fsQuad);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	//glBindVertexArray(0);
-}
-
-void SceneBasic_Uniform::pass3()
-{
-	/* Tex1 now holds brightest pixels only
-	* This applies a vertical gaussian blur effect and saves it to tex2 with the same FBO
-	*/
-	prog.use();
-	prog.setUniform("Pass", 3);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex2, 0);
-	
-	model = mat4(1.0f);
-	view = mat4(1.0f);
-	projection = mat4(1.0f);
-	setMatrices(prog);
-	glBindVertexArray(fsQuad);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	//glBindVertexArray(0);
-}
-
-void SceneBasic_Uniform::pass4()
-{
-	/* Tex 2 is now vertically blurred
-	* Pass 4 in the shader does horizontal blurring
-	* Renders to the fbo then saves to tex1
-	*/
-	prog.use();
-	prog.setUniform("Pass", 4);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex1, 0);
-
-	model = mat4(1.0f);
-	view = mat4(1.0f);
-	projection = mat4(1.0f);
-	setMatrices(prog);
-	glBindVertexArray(fsQuad);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	//glBindVertexArray(0);
-}
-
-void SceneBasic_Uniform::pass5()
-{
-	/* Tex1 holds the blurred lights only. 
-	* In the shader pass 5 performs tonemapping using stuff from HDR section. Gets the colour of the original render
-	* Then samples the blurred texture and overlays it on the first render
-	* 
-	*/
-	prog.use();
-	prog.setUniform("Pass", 5);
+	//Second pass
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDisable(GL_DEPTH_TEST);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
-	glViewport(0, 0, width, height);
-	glBindSampler(9, linearSampler);
-	
-
+	screenShaderProg.use();
 	model = mat4(1.0f);
 	view = mat4(1.0f);
 	projection = mat4(1.0f);
-	setMatrices(prog);
+	setMatrices(screenShaderProg);
 	glBindVertexArray(fsQuad);
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, hdrTex);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 
-	glBindSampler(9, nearestSampler);
-	glBindVertexArray(0);
+
 }
+
+
 
 float SceneBasic_Uniform::gauss(float x, float sigma2) {
 	double coeff = 1.0 / (two_pi<double>() * sigma2);
