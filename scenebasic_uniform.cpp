@@ -284,12 +284,6 @@ void SceneBasic_Uniform::compile()
 		screenHdrProg.compileShader("shader/screenHdr.vert");
 		screenHdrProg.compileShader("shader/screenHdr.frag");
 		screenHdrProg.link();
-		screenBlur.compileShader("shader/gaussianBlur.vert");
-		screenBlur.compileShader("shader/gaussianBlur.frag");
-		screenBlur.link();
-		screenBlurCombine.compileShader("shader/screenBlurCombine.vert");
-		screenBlurCombine.compileShader("shader/screenBlurCombine.frag");
-		screenBlurCombine.link();
 
 	}
 	catch (GLSLProgramException& e) {
@@ -517,9 +511,9 @@ void SceneBasic_Uniform::setupFBO() {
 	* (look in shader for more info)
 	* Texture unit 8 holds first, 9 holds bright pixels
 	*/	
-	glGenTextures(1, &newRenderTex);
+	glGenTextures(1, &renderTex);
 	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, newRenderTex);
+	glBindTexture(GL_TEXTURE_2D, renderTex);
 	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -527,80 +521,13 @@ void SceneBasic_Uniform::setupFBO() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 	glFramebufferTexture2D(
-		GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, newRenderTex, 0
+		GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0
 	);
 
-	glGenTextures(1, &newBrightTex);
-	glActiveTexture(GL_TEXTURE9);
-	glBindTexture(GL_TEXTURE_2D, newBrightTex);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-	glFramebufferTexture2D(
-		GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, newBrightTex, 0
-	);
-	
-	
-	//Need to tell open gl to use both attachments
-	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-	glDrawBuffers(2, attachments);
-
-	/*
-	//HDR texture to render to on first pass	
-	glGenTextures(1, &hdrTex);
-	glBindTexture(GL_TEXTURE_2D, hdrTex);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, width, height); //Set to 32F for HDR
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
 
 	//Attach this texture to the frame buffer
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hdrTex, 0);
-	*/
-	/* Gaussian blur will require two framebuffers. One for horizontal and one for vertical blur
-	* These are 'ping pong' buffers, as the first sends to the second which sends back to the first
-	* Creates the two buffers, then the two textures. Links each buffer to it's respective texture
-	* Ping tex will be in 10, pong in 11
-	*/	
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0);
 	
-	
-
-	glGenFramebuffers(1, &pingPongFBO[0]);
-	glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[0]);
-
-	glGenTextures(1, &pingPongTex[0]);
-	glActiveTexture(GL_TEXTURE10);
-	glBindTexture(GL_TEXTURE_2D, pingPongTex[0]);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-	glFramebufferTexture2D(
-		GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingPongTex[0], 0
-	);
-
-	glGenFramebuffers(1, &pingPongFBO[1]);
-	glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[1]);
-
-	glGenTextures(1, &pingPongTex[1]);
-	glActiveTexture(GL_TEXTURE11);
-	glBindTexture(GL_TEXTURE_2D, pingPongTex[1]);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-	glFramebufferTexture2D(
-		GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pingPongTex[1], 0
-	);
-
-
 
 	//Render buffer object for depth and stencil attachments that won't be sampled by me
 	glGenRenderbuffers(1, &depthRbo);
@@ -692,16 +619,12 @@ void SceneBasic_Uniform::pass1() {
 	setMatrices(prog);
 
 	plane.render();
-
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	//First pass uses first shader, which creates the scene and bright pixel textures
 
-	//Second pass - creates HDR texture and bright pixels texture
-	/*
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glDisable(GL_DEPTH_TEST);
+	//Second pass - HDR		
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	screenHdrProg.use();
 	model = mat4(1.0f);
 	view = mat4(1.0f);
@@ -711,50 +634,9 @@ void SceneBasic_Uniform::pass1() {
 	screenHdrProg.setUniform("exposure", exposure);
 	glBindVertexArray(fsQuad);
 	glActiveTexture(GL_TEXTURE8); //Gaussian blur needs texture unit 8
-	glBindTexture(GL_TEXTURE_2D, hdrTex);
+	glBindTexture(GL_TEXTURE_2D, renderTex);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	*/
 	
-	//Third pass for gaussian blur
-	bool horizontal = true, first_iteration = true;
-	int amount = 10;
-	screenBlur.use();
-	int textureUnit = 10;
-	for (unsigned int i = 0; i < amount; i++)
-	{
-		//Horizontal is 0 or 1, convenient indexes
-		//First pingPongFBO renders to tex[0]
-		glBindFramebuffer(GL_FRAMEBUFFER, pingPongFBO[horizontal]);
-		screenBlur.setUniform("horizontal", horizontal);
-		glActiveTexture(GL_TEXTURE0 + (int)horizontal);
-		//Bind one of the two frame buffers, bind the bright pixel texture first to blur those, then instead bind the horizontally blurred texture to blur that
-		glBindTexture(
-			GL_TEXTURE_2D, first_iteration ? newBrightTex : pingPongTex[!horizontal]
-		);
-		model = mat4(1.0f);
-		view = mat4(1.0f);
-		projection = mat4(1.0f);		
-		glBindVertexArray(fsQuad);		
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		horizontal = !horizontal;
-		if (first_iteration)
-			first_iteration = false;
-		
-	}
-	
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	
-	//Combine and render to quad
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glBindVertexArray(fsQuad);
-	screenBlurCombine.use();
-	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, newRenderTex); //Colourbuffers[0] is attached to the first hdrfbo, a texture for the base rendered scene
-	glActiveTexture(GL_TEXTURE10);
-	glBindTexture(GL_TEXTURE_2D, pingPongTex[!horizontal]); //The final blurred image
-	screenBlurCombine.setUniform("bloom", bloom);
-	screenBlurCombine.setUniform("exposure", exposure);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
 	
 }
 
@@ -770,7 +652,7 @@ void SceneBasic_Uniform::computeLogAveLuminance() {
 	int size = width * height;
 	vector<GLfloat> texData(size * 3);
 	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, hdrTex);
+	glBindTexture(GL_TEXTURE_2D, renderTex);
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, texData.data());
 	float sum = 0.0f;
 	for (int i = 0; i < size; i++)

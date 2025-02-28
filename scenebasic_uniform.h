@@ -37,18 +37,17 @@ private:
     std::unique_ptr<ObjMesh> TerrainMesh;
     Cube cube;
     GLuint fsQuad;
-    GLuint renderFBO, intermediateFBO, hdrFBO, blurFBO;
-    GLuint renderTex, intermediateTex;
-    GLuint hdrTex, avgTex, tex1, tex2;
+    GLuint hdrFBO;   
+   
     GLuint linearSampler, nearestSampler;
     GLuint depthRbo; 
-    GLuint newRenderTex, newBrightTex;
-    GLuint pingPongFBO[2], pingPongTex[2];
+    GLuint renderTex;
+    
  
 
     int bloomBufWidth, bloomBufHeight;
     bool hdr = true;
-    float exposure = 1.0f;
+    float exposure = 2.2f;
     bool bloom = false;
 
 

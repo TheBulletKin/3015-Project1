@@ -66,7 +66,7 @@ uniform mat4 view;
 
 
 layout(binding = 8) uniform sampler2D HdrTex;
-layout(binding = 9) uniform sampler2D BlurTex;
+
 
 
 void main()
