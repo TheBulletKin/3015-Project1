@@ -44,6 +44,8 @@ private:
     GLuint rbo;
 
     int bloomBufWidth, bloomBufHeight;
+    bool hdr = true;
+    float exposure = 1.0f;
 
 
     Camera camera;
@@ -57,8 +59,8 @@ private:
     int fireFlySpawnCooldown;
     int currentFireFlyCount;
     int maxFireFlyCount;
-    vec3 fireFlyLightColour = vec3(0.3f, 0.3f, 0.3f);
-    vec3 ambientLightColour = vec3(0.3f, 0.6f, 0.2f);
+    vec3 fireFlyLightColour = vec3(200.0f, 200.0f, 200.0f);
+    vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.1f);
 
     struct Point {
         float x, y, z;

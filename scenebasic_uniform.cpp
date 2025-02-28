@@ -505,7 +505,7 @@ void SceneBasic_Uniform::setupFBO() {
 	glActiveTexture(GL_TEXTURE8);
 	glGenTextures(1, &hdrTex);
 	glBindTexture(GL_TEXTURE_2D, hdrTex);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA32F, width, height);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, width, height); //Set to 32F for HDR
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
@@ -516,8 +516,8 @@ void SceneBasic_Uniform::setupFBO() {
 	//Render buffer object for depth and stencil attachments that won't be sampled by me
 	glGenRenderbuffers(1, &rbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
 	//Error checking
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -561,9 +561,9 @@ void SceneBasic_Uniform::pass1() {
 		//prog.setUniform((lightUniformTag + ".quadratic").c_str(), fireFly->pointLight->quadratic);
 
 		prog.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
-		//prog.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient);
+		prog.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient);
 		//prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFlyLightColour);
-		prog.setUniform((lightUniformTag + ".Ld").c_str(), vec3(0.8f, 0.8f, 0.8f));
+		prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse);
 
 
 		fireFlyLightIndex++;
@@ -614,6 +614,8 @@ void SceneBasic_Uniform::pass1() {
 	view = mat4(1.0f);
 	projection = mat4(1.0f);
 	setMatrices(screenShaderProg);
+	screenShaderProg.setUniform("hdr", hdr);
+	screenShaderProg.setUniform("exposure", exposure);
 	glBindVertexArray(fsQuad);
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, hdrTex);
