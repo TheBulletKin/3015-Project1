@@ -27,7 +27,7 @@ class SceneBasic_Uniform : public Scene
 {
 private:
     //GLuint vaoHandle;
-    GLSLProgram prog, skyProg, screenHdrProg, screenBlur, screenBlurCombine;
+    GLSLProgram prog, skyProg, screenHdrProg, screenBlur, particleProg;
     
     GLFWwindow* window;
     //float angle;
@@ -50,6 +50,9 @@ private:
     float exposure = 2.2f;
     bool bloom = false;
 
+    GLuint sprites;
+    int numSprites;
+    float* locations;
 
     Camera camera;
     

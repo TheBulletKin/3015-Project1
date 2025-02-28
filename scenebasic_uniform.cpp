@@ -264,8 +264,43 @@ void SceneBasic_Uniform::initScene()
 
 	prog.setUniform("CloudTex", 4);
 
+	numSprites = 50;
+	locations = new float[numSprites * 3];
+	srand((unsigned int)time(0));
+
+	for (int i = 0; i < numSprites; i++)
+	{
+		vec3 p(((float)rand() / RAND_MAX * 2.0f) - 1.0f,
+			((float)rand() / RAND_MAX * 2.0f) - 1.0f,
+			((float)rand() / RAND_MAX * 2.0f) - 1.0f);
+		locations[i * 3] = p.x;
+		locations[i * 3 + 1] = p.y;
+		locations[i * 3 + 2] = p.z;
+	}
+
+	GLuint spriteHandle;
+	glGenBuffers(1, &spriteHandle);
+	glBindBuffer(GL_ARRAY_BUFFER, spriteHandle);
+	glBufferData(GL_ARRAY_BUFFER, numSprites * 3 * sizeof(float), locations, GL_STATIC_DRAW);
+
+	delete[] locations;
+
+	glGenVertexArrays(1, &sprites);
+	glBindVertexArray(sprites);
+
+	glBindBuffer(GL_ARRAY_BUFFER, spriteHandle);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ((GLubyte*)NULL + (0)));
+
+	glBindVertexArray(0);
+
+	GLuint spriteTex = Texture::loadTexture("media/texture/flower.png");
+	glActiveTexture(GL_TEXTURE12);
+	glBindTexture(GL_TEXTURE_2D, spriteTex);
 
 
+	particleProg.use();
+	particleProg.setUniform("spriteTex", 12);
+	particleProg.setUniform("Size2", 0.15f);
 
 
 
@@ -285,6 +320,10 @@ void SceneBasic_Uniform::compile()
 		screenHdrProg.compileShader("shader/screenHdr.vert");
 		screenHdrProg.compileShader("shader/screenHdr.frag");
 		screenHdrProg.link();
+		particleProg.compileShader("shader/particle.vert");
+		particleProg.compileShader("shader/particle.frag");
+		particleProg.compileShader("shader/particle.geom");
+		particleProg.link();
 
 	}
 	catch (GLSLProgramException& e) {
@@ -623,6 +662,13 @@ void SceneBasic_Uniform::pass1() {
 	setMatrices(prog);
 
 	plane.render();
+
+	particleProg.use();
+	model = mat4(1.0f);
+	setMatrices(particleProg);
+
+	glBindVertexArray(sprites);
+	glDrawArrays(GL_POINTS, 0, numSprites);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
