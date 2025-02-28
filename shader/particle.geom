@@ -6,10 +6,11 @@ layout ( triangle_strip, max_vertices = 4) out; //The type of primitive to produ
 
 uniform float Size2; //half width of the quad
 
-out vec3 Position;
-out vec3 WorldPosition;
-out vec3 Normal;
+
+in vec3 WorldPosition[];
+
 out vec2 TexCoord;
+out vec3 FragWorldPos;
 
 vec3 LightDir;
 vec3 ViewDir;
@@ -29,30 +30,23 @@ uniform mat4 projection;
 void main()
 {
     
-   mat4 m = projection;
-   //Vertex 1
-   gl_Position = model * (vec4(-Size2, -Size2, 0.0, 0.0) + gl_in[0].gl_Position); //Gl in provides information
+    vec4 worldPos = gl_in[0].gl_Position;
 
-   TexCoord = vec2(0.0, 0.0);
-   EmitVertex();
+     gl_Position = (model * (vec4(-Size2, -Size2, 0.0, 1.0) + worldPos));
+    TexCoord = vec2(0.0, 0.0);
+    EmitVertex();
 
-   //Vertex 2
-   gl_Position = model * (vec4(Size2, -Size2, 0.0, 0.0) + gl_in[0].gl_Position); //Gl in provides information
+     gl_Position = (model * (vec4(Size2, -Size2, 0.0, 1.0) + worldPos));
+    TexCoord = vec2(1.0, 0.0);
+    EmitVertex();
 
-   TexCoord = vec2(1.0, 0.0);
-   EmitVertex();
+    gl_Position = (model * (vec4(-Size2, Size2, 0.0, 1.0) + worldPos));
+    TexCoord = vec2(0.0, 1.0);
+    EmitVertex();
 
-   //Vertex 3
-   gl_Position = model * (vec4(-Size2, Size2, 0.0, 0.0) + gl_in[0].gl_Position); //Gl in provides information
-
-   TexCoord = vec2(0.0, 1.0);
-   EmitVertex();
-
-   //Vertex 4
-   gl_Position = model * (vec4(Size2, Size2, 0.0, 0.0) + gl_in[0].gl_Position); //Gl in provides information
-
-   TexCoord = vec2(1.0, 1.0);
-   EmitVertex();
+    gl_Position = (model * (vec4(Size2, Size2, 0.0, 1.0) + worldPos));
+    TexCoord = vec2(1.0, 1.0);
+    EmitVertex();
 
     EndPrimitive();
 }

@@ -1,6 +1,7 @@
 #version 460
 
 in vec2 TexCoord;
+in vec3 FragWorldPos;
 
 uniform sampler2D spriteTex;
 

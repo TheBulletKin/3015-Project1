@@ -264,32 +264,22 @@ void SceneBasic_Uniform::initScene()
 
 	prog.setUniform("CloudTex", 4);
 
-	numSprites = 50;
-	locations = new float[numSprites * 3];
-	srand((unsigned int)time(0));
+	
+	
 
-	for (int i = 0; i < numSprites; i++)
-	{
-		vec3 p(((float)rand() / RAND_MAX * 2.0f) - 1.0f,
-			((float)rand() / RAND_MAX * 2.0f) - 1.0f,
-			((float)rand() / RAND_MAX * 2.0f) - 1.0f);
-		locations[i * 3] = p.x;
-		locations[i * 3 + 1] = p.y;
-		locations[i * 3 + 2] = p.z;
-	}
+	
+	glGenVertexArrays(1, &spritesVAO);	
+	glGenBuffers(1, &spritesInstanceVBO);
 
-	GLuint spriteHandle;
-	glGenBuffers(1, &spriteHandle);
-	glBindBuffer(GL_ARRAY_BUFFER, spriteHandle);
-	glBufferData(GL_ARRAY_BUFFER, numSprites * 3 * sizeof(float), locations, GL_STATIC_DRAW);
+	glBindVertexArray(spritesVAO);
 
-	delete[] locations;
 
-	glGenVertexArrays(1, &sprites);
-	glBindVertexArray(sprites);
-
-	glBindBuffer(GL_ARRAY_BUFFER, spriteHandle);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, ((GLubyte*)NULL + (0)));
+	// Firefly positions (instance buffer)
+	glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
+	glBufferData(GL_ARRAY_BUFFER, maxFireFlyCount * sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribDivisor(1, 1); // 1 instance per particle
 
 	glBindVertexArray(0);
 
@@ -302,6 +292,7 @@ void SceneBasic_Uniform::initScene()
 	particleProg.setUniform("spriteTex", 12);
 	particleProg.setUniform("Size2", 0.15f);
 
+	
 
 
 }
@@ -386,6 +377,7 @@ void SceneBasic_Uniform::update(float t)
 		fireFlySpawnCooldown = linearRand(3.0f, 6.0f);
 	}
 
+	
 	for (size_t i = 0; i < fireFlies.size(); i++)
 	{
 		FireFly* fireFly = fireFlies[i];
@@ -423,7 +415,7 @@ void SceneBasic_Uniform::update(float t)
 		}
 	}
 
-
+	
 	/* Make a collection for firelies
 	*  Timer that counts down
 	*  Max number of fireflies
@@ -601,7 +593,7 @@ void SceneBasic_Uniform::pass1() {
 	view = camera.GetViewMatrix();
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
-
+	vector<vec3> fireFlyPositions;
 	int fireFlyLightIndex = numberOfStaticLights;
 	string lightUniformTag;
 	for (size_t i = 0; i < fireFlies.size(); i++) {
@@ -626,7 +618,13 @@ void SceneBasic_Uniform::pass1() {
 		prog.setUniform((lightUniformTag + ".Enabled").c_str(), true);
 
 		fireFlyLightIndex++;
+		fireFlyPositions.push_back(fireFly->GetPosition());
 	}
+
+	//Update instance position buffer for firefly particles	
+	glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, fireFlyPositions.size() * sizeof(vec3), fireFlyPositions.data());
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	prog.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
 	prog.setUniform("staticPointLights", numberOfStaticLights);
@@ -667,8 +665,8 @@ void SceneBasic_Uniform::pass1() {
 	model = mat4(1.0f);
 	setMatrices(particleProg);
 
-	glBindVertexArray(sprites);
-	glDrawArrays(GL_POINTS, 0, numSprites);
+	glBindVertexArray(spritesVAO);
+	glDrawArraysInstanced(GL_POINTS, 0, 1, fireFlies.size());
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

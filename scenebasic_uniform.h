@@ -42,6 +42,9 @@ private:
     GLuint linearSampler, nearestSampler;
     GLuint depthRbo; 
     GLuint renderTex;
+    GLuint spritesVAO, spritesQuadVBO, spritesInstanceVBO;
+
+    GLuint lightPositionsBuffer;
     
  
 
