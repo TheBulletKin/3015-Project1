@@ -27,7 +27,7 @@ class SceneBasic_Uniform : public Scene
 {
 private:
     //GLuint vaoHandle;
-    GLSLProgram prog, skyProg, screenShaderProg;
+    GLSLProgram prog, skyProg, screenHdrProg, screenBlur, screenBlurCombine;
     
     GLFWwindow* window;
     //float angle;
@@ -41,11 +41,15 @@ private:
     GLuint renderTex, intermediateTex;
     GLuint hdrTex, avgTex, tex1, tex2;
     GLuint linearSampler, nearestSampler;
-    GLuint rbo;
+    GLuint depthRbo; 
+    GLuint newRenderTex, newBrightTex;
+    GLuint pingPongFBO[2], pingPongTex[2];
+ 
 
     int bloomBufWidth, bloomBufHeight;
     bool hdr = true;
     float exposure = 1.0f;
+    bool bloom = false;
 
 
     Camera camera;
@@ -59,7 +63,7 @@ private:
     int fireFlySpawnCooldown;
     int currentFireFlyCount;
     int maxFireFlyCount;
-    vec3 fireFlyLightColour = vec3(200.0f, 200.0f, 200.0f);
+    vec3 fireFlyLightColour = vec3(2.0f, 2.0f, 2.0f);
     vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.1f);
 
     struct Point {

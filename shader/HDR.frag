@@ -1,7 +1,7 @@
 #version 460
 
 layout (location = 0) out vec4 FragColour;
-layout (location = 1) out vec3 HdrColour;
+layout (location = 1) out vec4 BrightColour;
 
 #define MAX_NUMBER_OF_LIGHTS 6
 
@@ -92,7 +92,16 @@ void main() {
         colour += phongModel(i, Position, adjustedNormal, texture(MossTex, TexCoord).rgb);
     }
 
+    //First calculate frag colour. Layout specified means this is sent to colour attachment 0
     FragColour = vec4(colour, 1.0);
+
+    //Then calculate brightness. Pixels that are bright are saved to colour attachment 1 texture, non bright are discarded
+    float brightness = dot(FragColour.rgb, vec3(0.2126, 0.7152, 0.7222));
+    if (brightness > 1.0){
+        BrightColour = vec4(FragColour.rgb, 1.0);
+    } else {
+        BrightColour = vec4(0.0, 0.0, 0.0, 1.0);
+    }
     
    
 
