@@ -78,8 +78,8 @@ void main() {
     }   
     
     //FragColour = vec4(TexColour.rgb, 1.0);
-    FragColour = vec4(colour.rgb, 1.0);
-    //FragColour = vec4(clamp(colour * shadow, 0.0, 1.0), 1.0);   
+    //FragColour = vec4(colour.rgb, 1.0);
+    FragColour = vec4(clamp(colour * shadow, 0.0, 1.0), 1.0);   
     //FragColour = vec4(texture(CloudTex, TexCoord)); 
    
 }
