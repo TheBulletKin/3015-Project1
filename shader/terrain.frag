@@ -77,10 +77,12 @@ void main() {
         colour += phongModel(i, Position, adjustedNormal, TexColour.rgb);
     }   
     
+    vec3 finalColor = mix(colour, colour * shadow, 0.5);
+
     //FragColour = vec4(TexColour.rgb, 1.0);
     //FragColour = vec4(colour.rgb, 1.0);
     FragColour = vec4(clamp(colour * shadow, 0.0, 1.0), 1.0);   
-    //FragColour = vec4(texture(CloudTex, TexCoord)); 
+    //FragColour = vec4(finalColour, 1.0); 
    
 }
 

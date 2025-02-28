@@ -325,8 +325,8 @@ void SceneBasic_Uniform::update(float t)
 			0.8f,
 			0.7f,
 			ambientLightColour * 0.5f,
-			fireFlyLightColour * 5.0f,
-			fireFlyLightColour * 5.0f
+			fireFlyLightColour * 3.2f,
+			fireFlyLightColour * 2.6f
 
 		);
 
