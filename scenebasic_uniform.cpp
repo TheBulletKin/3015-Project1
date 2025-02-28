@@ -53,18 +53,17 @@ void SceneBasic_Uniform::initScene()
 	view = glm::lookAt(vec3(0.0f, 1.0f, 2.0f), vec3(0.0f, 1.0f, -4.0f), vec3(0.0f, 1.0f, 0.0f)); //First is where the eye is, second is the coordinate it is looking at, last is up vector
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
-	GLuint brickID = Texture::loadTexture("media/texture/brick1.jpg");
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, brickID);
+	//Grass texture
+	grassID = Texture::loadTexture("media/texture/grass_02_1k/grass_02_base_1k.png");
+	
 
-	GLuint mossID = Texture::loadTexture("media/texture/moss.png");
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, mossID);
+	//Rock texture
+	rockID = Texture::loadTexture("media/texture/cliff_rocks_02_1k/cliff_rocks_02_baseColor_1k.png");
+	
 
-	GLuint skyCubeTex = Texture::loadHdrCubeMap("media/texture/cube/pisa-hdr/pisa");
-
+	skyCubeID = Texture::loadHdrCubeMap("media/texture/cube/pisa-hdr/pisa");
 	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, skyCubeTex);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyCubeID);
 
 	setupFBO();
 
@@ -111,12 +110,9 @@ void SceneBasic_Uniform::initScene()
 	glEnableVertexAttribArray(2); //Texture coord as in shader
 	glBindVertexArray(0);
 
-	prog.use();
-	prog.setUniform("EdgeThreshold", 0.05f);
+	
 
-	prog.setUniform("FogStart", 10.0f);
-	prog.setUniform("FogEnd", 20.0f);
-	prog.setUniform("FogColour", 0.0f, 0.5f, 0.0f);
+	
 
 	//Gaussian blur
 	/* Weights follow a gaussian distribution, falling off the further it gets from the centre
@@ -125,33 +121,10 @@ void SceneBasic_Uniform::initScene()
 
 
 
-	//HDR
-	vec3 intense = vec3(5.0f);
+	
 
 
-	//Bloom
-	prog.setUniform("LumThresh", 1.2f);
-	float weights[10], sum, sigma2 = 25.0f;
-
-	//Compute and sum weights
-
-	weights[0] = gauss(0, sigma2);
-	sum = weights[0];
-
-	for (int i = 1; i < 10; i++)
-	{
-		weights[i] = gauss(float(i), sigma2);
-		sum += 2 * weights[i];
-	}
-
-	//Normalise and set uniform
-	for (int i = 0; i < 10; i++)
-	{
-		stringstream uniName;
-		uniName << "Weight[" << i << "]";
-		float val = weights[i] / sum;
-		prog.setUniform(uniName.str().c_str(), val);
-	}
+	
 
 	//Set up sampler objects for linear and nearest filtering
 	GLuint samplers[2];
@@ -179,12 +152,13 @@ void SceneBasic_Uniform::initScene()
 	glBindSampler(9, nearestSampler);
 	glBindSampler(10, nearestSampler);
 
-	prog.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
-	prog.setUniform("Ka", vec3(0.1f, 0.1f, 0.1f));
-	prog.setUniform("Ks", vec3(1.0f, 1.0f, 1.0f));
-	prog.setUniform("Roughness", 32.0f);
-	prog.setUniform("La", vec3(0.2f, 0.2f, 0.2f));
-	prog.setUniform("Ld", vec3(1.0f, 1.0f, 1.0f));
+	terrainProg.use();
+	terrainProg.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
+	terrainProg.setUniform("Ka", vec3(0.1f, 0.1f, 0.1f));
+	terrainProg.setUniform("Ks", vec3(1.0f, 1.0f, 1.0f));
+	terrainProg.setUniform("Roughness", 32.0f);
+	terrainProg.setUniform("La", vec3(0.2f, 0.2f, 0.2f));
+	terrainProg.setUniform("Ld", vec3(1.0f, 1.0f, 1.0f));
 
 
 	glm::vec4 light1Pos = glm::vec4(-3.0f, 0.0f, -0.5f, 1.0f); //Left rim 
@@ -192,13 +166,13 @@ void SceneBasic_Uniform::initScene()
 	glm::vec4 light3Pos = glm::vec4(0.5f, 1.6f, -0.8f, 1.0f); //Right rim
 
 	// Apply the view transformation to transform into view space
-	prog.setUniform("pointLights[0].Position", view * light1Pos);
-	prog.setUniform("pointLights[1].Position", view * light2Pos);
-	prog.setUniform("pointLights[2].Position", view * light3Pos);
+	terrainProg.setUniform("pointLights[0].Position", view * light1Pos);
+	terrainProg.setUniform("pointLights[1].Position", view * light2Pos);
+	terrainProg.setUniform("pointLights[2].Position", view * light3Pos);
 
-	prog.setUniform("pointLights[0].Ld", vec3(0.8f, 0.8f, 0.8f));
-	prog.setUniform("pointLights[1].Ld", vec3(0.8f, 0.8f, 0.8f));
-	prog.setUniform("pointLights[2].Ld", vec3(0.8f, 0.8f, 0.8f));
+	terrainProg.setUniform("pointLights[0].Ld", vec3(0.8f, 0.8f, 0.8f));
+	terrainProg.setUniform("pointLights[1].Ld", vec3(0.8f, 0.8f, 0.8f));
+	terrainProg.setUniform("pointLights[2].Ld", vec3(0.8f, 0.8f, 0.8f));
 
 
 	numberOfStaticLights = 3;
@@ -214,9 +188,9 @@ void SceneBasic_Uniform::initScene()
 		string lightUniformTag = "pointLights[" + std::to_string(i) + "]";
 
 
-		prog.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
-		prog.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
-		prog.setUniform((lightUniformTag + ".La").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+		terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+		terrainProg.setUniform((lightUniformTag + ".La").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
 
 
 	}
@@ -247,10 +221,11 @@ void SceneBasic_Uniform::initScene()
 		}
 	}
 
-	GLuint noiseTexture;
-	glGenTextures(1, &noiseTexture);
+	//Cloud texture in unit 4
+	
+	glGenTextures(1, &cloudID);
 	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, noiseTexture);
+	glBindTexture(GL_TEXTURE_2D, cloudID);
 
 	// Upload the noise data to the texture
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, textureWidth, textureHeight, 0, GL_RED, GL_FLOAT, &noiseData[0]);
@@ -262,13 +237,13 @@ void SceneBasic_Uniform::initScene()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 
-	prog.setUniform("CloudTex", 4);
-
-	
 	
 
-	
-	glGenVertexArrays(1, &spritesVAO);	
+
+
+
+
+	glGenVertexArrays(1, &spritesVAO);
 	glGenBuffers(1, &spritesInstanceVBO);
 
 	glBindVertexArray(spritesVAO);
@@ -284,15 +259,14 @@ void SceneBasic_Uniform::initScene()
 	glBindVertexArray(0);
 
 	GLuint spriteTex = Texture::loadTexture("media/texture/flower.png");
-	glActiveTexture(GL_TEXTURE12);
+	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, spriteTex);
 
 
-	particleProg.use();
-	particleProg.setUniform("spriteTex", 12);
+	particleProg.use();	
 	particleProg.setUniform("Size2", 0.15f);
 
-	
+
 
 
 }
@@ -315,6 +289,9 @@ void SceneBasic_Uniform::compile()
 		particleProg.compileShader("shader/particle.frag");
 		particleProg.compileShader("shader/particle.geom");
 		particleProg.link();
+		terrainProg.compileShader("shader/terrain.vert");
+		terrainProg.compileShader("shader/terrain.frag");
+		terrainProg.link();
 
 	}
 	catch (GLSLProgramException& e) {
@@ -338,8 +315,8 @@ void SceneBasic_Uniform::update(float t)
 		fireFlySpawnTimer = 0.0f;
 	}
 
-	prog.use();
-	prog.setUniform("time", t / 1000);
+	terrainProg.use();
+	terrainProg.setUniform("time", t / 1000);
 
 	if (fireFlySpawnTimer >= fireFlySpawnCooldown && currentFireFlyCount < maxFireFlyCount)
 	{
@@ -347,9 +324,9 @@ void SceneBasic_Uniform::update(float t)
 			1.0f,
 			0.8f,
 			0.7f,
-			ambientLightColour * 0.2f,
-			fireFlyLightColour * 1.5f,
-			fireFlyLightColour * 1.5f
+			ambientLightColour * 0.5f,
+			fireFlyLightColour * 5.0f,
+			fireFlyLightColour * 5.0f
 
 		);
 
@@ -377,7 +354,7 @@ void SceneBasic_Uniform::update(float t)
 		fireFlySpawnCooldown = linearRand(3.0f, 6.0f);
 	}
 
-	
+
 	for (size_t i = 0; i < fireFlies.size(); i++)
 	{
 		FireFly* fireFly = fireFlies[i];
@@ -391,10 +368,10 @@ void SceneBasic_Uniform::update(float t)
 				string lightUniformTag = "pointLights[" + std::to_string(fireFlyLightIndex) + "]";
 
 
-				prog.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
-				prog.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
-				prog.setUniform((lightUniformTag + ".La").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
-				prog.setUniform((lightUniformTag + ".Enabled").c_str(), false);
+				terrainProg.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+				terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+				terrainProg.setUniform((lightUniformTag + ".La").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+				terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), false);
 
 				delete fireFly;
 				fireFlies.erase(fireFlies.begin() + i);
@@ -403,7 +380,7 @@ void SceneBasic_Uniform::update(float t)
 
 
 
-				prog.setUniform("dynamicPointLights", currentFireFlyCount);
+				terrainProg.setUniform("dynamicPointLights", currentFireFlyCount);
 
 
 
@@ -415,7 +392,7 @@ void SceneBasic_Uniform::update(float t)
 		}
 	}
 
-	
+
 	/* Make a collection for firelies
 	*  Timer that counts down
 	*  Max number of fireflies
@@ -428,6 +405,7 @@ void SceneBasic_Uniform::update(float t)
 void SceneBasic_Uniform::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
 
 	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
 
@@ -469,7 +447,7 @@ void SceneBasic_Uniform::setMatrices(GLSLProgram& program)
 
 	program.setUniform("NormalMatrix", normalMatrix);
 	//prog.setUniform("NormalMatrix", glm::mat3(vec3(mv[0]), vec3(mv[1]), vec3(mv[2])));
-	program.setUniform("ViewPos", vec3(0.0f, 0.0f, 0.0f));
+	program.setUniform("ViewPos", camera.Position);
 }
 
 void SceneBasic_Uniform::mouseCallback(GLFWwindow* window, double xposIn, double yposIn)
@@ -533,8 +511,8 @@ void SceneBasic_Uniform::setupFBO() {
 	*/
 
 	//Create FBO for first render pass
-	glGenFramebuffers(1, &hdrFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	//glGenFramebuffers(1, &hdrFBO);
+	//glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
 	/* Before, the shader rendering the scene only had a frag colour output
 	* For bloom to work you need the base scene and then the bright colours.
@@ -546,6 +524,8 @@ void SceneBasic_Uniform::setupFBO() {
 	* (look in shader for more info)
 	* Texture unit 8 holds first, 9 holds bright pixels
 	*/
+
+	/*
 	glGenTextures(1, &renderTex);
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, renderTex);
@@ -558,22 +538,23 @@ void SceneBasic_Uniform::setupFBO() {
 	glFramebufferTexture2D(
 		GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0
 	);
-
+	*/
 
 	//Attach this texture to the frame buffer
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0);
 
 
+	/*
 	//Render buffer object for depth and stencil attachments that won't be sampled by me
 	glGenRenderbuffers(1, &depthRbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, depthRbo);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRbo);
-
+	*/
 	//Error checking
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << endl;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		//cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << endl;
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void SceneBasic_Uniform::pass1() {
@@ -582,17 +563,12 @@ void SceneBasic_Uniform::pass1() {
 	*/
 
 	//Bind HDR framebuffer to render to hdrTex;
-	prog.use();
-	prog.setUniform("Pass", 1);
-	glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-	glEnable(GL_DEPTH_TEST);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
 	view = camera.GetViewMatrix();
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
-
+	
+	terrainProg.use();
 	vector<vec3> fireFlyPositions;
 	int fireFlyLightIndex = numberOfStaticLights;
 	string lightUniformTag;
@@ -607,70 +583,76 @@ void SceneBasic_Uniform::pass1() {
 	   // prog.setUniform((lightUniformTag + ".ambient").c_str(), fireFly->pointLight->ambient);
 	   // prog.setUniform((lightUniformTag + ".diffuse").c_str(), fireFlyLightColour);
 	   // prog.setUniform((lightUniformTag + ".specular").c_str(), fireFlyLightColour);
-		prog.setUniform((lightUniformTag + ".Constant").c_str(), fireFly->pointLight->constant);
-		prog.setUniform((lightUniformTag + ".Linear").c_str(), fireFly->pointLight->linear);
-		prog.setUniform((lightUniformTag + ".Quadratic").c_str(), fireFly->pointLight->quadratic);
+		terrainProg.setUniform((lightUniformTag + ".Constant").c_str(), fireFly->pointLight->constant);
+		terrainProg.setUniform((lightUniformTag + ".Linear").c_str(), fireFly->pointLight->linear);
+		terrainProg.setUniform((lightUniformTag + ".Quadratic").c_str(), fireFly->pointLight->quadratic);
 
-		prog.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
-		prog.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
+		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
+		terrainProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
 		//prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFlyLightColour);
-		prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
-		prog.setUniform((lightUniformTag + ".Enabled").c_str(), true);
+		terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
+		terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
 
 		fireFlyLightIndex++;
 		fireFlyPositions.push_back(fireFly->GetPosition());
 	}
 
-	//Update instance position buffer for firefly particles	
+	glBindVertexArray(spritesVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, fireFlyPositions.size() * sizeof(vec3), fireFlyPositions.data());
+	glBufferSubData(GL_ARRAY_BUFFER, 0, fireFlyPositions.size() * sizeof(glm::vec3), fireFlyPositions.data());
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	prog.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
-	prog.setUniform("staticPointLights", numberOfStaticLights);
-
-	prog.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
-	prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
-	prog.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
-	prog.setUniform("Material.Shininess", 180.0f);
-
-	model = mat4(1.0f);
-	model = glm::rotate(model, glm::radians(90.0f), vec3(0.0f, 10.0f, 0.0f));
-
-	setMatrices(prog);
-
-	PigMesh->render();
-	//cube.render();
-
-	model = mat4(1.0f);
-	model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
-	setMatrices(prog);
-	TerrainMesh->render();
-
-
-
-	prog.setUniform("Material.Kd", 0.1f, 0.1f, 0.1f);
-	prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
-	prog.setUniform("Material.Ka", 0.1f, 0.1f, 0.1f);
-	prog.setUniform("Material.Shininess", 64.0f);
-
-	model = mat4(1.0f);
-	model = glm::translate(model, vec3(0.0f, -0.45, 0.0f));
-
-	setMatrices(prog);
-
-	plane.render();
 
 	particleProg.use();
 	model = mat4(1.0f);
 	setMatrices(particleProg);
 
-	glBindVertexArray(spritesVAO);
+	
 	glDrawArraysInstanced(GL_POINTS, 0, 1, fireFlies.size());
 
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
+	terrainProg.use();
+	terrainProg.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
+	terrainProg.setUniform("staticPointLights", numberOfStaticLights);
 
-	//Second pass - HDR		
+	terrainProg.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
+	terrainProg.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
+	terrainProg.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
+	terrainProg.setUniform("Material.Shininess", 180.0f);
+
+	model = mat4(1.0f);
+	model = glm::rotate(model, glm::radians(90.0f), vec3(0.0f, 10.0f, 0.0f));
+	setMatrices(terrainProg);
+	PigMesh->render();
+	//cube.render();
+
+	//Terrain rendering
+	terrainProg.use();	
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
+	setMatrices(terrainProg);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, grassID);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, cloudID);
+	TerrainMesh->render();
+
+
+	//prog.use();
+	//prog.setUniform("Material.Kd", 0.1f, 0.1f, 0.1f);
+	//prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
+	//prog.setUniform("Material.Ka", 0.1f, 0.1f, 0.1f);
+	//prog.setUniform("Material.Shininess", 64.0f);
+
+	//Plane rendering
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(0.0f, -0.45, 0.0f));
+	setMatrices(prog);
+	plane.render();
+
+	
+
+	//Second pass - HDR	
+	/*
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	screenHdrProg.use();
@@ -684,7 +666,7 @@ void SceneBasic_Uniform::pass1() {
 	glActiveTexture(GL_TEXTURE8); //Gaussian blur needs texture unit 8
 	glBindTexture(GL_TEXTURE_2D, renderTex);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-
+	*/
 
 }
 
@@ -699,9 +681,9 @@ float SceneBasic_Uniform::gauss(float x, float sigma2) {
 void SceneBasic_Uniform::computeLogAveLuminance() {
 	int size = width * height;
 	vector<GLfloat> texData(size * 3);
-	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, renderTex);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, texData.data());
+	//glActiveTexture(GL_TEXTURE8);
+	//glBindTexture(GL_TEXTURE_2D, renderTex);
+	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, texData.data());
 	float sum = 0.0f;
 	for (int i = 0; i < size; i++)
 	{

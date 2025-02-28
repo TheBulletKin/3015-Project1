@@ -25,44 +25,14 @@ struct MaterialInfo {
 
 uniform MaterialInfo Material;
 
-
-uniform float EdgeThreshold;
-uniform int Pass;
+uniform int staticPointLights = 3;
+uniform int dynamicPointLights = 0;
+uniform float time;
 uniform vec3 ViewPos;
-
-uniform float AveLum;
-uniform mat3 rgb2xyz = mat3(
-    0.4124564, 0.2126729, 0.0193339,
-    0.3575761, 0.7151522, 0.1191920,
-    0.1804375, 0.0721750, 0.9503041
-);
-
-uniform mat3 xyz2rgb = mat3(
-    3.2404542, -0.9692660, 0.0556434,
-    -1.5371385, 1.8760108, -0.2040259,
-    -0.4985314, 0.0415560, 1.0572252
-);
-
-uniform float Exposure = 0.35;
-uniform float White = 0.928;
-uniform bool DoToneMap = true;
-uniform float FogStart;
-uniform float FogEnd;
-uniform vec3 FogColour;
-uniform float LumThresh;
-uniform float PixOffset[10] = float[](0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
-uniform float Weight[10];
+uniform mat4 view;
 
 
 
-const vec3 lum = vec3(0.2126, 0.7152, 0.0722);
-
-
-vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour);
-
-
-
-vec3 Colour;
 
 //position of fragment in view space
 in vec3 Position;
@@ -70,17 +40,32 @@ in vec3 WorldPosition;
 in vec3 Normal;
 in vec2 TexCoord;
 
-uniform mat4 view;
-
 
 layout(binding = 0) uniform sampler2D BaseTex;
-layout(binding = 6) uniform sampler2D RenderTex;
-layout(binding = 8) uniform sampler2D HdrTex;
+layout(binding = 4) uniform sampler2D CloudTex;
+
+vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour);
 
 
 
 void main() {
+     float noiseScale = 0.002f;
+    float speed = 0.5f;    
+
+    float animatedX = time * speed + sin(time * 0.1f) * 0.1f;
+    float animatedY = time * speed + cos(time * 0.12f) * 0.1f;
+   
+    vec2 animatedCoord = WorldPosition.xz * noiseScale + vec2(animatedX, animatedY);
+    float noise = texture(CloudTex, animatedCoord).r;  
+
+
+    float shadow = smoothstep(0.0, 0.05f, noise); 
+    shadow = mix(shadow, 1.0, 0.6);
     
+
+    vec4 TexColour = texture(BaseTex, TexCoord);
+
+
     vec3 adjustedNormal = Normal;
     if (!gl_FrontFacing) {
         adjustedNormal = -Normal;
@@ -89,12 +74,14 @@ void main() {
     vec3 colour = vec3(0.0);    
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {        
-        colour += phongModel(i, Position, adjustedNormal, texture(BaseTex, TexCoord).rgb);
-    }
-
-    //First calculate frag colour. Layout specified means this is sent to colour attachment 0
-    FragColour = vec4(colour, 1.0);
+        colour += phongModel(i, Position, adjustedNormal, TexColour.rgb);
+    }   
     
+    //FragColour = vec4(TexColour.rgb, 1.0);
+    FragColour = vec4(colour.rgb, 1.0);
+    //FragColour = vec4(clamp(colour * shadow, 0.0, 1.0), 1.0);   
+    //FragColour = vec4(texture(CloudTex, TexCoord)); 
+   
 }
 
 vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
@@ -103,9 +90,9 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
         return vec3(0.0f);
     }
 
-    //if (pointLights[light].Position == vec3(0.0f, 0.0f, 0.0f) || pointLights[light] == null) {        
-        //return vec3(0.0f);
-   // }
+    if (pointLights[light].Position == vec3(0.0f, 0.0f, 0.0f)) {        
+        return vec3(0.0f);
+    }
 
     
     
@@ -121,11 +108,11 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
                                pointLights[light].Quadratic * (distance * distance));
 
     //Ambient
-    vec3 AmbientLight = Material.Ka * pointLights[light].La * attenuation;
+    vec3 AmbientLight = Material.Ka * pointLights[light].La * texColour * attenuation;
 
     //Diffuse
     float sDotN = max(dot(n, LightDir), 0.0);
-    vec3 DiffuseLight = Material.Kd * sDotN * pointLights[light].Ld * attenuation;
+    vec3 DiffuseLight = Material.Kd * sDotN * pointLights[light].Ld * texColour * attenuation;
 
     //View dir is usually cameraPos - FragPos. Camera pos is 0, so this becomes - pos
     vec3 viewDir = normalize(ViewPos - position);

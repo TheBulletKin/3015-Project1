@@ -27,7 +27,7 @@ class SceneBasic_Uniform : public Scene
 {
 private:
     //GLuint vaoHandle;
-    GLSLProgram prog, skyProg, screenHdrProg, screenBlur, particleProg;
+    GLSLProgram prog, skyProg, screenHdrProg, screenBlur, particleProg, terrainProg;
     
     GLFWwindow* window;
     //float angle;
@@ -45,6 +45,8 @@ private:
     GLuint spritesVAO, spritesQuadVBO, spritesInstanceVBO;
 
     GLuint lightPositionsBuffer;
+
+    GLuint grassID, rockID, skyCubeID, cloudID;
     
  
 
