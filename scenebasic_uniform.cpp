@@ -345,11 +345,11 @@ void SceneBasic_Uniform::update(float t)
 	{
 		PointLight* newLight = new PointLight(
 			1.0f,
-			0.3f,
-			0.1f,
-			ambientLightColour,
-			fireFlyLightColour * 0.3f,
-			fireFlyLightColour * 0.3f
+			0.8f,
+			0.7f,
+			ambientLightColour * 0.2f,
+			fireFlyLightColour * 1.5f,
+			fireFlyLightColour * 1.5f
 
 		);
 

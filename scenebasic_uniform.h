@@ -68,7 +68,7 @@ private:
     int fireFlySpawnCooldown;
     int currentFireFlyCount;
     int maxFireFlyCount;
-    vec3 fireFlyLightColour = vec3(0.8f, 1.0f, 0.2f);
+    vec3 fireFlyLightColour = vec3(0.53, 0.67, 0.33);
     vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.3f);
 
     struct Point {
