@@ -50,7 +50,7 @@ private:
 
     int bloomBufWidth, bloomBufHeight;
     bool hdr = true;
-    float exposure = 2.2f;
+    float exposure = 1.3f;
     bool bloom = false;
 
     GLuint sprites;
@@ -68,8 +68,8 @@ private:
     int fireFlySpawnCooldown;
     int currentFireFlyCount;
     int maxFireFlyCount;
-    vec3 fireFlyLightColour = vec3(2.0f, 2.0f, 2.0f);
-    vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.1f);
+    vec3 fireFlyLightColour = vec3(0.8f, 1.0f, 0.2f);
+    vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.3f);
 
     struct Point {
         float x, y, z;
