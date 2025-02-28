@@ -134,7 +134,7 @@ void SceneBasic_Uniform::initScene()
 	float weights[10], sum, sigma2 = 25.0f;
 
 	//Compute and sum weights
-	
+
 	weights[0] = gauss(0, sigma2);
 	sum = weights[0];
 
@@ -216,6 +216,7 @@ void SceneBasic_Uniform::initScene()
 
 		prog.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
 		prog.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+		prog.setUniform((lightUniformTag + ".La").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
 
 
 	}
@@ -354,15 +355,17 @@ void SceneBasic_Uniform::update(float t)
 			fireFly->Update(deltaTime);
 			if (fireFly->ShouldDestroy())
 			{
-				int fireFlyLightIndex = i;
+				int fireFlyLightIndex = i + numberOfStaticLights;
 
 				string lightUniformTag = "pointLights[" + std::to_string(fireFlyLightIndex) + "]";
 
 
 				prog.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
 				prog.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+				prog.setUniform((lightUniformTag + ".La").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+				prog.setUniform((lightUniformTag + ".Enabled").c_str(), false);
 
-
+				delete fireFly;
 				fireFlies.erase(fireFlies.begin() + i);
 				currentFireFlyCount--;
 
@@ -371,7 +374,8 @@ void SceneBasic_Uniform::update(float t)
 
 				prog.setUniform("dynamicPointLights", currentFireFlyCount);
 
-				delete fireFly;
+
+
 
 				std::cout << "FireFly deleted   Number of lights: " << currentFireFlyCount << "\n";
 
@@ -405,7 +409,7 @@ void SceneBasic_Uniform::render()
 
 
 	pass1();
-	
+
 
 
 }
@@ -510,7 +514,7 @@ void SceneBasic_Uniform::setupFBO() {
 	*  and the texture assigned to colour attachment 1 will hold the brightColour
 	* (look in shader for more info)
 	* Texture unit 8 holds first, 9 holds bright pixels
-	*/	
+	*/
 	glGenTextures(1, &renderTex);
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, renderTex);
@@ -527,7 +531,7 @@ void SceneBasic_Uniform::setupFBO() {
 
 	//Attach this texture to the frame buffer
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0);
-	
+
 
 	//Render buffer object for depth and stencil attachments that won't be sampled by me
 	glGenRenderbuffers(1, &depthRbo);
@@ -572,15 +576,15 @@ void SceneBasic_Uniform::pass1() {
 	   // prog.setUniform((lightUniformTag + ".ambient").c_str(), fireFly->pointLight->ambient);
 	   // prog.setUniform((lightUniformTag + ".diffuse").c_str(), fireFlyLightColour);
 	   // prog.setUniform((lightUniformTag + ".specular").c_str(), fireFlyLightColour);
-		//prog.setUniform((lightUniformTag + ".constant").c_str(), fireFly->pointLight->constant);
-		//prog.setUniform((lightUniformTag + ".linear").c_str(), fireFly->pointLight->linear);
-		//prog.setUniform((lightUniformTag + ".quadratic").c_str(), fireFly->pointLight->quadratic);
+		prog.setUniform((lightUniformTag + ".Constant").c_str(), fireFly->pointLight->constant);
+		prog.setUniform((lightUniformTag + ".Linear").c_str(), fireFly->pointLight->linear);
+		prog.setUniform((lightUniformTag + ".Quadratic").c_str(), fireFly->pointLight->quadratic);
 
 		prog.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
 		prog.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
 		//prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFlyLightColour);
 		prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
-
+		prog.setUniform((lightUniformTag + ".Enabled").c_str(), true);
 
 		fireFlyLightIndex++;
 	}
@@ -619,7 +623,7 @@ void SceneBasic_Uniform::pass1() {
 	setMatrices(prog);
 
 	plane.render();
-	
+
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	//Second pass - HDR		
@@ -636,8 +640,8 @@ void SceneBasic_Uniform::pass1() {
 	glActiveTexture(GL_TEXTURE8); //Gaussian blur needs texture unit 8
 	glBindTexture(GL_TEXTURE_2D, renderTex);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	
-	
+
+
 }
 
 

@@ -9,6 +9,10 @@ struct LightInfo{
     vec3 Position;
     vec3 La; //Ambient light intensity
     vec3 Ld; //Diffuse and spec light intensity
+    float Constant;  // Attenuation constant
+    float Linear;    // Attenuation linear factor
+    float Quadratic; // Attenuation quadratic factor
+    bool Enabled;
 };
 
 uniform LightInfo pointLights[MAX_NUMBER_OF_LIGHTS];
@@ -110,18 +114,33 @@ void main() {
 
 vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     
-    if (pointLights[light].Position == vec3(0.0f, 0.0f, 0.0f)) {        
+    if (!pointLights[light].Enabled) {
         return vec3(0.0f);
     }
 
-    vec3 AmbientLight = Material.Ka * pointLights[light].La;
+    //if (pointLights[light].Position == vec3(0.0f, 0.0f, 0.0f) || pointLights[light] == null) {        
+        //return vec3(0.0f);
+   // }
+
+    
     
     vec3 lightPosView = vec3(view * vec4(pointLights[light].Position, 1.0));
     vec3 LightDir = normalize(lightPosView - position);
 
-    
+   
+    float distance = length(lightPosView - position);
+
+    //Attenuation formula
+    float attenuation = 1.0 / (pointLights[light].Constant +
+                               pointLights[light].Linear * distance +
+                               pointLights[light].Quadratic * (distance * distance));
+
+    //Ambient
+    vec3 AmbientLight = Material.Ka * pointLights[light].La * attenuation;
+
+    //Diffuse
     float sDotN = max(dot(n, LightDir), 0.0);
-    vec3 DiffuseLight = Material.Kd * sDotN;
+    vec3 DiffuseLight = Material.Kd * sDotN * pointLights[light].Ld * attenuation;
 
     //View dir is usually cameraPos - FragPos. Camera pos is 0, so this becomes - pos
     vec3 viewDir = normalize(ViewPos - position);
@@ -138,9 +157,11 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     //F is a power coefficient, controlling the falloff value so when you move the eye away from that reflected vector how bright is it
     float specular = pow(max(dot(viewDir, reflectDir), 0.0), Material.Shininess);
 
-    vec3 SpecularLight = Material.Ks * pointLights[light].Ld * specular;
+    vec3 SpecularLight = Material.Ks * pointLights[light].Ld * specular * attenuation;
 
     return AmbientLight + DiffuseLight + SpecularLight;
+
+    
 }
 
 
