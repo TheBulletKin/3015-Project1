@@ -27,7 +27,7 @@ class SceneBasic_Uniform : public Scene
 {
 private:
     //GLuint vaoHandle;
-    GLSLProgram prog, skyProg, screenHdrProg, screenBlur, particleProg, terrainProg;
+    GLSLProgram skyProg, screenHdrProg, screenBlur, particleProg, terrainProg, objectProg;
     
     GLFWwindow* window;
     //float angle;
@@ -35,6 +35,7 @@ private:
     Plane plane;
     std::unique_ptr<ObjMesh> PigMesh;
     std::unique_ptr<ObjMesh> TerrainMesh;
+    std::unique_ptr<ObjMesh> RuinMesh;
     Cube cube;
     GLuint fsQuad;
     GLuint hdrFBO;   
@@ -46,7 +47,7 @@ private:
 
     GLuint lightPositionsBuffer;
 
-    GLuint grassID, rockID, skyCubeID, cloudID;
+    GLuint grassID, rockID, skyCubeID, cloudID, brickID;
     
  
 

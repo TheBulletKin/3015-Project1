@@ -29,6 +29,7 @@ SceneBasic_Uniform::SceneBasic_Uniform() : plane(10.0f, 10.0f, 100, 100), sky(10
 {
 	PigMesh = ObjMesh::load("media/pig_triangulated.obj", true);
 	TerrainMesh = ObjMesh::load("media/Terrain.obj", true);
+	RuinMesh = ObjMesh::load("media/Ruin.obj", true);
 }
 
 void SceneBasic_Uniform::initScene()
@@ -54,16 +55,28 @@ void SceneBasic_Uniform::initScene()
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
 	//Grass texture
+	glActiveTexture(GL_TEXTURE0);
 	grassID = Texture::loadTexture("media/texture/grass_02_1k/grass_02_base_1k.png");
+	
 	
 
 	//Rock texture
+	glActiveTexture(GL_TEXTURE1);
 	rockID = Texture::loadTexture("media/texture/cliff_rocks_02_1k/cliff_rocks_02_baseColor_1k.png");
 	
+	
 
-	skyCubeID = Texture::loadHdrCubeMap("media/texture/cube/pisa-hdr/pisa");
-	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, skyCubeID);
+
+	//Rock texture
+	glActiveTexture(GL_TEXTURE2);
+	brickID = Texture::loadTexture("media/texture/stone_bricks_wall_04_1k/stone_bricks_wall_04_color_1k.png");
+	
+	
+
+	glActiveTexture(GL_TEXTURE3);
+	skyCubeID = Texture::loadCubeMap("media/texture/cubeMap/night");
+	
+	
 
 	setupFBO();
 
@@ -174,6 +187,44 @@ void SceneBasic_Uniform::initScene()
 	terrainProg.setUniform("pointLights[1].Ld", vec3(0.8f, 0.8f, 0.8f));
 	terrainProg.setUniform("pointLights[2].Ld", vec3(0.8f, 0.8f, 0.8f));
 
+	objectProg.use();
+	objectProg.setUniform("Kd", vec3(0.9f, 0.5f, 0.3f));
+	objectProg.setUniform("Ka", vec3(0.1f, 0.1f, 0.1f));
+	objectProg.setUniform("Ks", vec3(1.0f, 1.0f, 1.0f));
+	objectProg.setUniform("Roughness", 32.0f);
+	objectProg.setUniform("La", vec3(0.2f, 0.2f, 0.2f));
+	objectProg.setUniform("Ld", vec3(1.0f, 1.0f, 1.0f));
+
+
+	// Apply the view transformation to transform into view space
+	objectProg.setUniform("pointLights[0].Position", view* light1Pos);
+	objectProg.setUniform("pointLights[1].Position", view* light2Pos);
+	objectProg.setUniform("pointLights[2].Position", view* light3Pos);
+
+	objectProg.setUniform("pointLights[0].Ld", vec3(0.8f, 0.8f, 0.8f));
+	objectProg.setUniform("pointLights[1].Ld", vec3(0.8f, 0.8f, 0.8f));
+	objectProg.setUniform("pointLights[2].Ld", vec3(0.8f, 0.8f, 0.8f));
+
+	
+	vec3 lightDirection = glm::normalize(glm::vec3(0.5f, -1.0f, 0.5f)); // Light coming from top-left
+	vec3 lightAmbient = vec3(0.2f, 0.2f, 0.4f);
+	vec3 lightDiffuse = vec3(0.3f, 0.3f, 0.5f);
+	vec3 lightSpecular = vec3(1.0f, 1.0f, 1.0f);
+
+	objectProg.use();
+	objectProg.setUniform("directionalLight.Direction", lightDirection);
+	objectProg.setUniform("directionalLight.La", lightAmbient);
+	objectProg.setUniform("directionalLight.Ld", lightDiffuse * 0.6f);
+	objectProg.setUniform("directionalLight.Ls", lightSpecular * 0.3f);
+	objectProg.setUniform("directionalLight.Enabled", true);
+
+	terrainProg.use();
+	terrainProg.setUniform("directionalLight.Direction", lightDirection);
+	terrainProg.setUniform("directionalLight.La", lightAmbient);
+	terrainProg.setUniform("directionalLight.Ld", lightDiffuse * 0.6f);
+	terrainProg.setUniform("directionalLight.Ls", lightSpecular * 0.3f);
+	terrainProg.setUniform("directionalLight.Enabled", true);
+
 
 	numberOfStaticLights = 3;
 
@@ -187,11 +238,15 @@ void SceneBasic_Uniform::initScene()
 
 		string lightUniformTag = "pointLights[" + std::to_string(i) + "]";
 
-
+		terrainProg.use();
 		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
 		terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
 		terrainProg.setUniform((lightUniformTag + ".La").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
 
+		objectProg.use();
+		objectProg.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+		objectProg.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+		objectProg.setUniform((lightUniformTag + ".La").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
 
 	}
 
@@ -223,7 +278,7 @@ void SceneBasic_Uniform::initScene()
 
 	//Cloud texture in unit 4
 	
-	glGenTextures(1, &cloudID);
+	glGenTextures(1, &cloudID);	
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, cloudID);
 
@@ -236,7 +291,8 @@ void SceneBasic_Uniform::initScene()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, cloudID);
 	
 
 
@@ -259,7 +315,7 @@ void SceneBasic_Uniform::initScene()
 	glBindVertexArray(0);
 
 	GLuint spriteTex = Texture::loadTexture("media/texture/flower.png");
-	glActiveTexture(GL_TEXTURE3);
+	glActiveTexture(GL_TEXTURE5);
 	glBindTexture(GL_TEXTURE_2D, spriteTex);
 
 
@@ -276,9 +332,9 @@ void SceneBasic_Uniform::compile()
 	try {
 		//prog.compileShader("shader/basic_uniform.vert");
 		//prog.compileShader("shader/basic_uniform.frag");
-		prog.compileShader("shader/object.vert");
-		prog.compileShader("shader/object.frag");
-		prog.link();
+		objectProg.compileShader("shader/object.vert");
+		objectProg.compileShader("shader/object.frag");
+		objectProg.link();
 		skyProg.compileShader("shader/skybox.vert");
 		skyProg.compileShader("shader/skybox.frag");
 		skyProg.link();
@@ -367,11 +423,17 @@ void SceneBasic_Uniform::update(float t)
 
 				string lightUniformTag = "pointLights[" + std::to_string(fireFlyLightIndex) + "]";
 
-
+				terrainProg.use();
 				terrainProg.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
 				terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
 				terrainProg.setUniform((lightUniformTag + ".La").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
 				terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), false);
+
+				objectProg.use();
+				objectProg.setUniform((lightUniformTag + ".Position").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+				objectProg.setUniform((lightUniformTag + ".Ld").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+				objectProg.setUniform((lightUniformTag + ".La").c_str(), glm::vec3(0.0f, 0.0f, 0.0f));
+				objectProg.setUniform((lightUniformTag + ".Enabled").c_str(), false);
 
 				delete fireFly;
 				fireFlies.erase(fireFlies.begin() + i);
@@ -379,9 +441,11 @@ void SceneBasic_Uniform::update(float t)
 
 
 
-
+				terrainProg.use();
 				terrainProg.setUniform("dynamicPointLights", currentFireFlyCount);
 
+				objectProg.use();
+				objectProg.setUniform("dynamicPointLights", currentFireFlyCount);
 
 
 
@@ -568,7 +632,7 @@ void SceneBasic_Uniform::pass1() {
 	view = camera.GetViewMatrix();
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 	
-	terrainProg.use();
+	
 	vector<vec3> fireFlyPositions;
 	int fireFlyLightIndex = numberOfStaticLights;
 	string lightUniformTag;
@@ -578,7 +642,7 @@ void SceneBasic_Uniform::pass1() {
 
 
 		lightUniformTag = ("pointLights[" + to_string(fireFlyLightIndex) + "]");
-
+		terrainProg.use();
 		//prog.setUniform((lightUniformTag + ".position").c_str(), fireFly->pointLight->position);
 	   // prog.setUniform((lightUniformTag + ".ambient").c_str(), fireFly->pointLight->ambient);
 	   // prog.setUniform((lightUniformTag + ".diffuse").c_str(), fireFlyLightColour);
@@ -593,6 +657,21 @@ void SceneBasic_Uniform::pass1() {
 		terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
 		terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
 
+		objectProg.use();
+		//prog.setUniform((lightUniformTag + ".position").c_str(), fireFly->pointLight->position);
+	   // prog.setUniform((lightUniformTag + ".ambient").c_str(), fireFly->pointLight->ambient);
+	   // prog.setUniform((lightUniformTag + ".diffuse").c_str(), fireFlyLightColour);
+	   // prog.setUniform((lightUniformTag + ".specular").c_str(), fireFlyLightColour);
+		objectProg.setUniform((lightUniformTag + ".Constant").c_str(), fireFly->pointLight->constant);
+		objectProg.setUniform((lightUniformTag + ".Linear").c_str(), fireFly->pointLight->linear);
+		objectProg.setUniform((lightUniformTag + ".Quadratic").c_str(), fireFly->pointLight->quadratic);
+
+		objectProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
+		objectProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
+		//prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFlyLightColour);
+		objectProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
+		objectProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
+
 		fireFlyLightIndex++;
 		fireFlyPositions.push_back(fireFly->GetPosition());
 	}
@@ -600,8 +679,7 @@ void SceneBasic_Uniform::pass1() {
 	glBindVertexArray(spritesVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, fireFlyPositions.size() * sizeof(glm::vec3), fireFlyPositions.data());
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
+	glBindBuffer(GL_ARRAY_BUFFER, 0);	
 	particleProg.use();
 	model = mat4(1.0f);
 	setMatrices(particleProg);
@@ -619,21 +697,41 @@ void SceneBasic_Uniform::pass1() {
 	terrainProg.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
 	terrainProg.setUniform("Material.Shininess", 180.0f);
 
-	model = mat4(1.0f);
-	model = glm::rotate(model, glm::radians(90.0f), vec3(0.0f, 10.0f, 0.0f));
-	setMatrices(terrainProg);
-	PigMesh->render();
+	objectProg.use();
+	objectProg.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
+	objectProg.setUniform("staticPointLights", numberOfStaticLights);
+
+	objectProg.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
+	objectProg.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
+	objectProg.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
+	objectProg.setUniform("Material.Shininess", 180.0f);
+
+	//model = mat4(1.0f);
+	//model = glm::rotate(model, glm::radians(90.0f), vec3(0.0f, 10.0f, 0.0f));
+	//setMatrices(terrainProg);
+	//PigMesh->render();
 	//cube.render();
+
+	objectProg.use();
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, brickID);
+	model = mat4(1.0f);
+	model = glm::scale(model, vec3(0.5f, 0.5f, 0.5f));
+	model = glm::translate(model, vec3(0.0f, 5.0f, -5.0f));
+	setMatrices(objectProg);
+	RuinMesh->render();
 
 	//Terrain rendering
 	terrainProg.use();	
-	model = mat4(1.0f);
-	model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
-	setMatrices(terrainProg);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, grassID);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, rockID);
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, cloudID);
+	model = mat4(1.0f);
+	model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
+	setMatrices(terrainProg);	
 	TerrainMesh->render();
 
 
@@ -643,11 +741,7 @@ void SceneBasic_Uniform::pass1() {
 	//prog.setUniform("Material.Ka", 0.1f, 0.1f, 0.1f);
 	//prog.setUniform("Material.Shininess", 64.0f);
 
-	//Plane rendering
-	model = mat4(1.0f);
-	model = glm::translate(model, vec3(0.0f, -0.45, 0.0f));
-	setMatrices(prog);
-	plane.render();
+	
 
 	
 
@@ -678,19 +772,4 @@ float SceneBasic_Uniform::gauss(float x, float sigma2) {
 	return (float)(coeff * exp(expon));
 }
 
-void SceneBasic_Uniform::computeLogAveLuminance() {
-	int size = width * height;
-	vector<GLfloat> texData(size * 3);
-	//glActiveTexture(GL_TEXTURE8);
-	//glBindTexture(GL_TEXTURE_2D, renderTex);
-	//glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, texData.data());
-	float sum = 0.0f;
-	for (int i = 0; i < size; i++)
-	{
-		float lum = dot(vec3(texData[i * 3 + 0], texData[i * 3 + 1], texData[i * 3 + 2]),
-			vec3(0.2126f, 0.7152f, 0.0722f));
-		sum += logf(lum + 0.00001f);
-	}
 
-	prog.setUniform("AveLum", expf(sum / size));
-}

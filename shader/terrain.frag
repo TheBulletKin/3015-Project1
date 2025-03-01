@@ -16,6 +16,16 @@ struct LightInfo{
 
 uniform LightInfo pointLights[MAX_NUMBER_OF_LIGHTS];
 
+struct DirectionalLight {
+    vec3 Direction; // Direction the light is shining
+    vec3 La;  // Ambient light intensity
+    vec3 Ld;  // Diffuse light intensity
+    vec3 Ls;  // Specular light intensity
+    bool Enabled;
+};
+
+uniform DirectionalLight directionalLight;
+
 struct MaterialInfo {
     vec3 Ka; //Ambient reflectivity
     vec3 Kd; //Diffuse reflectivity
@@ -41,10 +51,12 @@ in vec3 Normal;
 in vec2 TexCoord;
 
 
-layout(binding = 0) uniform sampler2D BaseTex;
+layout(binding = 0) uniform sampler2D GrassTex;
+layout(binding = 1) uniform sampler2D CliffTex;
 layout(binding = 4) uniform sampler2D CloudTex;
 
 vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour);
+vec3 directionalLightModel(vec3 n, vec3 texColour);
 
 
 
@@ -63,7 +75,7 @@ void main() {
     shadow = mix(shadow, 1.0, 0.6);
     
 
-    vec4 TexColour = texture(BaseTex, TexCoord);
+    vec4 TexColour = texture(GrassTex, TexCoord);
 
 
     vec3 adjustedNormal = Normal;
@@ -136,6 +148,27 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     return AmbientLight + DiffuseLight + SpecularLight;
 
     
+}
+
+vec3 directionalLightModel(vec3 n, vec3 texColour) {
+    
+    vec3 LightDir = normalize(-vec3((view * vec4(directionalLight.Direction, 1.0)))); // Ensure it's pointing towards the surface
+
+    // Ambient
+    vec3 AmbientLight = Material.Ka * directionalLight.La * texColour;
+
+    // Diffuse
+    float sDotN = max(dot(n, LightDir), 0.0);
+    vec3 DiffuseLight = Material.Kd * sDotN * directionalLight.Ld * texColour;
+
+    vec3 viewPosView = vec3(view * vec4(ViewPos, 1.0));
+    // Specular
+    vec3 viewDir = normalize(viewPosView - Position);
+    vec3 reflectDir = reflect(-LightDir, n);
+    float specular = pow(max(dot(viewDir, reflectDir), 0.0), Material.Shininess);
+    vec3 SpecularLight = Material.Ks * directionalLight.Ls * specular;
+
+    return AmbientLight + DiffuseLight + SpecularLight;
 }
 
 
