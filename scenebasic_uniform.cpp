@@ -75,6 +75,9 @@ void SceneBasic_Uniform::initScene()
 
 	glActiveTexture(GL_TEXTURE3);
 	skyCubeID = Texture::loadCubeMap("media/texture/cubeMap/night");
+
+	glActiveTexture(GL_TEXTURE5);
+	skyCubeID = Texture::loadTexture("media/texture/firefly/fireFlyTex.png");
 	
 	
 
@@ -314,9 +317,7 @@ void SceneBasic_Uniform::initScene()
 
 	glBindVertexArray(0);
 
-	GLuint spriteTex = Texture::loadTexture("media/texture/flower.png");
-	glActiveTexture(GL_TEXTURE5);
-	glBindTexture(GL_TEXTURE_2D, spriteTex);
+	
 
 
 	particleProg.use();	
