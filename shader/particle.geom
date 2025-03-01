@@ -32,19 +32,19 @@ void main()
     
     vec4 worldPos = gl_in[0].gl_Position;
 
-     gl_Position = (model * (vec4(-Size2, -Size2, 0.0, 1.0) + worldPos));
+     gl_Position = ((vec4(-Size2, -Size2, 0.0, 1.0) + worldPos));
     TexCoord = vec2(0.0, 0.0);
     EmitVertex();
 
-     gl_Position = (model * (vec4(Size2, -Size2, 0.0, 1.0) + worldPos));
+     gl_Position = ((vec4(Size2, -Size2, 0.0, 1.0) + worldPos));
     TexCoord = vec2(1.0, 0.0);
     EmitVertex();
 
-    gl_Position = (model * (vec4(-Size2, Size2, 0.0, 1.0) + worldPos));
+    gl_Position = ((vec4(-Size2, Size2, 0.0, 1.0) + worldPos));
     TexCoord = vec2(0.0, 1.0);
     EmitVertex();
 
-    gl_Position = (model * (vec4(Size2, Size2, 0.0, 1.0) + worldPos));
+    gl_Position = ((vec4(Size2, Size2, 0.0, 1.0) + worldPos));
     TexCoord = vec2(1.0, 1.0);
     EmitVertex();
 

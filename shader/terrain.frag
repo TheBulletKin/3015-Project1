@@ -77,12 +77,12 @@ void main() {
         colour += phongModel(i, Position, adjustedNormal, TexColour.rgb);
     }   
     
-    vec3 finalColor = mix(colour, colour * shadow, 0.5);
+    vec3 finalColour = mix(colour, colour * shadow, 0.5);
 
     //FragColour = vec4(TexColour.rgb, 1.0);
     //FragColour = vec4(colour.rgb, 1.0);
-    FragColour = vec4(clamp(colour * shadow, 0.0, 1.0), 1.0);   
-    //FragColour = vec4(finalColour, 1.0); 
+    //FragColour = vec4(clamp(colour * shadow, 0.0, 1.0), 1.0);   
+    FragColour = vec4(finalColour, 1.0); 
    
 }
 
@@ -100,7 +100,7 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     
     vec3 lightPosView = vec3(view * vec4(pointLights[light].Position, 1.0));
     vec3 LightDir = normalize(lightPosView - position);
-
+    vec3 viewPosView = vec3(view * vec4(ViewPos, 1.0));
    
     float distance = length(lightPosView - position);
 
@@ -117,7 +117,7 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     vec3 DiffuseLight = Material.Kd * sDotN * pointLights[light].Ld * texColour * attenuation;
 
     //View dir is usually cameraPos - FragPos. Camera pos is 0, so this becomes - pos
-    vec3 viewDir = normalize(ViewPos - position);
+    vec3 viewDir = normalize((viewPosView) - position);
     vec3 reflectDir = reflect(-LightDir, n);
 
     //Specular
