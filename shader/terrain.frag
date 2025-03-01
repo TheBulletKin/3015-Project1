@@ -41,7 +41,7 @@ uniform float time;
 uniform vec3 ViewPos;
 uniform mat4 view;
 
-
+uniform float TextureScale = 20.0;
 
 
 //position of fragment in view space
@@ -72,10 +72,10 @@ void main() {
 
 
     float shadow = smoothstep(0.0, 0.05f, noise); 
-    shadow = mix(shadow, 1.0, 0.6);
+    shadow = mix(shadow, 1.0, 0.35);
     
 
-    vec4 TexColour = texture(GrassTex, TexCoord);
+    vec4 TexColour = texture(GrassTex, TexCoord * TextureScale);
 
 
     vec3 adjustedNormal = Normal;
@@ -93,11 +93,9 @@ void main() {
         colour += directionalLightModel(adjustedNormal, TexColour.rgb);
     }
     
-    vec3 finalColour = mix(colour, colour * shadow, 0.5);
+    vec3 finalColour = mix(colour, colour * shadow, 0.9);
 
-    //FragColour = vec4(TexColour.rgb, 1.0);
-    //FragColour = vec4(colour.rgb, 1.0);
-    //FragColour = vec4(clamp(colour * shadow, 0.0, 1.0), 1.0);   
+     
     FragColour = vec4(finalColour, 1.0); 
    
 }
