@@ -216,16 +216,16 @@ void SceneBasic_Uniform::initScene()
 
 	objectProg.use();
 	objectProg.setUniform("directionalLight.Direction", lightDirection);
-	objectProg.setUniform("directionalLight.La", lightAmbient);
-	objectProg.setUniform("directionalLight.Ld", lightDiffuse * 0.6f);
-	objectProg.setUniform("directionalLight.Ls", lightSpecular * 0.3f);
+	objectProg.setUniform("directionalLight.La", lightAmbient * 0.2f);
+	objectProg.setUniform("directionalLight.Ld", lightDiffuse * 0.3f);
+	objectProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
 	objectProg.setUniform("directionalLight.Enabled", true);
 
 	terrainProg.use();
 	terrainProg.setUniform("directionalLight.Direction", lightDirection);
-	terrainProg.setUniform("directionalLight.La", lightAmbient);
-	terrainProg.setUniform("directionalLight.Ld", lightDiffuse * 0.6f);
-	terrainProg.setUniform("directionalLight.Ls", lightSpecular * 0.3f);
+	terrainProg.setUniform("directionalLight.La", lightAmbient * 0.2f);
+	terrainProg.setUniform("directionalLight.Ld", lightDiffuse * 0.3f);
+	terrainProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
 	terrainProg.setUniform("directionalLight.Enabled", true);
 
 

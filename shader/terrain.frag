@@ -88,6 +88,10 @@ void main() {
     {        
         colour += phongModel(i, Position, adjustedNormal, TexColour.rgb);
     }   
+
+    if (directionalLight.Enabled) {
+        colour += directionalLightModel(adjustedNormal, TexColour.rgb);
+    }
     
     vec3 finalColour = mix(colour, colour * shadow, 0.5);
 

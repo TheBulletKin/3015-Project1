@@ -30,6 +30,7 @@ void main()
     vec4 worldPos = model * vec4(InstancePosition, 1.0);    
 
     gl_Position = projection * view * worldPos;
+    gl_Position = vec4(InstancePosition, 1.0);
 
 }
 
