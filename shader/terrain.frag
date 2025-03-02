@@ -53,6 +53,7 @@ in vec3 Position;
 in vec3 WorldPosition;
 in vec3 Normal;
 in vec2 TexCoord;
+in vec3 WorldNormal;
 
 
 layout(binding = 0) uniform sampler2D GrassTex;
@@ -81,6 +82,35 @@ void main() {
 
     vec4 TexColour = texture(GrassTex, TexCoord * TextureScale);
 
+    //Triplanar texture mapping
+    /* Start by determining the blend value. Essentially the fragment's normal colour
+    
+    */
+    vec3 blending = abs(WorldNormal);
+    blending = normalize(pow(blending, vec3(1.2))); // Sharpen blending
+    
+    //Create texture coordinate positions based on the fragment's world position
+    vec2 xzProj = WorldPosition.xz;
+    vec2 xyProj = WorldPosition.xy;
+    vec2 yzProj = WorldPosition.yz;   
+
+    vec3 texXZ = texture(GrassTex, xzProj).rgb; // Top-down
+    vec3 texXY = texture(CliffTex, xyProj * TextureScale).rgb; // Side projection
+    vec3 texYZ = texture(CliffTex, yzProj * TextureScale).rgb; // Side projection
+    vec3 triplanarTex = texXZ * blending.y + texXY * blending.z + texYZ * blending.x;
+
+    //WorldNormal.y at 1 means vertical, 0 means horizontal. 
+    //If WorldNormal.y < 0.9, slopeFactor is 0, between 0.9 and 1.0 it smoothly blends from 0 to 1, and when WorldNormal.y > 1.0, slopeFactor is 1
+    float slopeFactor = smoothstep(0.9, 1.0, abs(WorldNormal.y));     
+
+    //Scale the textures
+    vec3 grassTex = texture(GrassTex, TexCoord * TextureScale).rgb;
+    vec3 rockTex = texture(CliffTex, TexCoord * TextureScale).rgb;
+
+    //Mix the textures based off the slope factor determined earlier
+    vec3 blendedTex = mix(rockTex, grassTex, slopeFactor);
+
+
 
     vec3 adjustedNormal = Normal;
     if (!gl_FrontFacing) {
@@ -90,11 +120,11 @@ void main() {
     vec3 colour = vec3(0.0);    
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {        
-        colour += phongModel(i, Position, adjustedNormal, TexColour.rgb);
+        colour += phongModel(i, Position, adjustedNormal, blendedTex.rgb);
     }   
 
     if (directionalLight.Enabled) {
-        colour += directionalLightModel(adjustedNormal, TexColour.rgb);
+        colour += directionalLightModel(adjustedNormal, blendedTex.rgb);
     }
     
     vec3 finalColour = mix(colour, colour * shadow, 0.9);
@@ -108,6 +138,7 @@ void main() {
 
      
     FragColour = vec4(finalColour, 1.0); 
+    
    
 }
 

@@ -77,7 +77,7 @@ void SceneBasic_Uniform::initScene()
 	skyCubeID = Texture::loadCubeMap("media/texture/cubeMap/night");
 
 	glActiveTexture(GL_TEXTURE5);
-	skyCubeID = Texture::loadTexture("media/texture/firefly/fireFlyTex.png");
+	fireFlyTexID = Texture::loadTexture("media/texture/firefly/fireFlyTex.png");
 	
 	
 
@@ -216,8 +216,8 @@ void SceneBasic_Uniform::initScene()
 
 	objectProg.use();
 	objectProg.setUniform("directionalLight.Direction", lightDirection);
-	objectProg.setUniform("directionalLight.La", lightAmbient * 1.0f);
-	objectProg.setUniform("directionalLight.Ld", lightDiffuse * 0.7f);
+	objectProg.setUniform("directionalLight.La", lightAmbient * 0.8f);
+	objectProg.setUniform("directionalLight.Ld", lightDiffuse * 0.8f);
 	objectProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
 	objectProg.setUniform("directionalLight.Enabled", true);
 	objectProg.setUniform("FogStart", 10.0f);
@@ -226,8 +226,8 @@ void SceneBasic_Uniform::initScene()
 
 	terrainProg.use();
 	terrainProg.setUniform("directionalLight.Direction", lightDirection);
-	terrainProg.setUniform("directionalLight.La", lightAmbient * 1.0f);
-	terrainProg.setUniform("directionalLight.Ld", lightDiffuse * 0.67f);
+	terrainProg.setUniform("directionalLight.La", lightAmbient * 1.4f);
+	terrainProg.setUniform("directionalLight.Ld", lightDiffuse * 0.8f);
 	terrainProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
 	terrainProg.setUniform("directionalLight.Enabled", true);
 	terrainProg.setUniform("FogStart", 5.0f);

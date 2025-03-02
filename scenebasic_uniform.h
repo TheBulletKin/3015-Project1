@@ -47,7 +47,7 @@ private:
 
     GLuint lightPositionsBuffer;
 
-    GLuint grassID, rockID, skyCubeID, cloudID, brickID;
+    GLuint grassID, rockID, skyCubeID, cloudID, brickID, fireFlyTexID;
     
  
 

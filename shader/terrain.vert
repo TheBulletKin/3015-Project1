@@ -10,6 +10,7 @@ out vec3 Position;
 out vec3 WorldPosition;
 out vec3 Normal;
 out vec2 TexCoord;
+out vec3 WorldNormal;
 
 vec3 LightDir;
 vec3 ViewDir;
@@ -41,6 +42,7 @@ void main()
     //Normal Matrix is glm::transpose(glm::inverse(glm::mat3(mv))); in code.
     //Model view to become view space
     Normal = normalize(NormalMatrix * VertexNormal);
+    WorldNormal = normalize(transpose(inverse(mat3(model))) * VertexNormal);
     gl_Position = MVP * vec4(VertexPosition, 1.0);
 
 }
