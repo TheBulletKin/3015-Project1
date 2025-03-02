@@ -41,6 +41,10 @@ uniform float time;
 uniform vec3 ViewPos;
 uniform mat4 view;
 
+uniform float FogStart;
+uniform float FogEnd;
+uniform vec3 FogColour;
+
 uniform float TextureScale = 20.0;
 
 
@@ -94,6 +98,13 @@ void main() {
     }
     
     vec3 finalColour = mix(colour, colour * shadow, 0.9);
+
+    float distance = length(Position - ViewPos);    
+    // Linear fog factor (clamped between 0 and 1)
+    float fogFactor = clamp((FogEnd - distance) / (FogEnd - FogStart), 0.0, 1.0);
+
+
+    finalColour = mix(FogColour, finalColour, fogFactor);
 
      
     FragColour = vec4(finalColour, 1.0); 

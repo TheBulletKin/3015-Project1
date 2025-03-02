@@ -220,6 +220,9 @@ void SceneBasic_Uniform::initScene()
 	objectProg.setUniform("directionalLight.Ld", lightDiffuse * 0.7f);
 	objectProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
 	objectProg.setUniform("directionalLight.Enabled", true);
+	objectProg.setUniform("FogStart", 10.0f);
+	objectProg.setUniform("FogEnd", 20.0f);
+	objectProg.setUniform("FogColour", 0.0f, 0.5f, 0.0f);
 
 	terrainProg.use();
 	terrainProg.setUniform("directionalLight.Direction", lightDirection);
@@ -227,6 +230,9 @@ void SceneBasic_Uniform::initScene()
 	terrainProg.setUniform("directionalLight.Ld", lightDiffuse * 0.67f);
 	terrainProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
 	terrainProg.setUniform("directionalLight.Enabled", true);
+	terrainProg.setUniform("FogStart", 5.0f);
+	terrainProg.setUniform("FogEnd", 80.0f);
+	terrainProg.setUniform("FogColour", vec3(0.25, 0.31, 0.46));
 
 
 	numberOfStaticLights = 3;
@@ -718,7 +724,7 @@ void SceneBasic_Uniform::pass1() {
 	glBindTexture(GL_TEXTURE_2D, brickID);
 	model = mat4(1.0f);
 	model = glm::scale(model, vec3(0.3f, 0.3f, 0.3f));
-	model = glm::translate(model, vec3(-7.0f, 6.0f, -27.0f));
+	model = glm::translate(model, vec3(-7.0f, 4.0f, -27.0f));
 	setMatrices(objectProg);
 	RuinMesh->render();
 
@@ -736,7 +742,7 @@ void SceneBasic_Uniform::pass1() {
 	model = glm::scale(model, glm::vec3(0.25f, 0.25f, 0.25f)); // This scales the terrain in X, Y, and Z
 
 	// Translate the terrain to a desired position
-	model = glm::translate(model, glm::vec3(0.0f, 0.0f, -15.0f));
+	model = glm::translate(model, glm::vec3(0.0f, -3.0f, -15.0f));
 	setMatrices(terrainProg);	
 	TerrainMesh->render();
 
