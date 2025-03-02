@@ -216,15 +216,15 @@ void SceneBasic_Uniform::initScene()
 
 	objectProg.use();
 	objectProg.setUniform("directionalLight.Direction", lightDirection);
-	objectProg.setUniform("directionalLight.La", lightAmbient * 0.2f);
-	objectProg.setUniform("directionalLight.Ld", lightDiffuse * 0.3f);
+	objectProg.setUniform("directionalLight.La", lightAmbient * 0.4f);
+	objectProg.setUniform("directionalLight.Ld", lightDiffuse * 0.5f);
 	objectProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
 	objectProg.setUniform("directionalLight.Enabled", true);
 
 	terrainProg.use();
 	terrainProg.setUniform("directionalLight.Direction", lightDirection);
-	terrainProg.setUniform("directionalLight.La", lightAmbient * 0.2f);
-	terrainProg.setUniform("directionalLight.Ld", lightDiffuse * 0.3f);
+	terrainProg.setUniform("directionalLight.La", lightAmbient * 0.4f);
+	terrainProg.setUniform("directionalLight.Ld", lightDiffuse * 0.5f);
 	terrainProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
 	terrainProg.setUniform("directionalLight.Enabled", true);
 
@@ -233,7 +233,7 @@ void SceneBasic_Uniform::initScene()
 
 	fireFlySpawnTimer = 0.0f;
 	currentFireFlyCount = 0;
-	maxFireFlyCount = 3;
+	maxFireFlyCount = 14;
 	fireFlySpawnCooldown = 3.0f;
 
 	for (int i = numberOfStaticLights; i < maxFireFlyCount; i++)
@@ -717,8 +717,8 @@ void SceneBasic_Uniform::pass1() {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, brickID);
 	model = mat4(1.0f);
-	model = glm::scale(model, vec3(0.5f, 0.5f, 0.5f));
-	model = glm::translate(model, vec3(0.0f, 5.0f, -5.0f));
+	model = glm::scale(model, vec3(0.3f, 0.3f, 0.3f));
+	model = glm::translate(model, vec3(-7.0f, 8.0f, -27.0f));
 	setMatrices(objectProg);
 	RuinMesh->render();
 
@@ -731,7 +731,12 @@ void SceneBasic_Uniform::pass1() {
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, cloudID);
 	model = mat4(1.0f);
-	model = glm::translate(model, vec3(0.0f, -0.45, -5.0f));
+	model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+	model = glm::scale(model, glm::vec3(0.25f, 0.25f, 0.25f)); // This scales the terrain in X, Y, and Z
+
+	// Translate the terrain to a desired position
+	model = glm::translate(model, glm::vec3(0.0f, 0.0f, -15.0f));
 	setMatrices(terrainProg);	
 	TerrainMesh->render();
 

@@ -2,7 +2,7 @@
 
 layout (location = 0) out vec4 FragColour;
 
-#define MAX_NUMBER_OF_LIGHTS 6
+#define MAX_NUMBER_OF_LIGHTS 13
 
 struct LightInfo{
     vec3 Position;

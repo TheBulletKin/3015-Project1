@@ -78,8 +78,8 @@ private:
         float x, y, z;
     };
     
-    Point topLeftSpawnBound = { -3.0f, -0.4f, -2.0f }; //-X means left  -Z means forward
-    Point bottomRightSpawnBound = { 2.0f, -0.4f, 2.0 };
+    Point topLeftSpawnBound = { -7.0f, 23.0f, -14.0f }; //-X means left  -Z means forward
+    Point bottomRightSpawnBound = { 2.0f, 17.0f, -3.0 };
 
     std::random_device rd;  
     std::mt19937 gen;

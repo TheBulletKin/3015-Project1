@@ -8,7 +8,7 @@ FireFly::FireFly(PointLight* pointLight, vec3 spawnPosition, int index) {
 	this->pointLight = pointLight;
 	this->index = index;
 	currentLifeTime = 0.0f;
-	lifeTimeMax = linearRand(8.0f, 18.0f);
+	lifeTimeMax = linearRand(12.0f, 32.0f);
 	currentPosition = spawnPosition;
 	
 	noiseGen.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
