@@ -57,29 +57,29 @@ void SceneBasic_Uniform::initScene()
 	//Grass texture
 	glActiveTexture(GL_TEXTURE0);
 	grassID = Texture::loadTexture("media/texture/grass_02_1k/grass_02_base_1k.png");
-	
-	
+
+
 
 	//Rock texture
 	glActiveTexture(GL_TEXTURE1);
 	rockID = Texture::loadTexture("media/texture/cliff_rocks_02_1k/cliff_rocks_02_baseColor_1k.png");
-	
-	
+
+
 
 
 	//Rock texture
 	glActiveTexture(GL_TEXTURE2);
 	brickID = Texture::loadTexture("media/texture/stone_bricks_wall_04_1k/stone_bricks_wall_04_color_1k.png");
-	
-	
+
+
 
 	glActiveTexture(GL_TEXTURE3);
 	skyCubeID = Texture::loadCubeMap("media/texture/cubeMap/night");
 
 	glActiveTexture(GL_TEXTURE5);
 	fireFlyTexID = Texture::loadTexture("media/texture/firefly/fireFlyTex.png");
-	
-	
+
+
 
 	setupFBO();
 
@@ -126,9 +126,9 @@ void SceneBasic_Uniform::initScene()
 	glEnableVertexAttribArray(2); //Texture coord as in shader
 	glBindVertexArray(0);
 
-	
 
-	
+
+
 
 	//Gaussian blur
 	/* Weights follow a gaussian distribution, falling off the further it gets from the centre
@@ -137,10 +137,10 @@ void SceneBasic_Uniform::initScene()
 
 
 
-	
 
 
-	
+
+
 
 	//Set up sampler objects for linear and nearest filtering
 	GLuint samplers[2];
@@ -200,15 +200,15 @@ void SceneBasic_Uniform::initScene()
 
 
 	// Apply the view transformation to transform into view space
-	objectProg.setUniform("pointLights[0].Position", view* light1Pos);
-	objectProg.setUniform("pointLights[1].Position", view* light2Pos);
-	objectProg.setUniform("pointLights[2].Position", view* light3Pos);
+	objectProg.setUniform("pointLights[0].Position", view * light1Pos);
+	objectProg.setUniform("pointLights[1].Position", view * light2Pos);
+	objectProg.setUniform("pointLights[2].Position", view * light3Pos);
 
 	objectProg.setUniform("pointLights[0].Ld", vec3(0.8f, 0.8f, 0.8f));
 	objectProg.setUniform("pointLights[1].Ld", vec3(0.8f, 0.8f, 0.8f));
 	objectProg.setUniform("pointLights[2].Ld", vec3(0.8f, 0.8f, 0.8f));
 
-	
+
 	vec3 lightDirection = glm::normalize(glm::vec3(0.5f, -1.0f, 0.5f)); // Light coming from top-left
 	vec3 lightAmbient = vec3(0.2f, 0.2f, 0.4f);
 	vec3 lightDiffuse = vec3(0.3f, 0.3f, 0.5f);
@@ -286,8 +286,8 @@ void SceneBasic_Uniform::initScene()
 	}
 
 	//Cloud texture in unit 4
-	
-	glGenTextures(1, &cloudID);	
+
+	glGenTextures(1, &cloudID);
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, cloudID);
 
@@ -302,7 +302,7 @@ void SceneBasic_Uniform::initScene()
 
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, cloudID);
-	
+
 
 
 
@@ -323,10 +323,10 @@ void SceneBasic_Uniform::initScene()
 
 	glBindVertexArray(0);
 
-	
 
 
-	particleProg.use();	
+
+	particleProg.use();
 	particleProg.setUniform("Size2", 0.15f);
 
 
@@ -475,10 +475,10 @@ void SceneBasic_Uniform::update(float t)
 
 void SceneBasic_Uniform::render()
 {
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glDisable(GL_DEPTH_TEST);
-	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-
 	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
 	glEnable(GL_DEPTH_TEST);
 	skyProg.use();
@@ -487,7 +487,7 @@ void SceneBasic_Uniform::render()
 	setMatrices(skyProg);
 	sky.render();
 	glDepthMask(GL_TRUE);
-	
+
 
 	pass1();
 
@@ -597,7 +597,7 @@ void SceneBasic_Uniform::setupFBO() {
 	* Texture unit 8 holds first, 9 holds bright pixels
 	*/
 
-	
+
 	glGenTextures(1, &renderTex);
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, renderTex);
@@ -610,15 +610,15 @@ void SceneBasic_Uniform::setupFBO() {
 	glFramebufferTexture2D(
 		GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0
 	);
-	
 
-	
+
+
 	//Render buffer object for depth and stencil attachments that won't be sampled by me
 	glGenRenderbuffers(1, &depthRbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, depthRbo);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRbo);
-	
+
 	//Error checking
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << endl;
@@ -631,14 +631,14 @@ void SceneBasic_Uniform::pass1() {
 	*/
 
 	//Bind HDR framebuffer to render to hdrTex;
-	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glEnable(GL_DEPTH_TEST);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 
 	view = camera.GetViewMatrix();
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
-	
-	
+
+
 	vector<vec3> fireFlyPositions;
 	int fireFlyLightIndex = numberOfStaticLights;
 	string lightUniformTag;
@@ -685,15 +685,15 @@ void SceneBasic_Uniform::pass1() {
 	glBindVertexArray(spritesVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, fireFlyPositions.size() * sizeof(glm::vec3), fireFlyPositions.data());
-	glBindBuffer(GL_ARRAY_BUFFER, 0);	
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	particleProg.use();
 	model = mat4(1.0f);
 	setMatrices(particleProg);
 
-	
+
 	glDrawArraysInstanced(GL_POINTS, 0, 1, fireFlies.size());
 
-	
+
 	terrainProg.use();
 	terrainProg.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
 	terrainProg.setUniform("staticPointLights", numberOfStaticLights);
@@ -728,7 +728,7 @@ void SceneBasic_Uniform::pass1() {
 	RuinMesh->render();
 
 	//Terrain rendering
-	terrainProg.use();	
+	terrainProg.use();
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, grassID);
 	glActiveTexture(GL_TEXTURE1);
@@ -742,7 +742,7 @@ void SceneBasic_Uniform::pass1() {
 
 	// Translate the terrain to a desired position
 	model = glm::translate(model, glm::vec3(0.0f, -3.0f, -15.0f));
-	setMatrices(terrainProg);	
+	setMatrices(terrainProg);
 	TerrainMesh->render();
 
 
@@ -752,12 +752,12 @@ void SceneBasic_Uniform::pass1() {
 	//prog.setUniform("Material.Ka", 0.1f, 0.1f, 0.1f);
 	//prog.setUniform("Material.Shininess", 64.0f);
 
-	
 
-	
+
+
 
 	//Second pass - HDR	
-	
+	/*
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDisable(GL_DEPTH_TEST);
 	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -773,7 +773,7 @@ void SceneBasic_Uniform::pass1() {
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, renderTex);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	
+	*/
 
 }
 
