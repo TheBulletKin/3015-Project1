@@ -82,7 +82,7 @@ void main() {
     if (!gl_FrontFacing) {
         adjustedNormal = -Normal;
     }
-    //vec3 n = normalize(adjustedNormal);
+   // vec3 n = normalize(adjustedNormal);
     vec3 colour = vec3(0.0);    
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {        
