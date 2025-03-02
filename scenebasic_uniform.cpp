@@ -477,6 +477,7 @@ void SceneBasic_Uniform::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
 	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
 
@@ -582,8 +583,8 @@ void SceneBasic_Uniform::setupFBO() {
 	*/
 
 	//Create FBO for first render pass
-	//glGenFramebuffers(1, &hdrFBO);
-	//glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	glGenFramebuffers(1, &hdrFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
 	/* Before, the shader rendering the scene only had a frag colour output
 	* For bloom to work you need the base scene and then the bright colours.
@@ -596,7 +597,7 @@ void SceneBasic_Uniform::setupFBO() {
 	* Texture unit 8 holds first, 9 holds bright pixels
 	*/
 
-	/*
+	
 	glGenTextures(1, &renderTex);
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, renderTex);
@@ -609,23 +610,23 @@ void SceneBasic_Uniform::setupFBO() {
 	glFramebufferTexture2D(
 		GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0
 	);
-	*/
+	
 
 	//Attach this texture to the frame buffer
-	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0);
 
 
-	/*
+	
 	//Render buffer object for depth and stencil attachments that won't be sampled by me
 	glGenRenderbuffers(1, &depthRbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, depthRbo);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRbo);
-	*/
+	
 	//Error checking
-	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		//cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << endl;
-	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void SceneBasic_Uniform::pass1() {
@@ -634,7 +635,9 @@ void SceneBasic_Uniform::pass1() {
 	*/
 
 	//Bind HDR framebuffer to render to hdrTex;
-
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	view = camera.GetViewMatrix();
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
@@ -758,9 +761,11 @@ void SceneBasic_Uniform::pass1() {
 	
 
 	//Second pass - HDR	
-	/*
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glDisable(GL_DEPTH_TEST);
 	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 	screenHdrProg.use();
 	model = mat4(1.0f);
 	view = mat4(1.0f);
@@ -769,10 +774,10 @@ void SceneBasic_Uniform::pass1() {
 	screenHdrProg.setUniform("hdr", hdr);
 	screenHdrProg.setUniform("exposure", exposure);
 	glBindVertexArray(fsQuad);
-	glActiveTexture(GL_TEXTURE8); //Gaussian blur needs texture unit 8
+	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, renderTex);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
-	*/
+	
 
 }
 

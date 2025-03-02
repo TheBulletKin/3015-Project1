@@ -3,24 +3,7 @@
 layout (location = 0) out vec4 FragColour;
 
 
-#define MAX_NUMBER_OF_LIGHTS 6
 
-struct LightInfo{
-    vec3 Position;
-    vec3 La; //Ambient light intensity
-    vec3 Ld; //Diffuse and spec light intensity
-};
-
-uniform LightInfo pointLights[MAX_NUMBER_OF_LIGHTS];
-
-struct MaterialInfo {
-    vec3 Ka; //Ambient reflectivity
-    vec3 Kd; //Diffuse reflectivity
-    vec3 Ks; //Specular reflectivity
-    float Shininess; //Specular shininess factor
-};
-
-uniform MaterialInfo Material;
 
 
 uniform float EdgeThreshold;
@@ -65,14 +48,14 @@ uniform mat4 view;
 
 
 
-layout(binding = 8) uniform sampler2D HdrTex;
+layout(binding = 8) uniform sampler2D RenderTex;
 
 
 
 void main()
 {
-    const float gamma = 1.2;
-    vec3 hdrColor = texture(HdrTex, TexCoord).rgb;
+    const float gamma = 1.0;
+    vec3 hdrColor = texture(RenderTex, TexCoord).rgb;
     
     //FragColour = vec4(hdrColor, 1.0); // Output raw HDR color without tone mapping
     
