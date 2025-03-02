@@ -8,9 +8,11 @@ struct LightInfo{
     vec3 Position;
     vec3 La; //Ambient light intensity
     vec3 Ld; //Diffuse and spec light intensity
-    float Constant;  // Attenuation constant
-    float Linear;    // Attenuation linear factor
-    float Quadratic; // Attenuation quadratic factor
+    //Attenuation
+    float Constant;
+    float Linear;
+    float Quadratic; 
+
     bool Enabled;
 };
 
@@ -66,7 +68,7 @@ vec3 directionalLightModel(vec3 n, vec3 texColour);
 
 
 void main() {
-     float noiseScale = 0.002f;
+    float noiseScale = 0.002f;
     float speed = 0.5f;    
 
     float animatedX = time * speed + sin(time * 0.1f) * 0.1f;
@@ -83,23 +85,12 @@ void main() {
     vec4 TexColour = texture(GrassTex, TexCoord * TextureScale);
 
     //Triplanar texture mapping
-    /* Start by determining the blend value. Essentially the fragment's normal colour
-    
+    /* The fragment's normal is essentially representing a direction by it's colour
+    * Therefore the y component of worldNormal is high for flat surfaces, low for vertical ones 
+    * Slopefactor is a 0 - 1 value that describes the weighting of that blend between grass and cliff
+    * Determines the final texture by this blend value
     */
-    vec3 blending = abs(WorldNormal);
-    blending = normalize(pow(blending, vec3(1.2))); // Sharpen blending
-    
-    //Create texture coordinate positions based on the fragment's world position
-    vec2 xzProj = WorldPosition.xz;
-    vec2 xyProj = WorldPosition.xy;
-    vec2 yzProj = WorldPosition.yz;   
-
-    vec3 texXZ = texture(GrassTex, xzProj).rgb; // Top-down
-    vec3 texXY = texture(CliffTex, xyProj * TextureScale).rgb; // Side projection
-    vec3 texYZ = texture(CliffTex, yzProj * TextureScale).rgb; // Side projection
-    vec3 triplanarTex = texXZ * blending.y + texXY * blending.z + texYZ * blending.x;
-
-    //WorldNormal.y at 1 means vertical, 0 means horizontal. 
+   
     //If WorldNormal.y < 0.9, slopeFactor is 0, between 0.9 and 1.0 it smoothly blends from 0 to 1, and when WorldNormal.y > 1.0, slopeFactor is 1
     float slopeFactor = smoothstep(0.9, 1.0, abs(WorldNormal.y));     
 
@@ -129,10 +120,8 @@ void main() {
     
     vec3 finalColour = mix(colour, colour * shadow, 0.9);
 
-    float distance = length(Position - ViewPos);    
-    // Linear fog factor (clamped between 0 and 1)
+    float distance = length(Position - ViewPos);
     float fogFactor = clamp((FogEnd - distance) / (FogEnd - FogStart), 0.0, 1.0);
-
 
     finalColour = mix(FogColour, finalColour, fogFactor);
 
@@ -171,8 +160,7 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     //Diffuse
     float sDotN = max(dot(n, LightDir), 0.0);
     vec3 DiffuseLight = Material.Kd * sDotN * pointLights[light].Ld * texColour * attenuation;
-
-    //View dir is usually cameraPos - FragPos. Camera pos is 0, so this becomes - pos
+    
     vec3 viewDir = normalize((viewPosView) - position);
     vec3 reflectDir = reflect(-LightDir, n);
 

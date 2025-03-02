@@ -478,7 +478,7 @@ void SceneBasic_Uniform::render()
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glDisable(GL_DEPTH_TEST);
+	
 	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
 	glEnable(GL_DEPTH_TEST);
 	skyProg.use();
@@ -631,8 +631,7 @@ void SceneBasic_Uniform::pass1() {
 	*/
 
 	//Bind HDR framebuffer to render to hdrTex;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glEnable(GL_DEPTH_TEST);
+	
 
 
 	view = camera.GetViewMatrix();
@@ -648,18 +647,13 @@ void SceneBasic_Uniform::pass1() {
 
 
 		lightUniformTag = ("pointLights[" + to_string(fireFlyLightIndex) + "]");
-		terrainProg.use();
-		//prog.setUniform((lightUniformTag + ".position").c_str(), fireFly->pointLight->position);
-	   // prog.setUniform((lightUniformTag + ".ambient").c_str(), fireFly->pointLight->ambient);
-	   // prog.setUniform((lightUniformTag + ".diffuse").c_str(), fireFlyLightColour);
-	   // prog.setUniform((lightUniformTag + ".specular").c_str(), fireFlyLightColour);
+		terrainProg.use();		
 		terrainProg.setUniform((lightUniformTag + ".Constant").c_str(), fireFly->pointLight->constant);
 		terrainProg.setUniform((lightUniformTag + ".Linear").c_str(), fireFly->pointLight->linear);
 		terrainProg.setUniform((lightUniformTag + ".Quadratic").c_str(), fireFly->pointLight->quadratic);
 
 		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
-		terrainProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
-		//prog.setUniform((lightUniformTag + ".Ld").c_str(), fireFlyLightColour);
+		terrainProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);		
 		terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
 		terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
 
