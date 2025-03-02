@@ -1,30 +1,18 @@
 #version 460
-//Set up for vertex lighting
 
 layout ( points ) in;
 layout ( triangle_strip, max_vertices = 4) out;
 
 uniform float Size2; //half width of the quad
 
-
-in vec3 WorldPosition[];
-
 out vec2 TexCoord;
 out vec3 FragWorldPos;
 
-vec3 LightDir;
-vec3 ViewDir;
-vec3 FragPos;
-
-uniform mat4 ModelViewMatrix;
-uniform mat4 MVP;
 uniform mat3 NormalMatrix;
-
 
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-
 
 
 void main()

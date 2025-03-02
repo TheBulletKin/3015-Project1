@@ -1,10 +1,8 @@
 #version 460
-//Set up for vertex lighting
 
 layout (location = 0) in vec3 VertexPosition;
 layout (location = 1) in vec3 VertexNormal;
 layout (location = 2) in vec2 VertexTexCoord;
-
 
 out vec3 Position;
 out vec3 WorldPosition;
@@ -12,27 +10,15 @@ out vec3 Normal;
 out vec2 TexCoord;
 out vec3 WorldNormal;
 
-vec3 LightDir;
-vec3 ViewDir;
-vec3 FragPos;
-
 uniform mat4 ModelViewMatrix;
 uniform mat4 MVP;
 uniform mat3 NormalMatrix;
-
-
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-
-
 void main()
-{
-    //VERTEX LIGHTING 
-    //Vertex lighting has been removed. But essentially calculations now done on the fragment is shader is done in the vertex shader
-    //https://github.com/ruange/Gouraud-Shading-and-Phong-Shading
-  
+{     
     //Multiply by model and view to transform to view space
     Position = vec3(ModelViewMatrix * vec4(VertexPosition, 1.0));
     WorldPosition = vec3(model * vec4(VertexPosition, 1.0));
@@ -44,7 +30,6 @@ void main()
     Normal = normalize(NormalMatrix * VertexNormal);
     WorldNormal = normalize(transpose(inverse(mat3(model))) * VertexNormal);
     gl_Position = MVP * vec4(VertexPosition, 1.0);
-
 }
 
 

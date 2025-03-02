@@ -12,7 +12,6 @@ struct LightInfo{
     float Constant;
     float Linear;
     float Quadratic; 
-
     bool Enabled;
 };
 
@@ -37,18 +36,17 @@ struct MaterialInfo {
 
 uniform MaterialInfo Material;
 
-uniform int staticPointLights = 3;
-uniform int dynamicPointLights = 0;
-uniform float time;
-uniform vec3 ViewPos;
-uniform mat4 view;
-
+//uniform int staticPointLights = 3;
+//uniform int dynamicPointLights = 0;
+uniform float Exposure = 0.35;
 uniform float FogStart;
 uniform float FogEnd;
 uniform vec3 FogColour;
-
+uniform vec3 ViewPos;
+uniform mat4 view;
 uniform float TextureScale = 30.0;
 
+uniform float time;
 
 //position of fragment in view space
 in vec3 Position;
@@ -57,7 +55,6 @@ in vec3 Normal;
 in vec2 TexCoord;
 in vec3 WorldNormal;
 
-
 layout(binding = 0) uniform sampler2D GrassTex;
 layout(binding = 1) uniform sampler2D CliffTex;
 layout(binding = 4) uniform sampler2D CloudTex;
@@ -65,26 +62,24 @@ layout(binding = 4) uniform sampler2D CloudTex;
 vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour);
 vec3 directionalLightModel(vec3 n, vec3 texColour);
 
-
-
 void main() {
+    // ----- Cloud shadows
     float noiseScale = 0.002f;
     float speed = 0.5f;    
 
+    //Change the target coordinate to sample on the texture to move with time
     float animatedX = time * speed + sin(time * 0.1f) * 0.1f;
     float animatedY = time * speed + cos(time * 0.12f) * 0.1f;
    
+    //Use the world position to determine the texture sample position to ensure uniformity with scene models
     vec2 animatedCoord = WorldPosition.xz * noiseScale + vec2(animatedX, animatedY);
     float noise = texture(CloudTex, animatedCoord).r;  
 
-
+    //Smooth gradient from 0 to shadow, and overall darkening of the shadow
     float shadow = smoothstep(0.0, 0.05f, noise); 
-    shadow = mix(shadow, 1.0, 0.35);
-    
+    shadow = mix(shadow, 1.0, 0.35);      
 
-    vec4 TexColour = texture(GrassTex, TexCoord * TextureScale);
-
-    //Slope texture blending
+    // -------- Slope texture blending
     /* The fragment's normal is essentially representing a direction by it's colour
     * Therefore the y component of worldNormal is high for flat surfaces, low for vertical ones 
     * Slopefactor is a 0 - 1 value that describes the weighting of that blend between grass and cliff
@@ -101,12 +96,13 @@ void main() {
     vec3 blendedTex = mix(rockTex, grassTex, slopeFactor);
 
 
-
+     //Fix normals
     vec3 adjustedNormal = Normal;
     if (!gl_FrontFacing) {
         adjustedNormal = -Normal;
     }
-   // vec3 n = normalize(adjustedNormal);
+
+ 
     vec3 colour = vec3(0.0);    
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {        
@@ -119,39 +115,35 @@ void main() {
     
     vec3 finalColour = mix(colour, colour * shadow, 0.9);
 
+    //------ Distance fog
     float distance = length(Position - ViewPos);
     float fogFactor = clamp((FogEnd - distance) / (FogEnd - FogStart), 0.0, 1.0);
 
     finalColour = mix(FogColour, finalColour, fogFactor);
-
      
-    FragColour = vec4(finalColour, 1.0); 
-    
+    FragColour = vec4(finalColour, 1.0);   
    
 }
 
 vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
-    
+    //Two checks to make sure a disabled light isn't rendered
     if (!pointLights[light].Enabled) {
         return vec3(0.0f);
     }
 
     if (pointLights[light].Position == vec3(0.0f, 0.0f, 0.0f)) {        
         return vec3(0.0f);
-    }
-
+    }   
     
-    
-    vec3 lightPosView = vec3(view * vec4(pointLights[light].Position, 1.0));
-    vec3 LightDir = normalize(lightPosView - position);
-    vec3 viewPosView = vec3(view * vec4(ViewPos, 1.0));
+    vec3 lightPosView = vec3(view * vec4(pointLights[light].Position, 1.0)); //Convert light position to view space
+    vec3 LightDir = normalize(lightPosView - position); //Get light direction in view space
+    vec3 viewPosView = vec3(view * vec4(ViewPos, 1.0)); //Turn view pos from world to view space
    
-    float distance = length(lightPosView - position);
+    float distance = length(lightPosView - position); //Distance as view space light post to view space fragment position
 
     //Attenuation formula
-    float attenuation = 1.0 / (pointLights[light].Constant +
-                               pointLights[light].Linear * distance +
-                               pointLights[light].Quadratic * (distance * distance));
+    float attenuation = 1.0 / (pointLights[light].Constant + pointLights[light].Linear * distance +
+                                pointLights[light].Quadratic * (distance * distance));
 
     //Ambient
     vec3 AmbientLight = Material.Ka * pointLights[light].La * texColour * attenuation;
@@ -159,7 +151,7 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     //Diffuse
     float sDotN = max(dot(n, LightDir), 0.0);
     vec3 DiffuseLight = Material.Kd * sDotN * pointLights[light].Ld * texColour * attenuation;
-    
+  
     vec3 viewDir = normalize((viewPosView) - position);
     vec3 reflectDir = reflect(-LightDir, n);
 
@@ -176,9 +168,7 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
 
     vec3 SpecularLight = Material.Ks * pointLights[light].Ld * specular * attenuation;
 
-    return AmbientLight + DiffuseLight + SpecularLight;
-
-    
+    return AmbientLight + DiffuseLight + SpecularLight; 
 }
 
 vec3 directionalLightModel(vec3 n, vec3 texColour) {

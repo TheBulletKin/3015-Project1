@@ -8,9 +8,10 @@ struct LightInfo{
     vec3 Position;
     vec3 La; //Ambient light intensity
     vec3 Ld; //Diffuse and spec light intensity
-    float Constant;  // Attenuation constant
-    float Linear;    // Attenuation linear factor
-    float Quadratic; // Attenuation quadratic factor
+    //Attenuation
+    float Constant;
+    float Linear;
+    float Quadratic; 
     bool Enabled;
 };
 
@@ -35,109 +36,75 @@ struct MaterialInfo {
 
 uniform MaterialInfo Material;
 
-
-uniform float EdgeThreshold;
-uniform int Pass;
-uniform vec3 ViewPos;
-
-uniform float AveLum;
-uniform mat3 rgb2xyz = mat3(
-    0.4124564, 0.2126729, 0.0193339,
-    0.3575761, 0.7151522, 0.1191920,
-    0.1804375, 0.0721750, 0.9503041
-);
-
-uniform mat3 xyz2rgb = mat3(
-    3.2404542, -0.9692660, 0.0556434,
-    -1.5371385, 1.8760108, -0.2040259,
-    -0.4985314, 0.0415560, 1.0572252
-);
-
 uniform float Exposure = 0.35;
-uniform float White = 0.928;
-uniform bool DoToneMap = true;
 uniform float FogStart;
 uniform float FogEnd;
 uniform vec3 FogColour;
-uniform float LumThresh;
-uniform float PixOffset[10] = float[](0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
-uniform float Weight[10];
-
-
-
-const vec3 lum = vec3(0.2126, 0.7152, 0.0722);
-
-
-vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour);
-vec3 directionalLightModel(vec3 n, vec3 texColour);
-
-
+uniform vec3 ViewPos;
+uniform mat4 view;
+uniform float TextureScale = 20.0;
 
 vec3 Colour;
 
 //position of fragment in view space
 in vec3 Position;
 in vec3 WorldPosition;
+//position of fragment in world space
 in vec3 Normal;
 in vec2 TexCoord;
 
-uniform mat4 view;
-uniform float TextureScale = 20.0;
-
 layout(binding = 1) uniform sampler2D BrickTex;
 
-
+vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour);
+vec3 directionalLightModel(vec3 n, vec3 texColour);
 
 void main() {
     
+    //Fix normals
     vec3 adjustedNormal = Normal;
     if (!gl_FrontFacing) {
         adjustedNormal = -Normal;
     }
-    //vec3 n = normalize(adjustedNormal);
-    mat2 rotationMatrix = mat2(0.0, -1.0, 1.0, 0.0);
-
     
+    //Rotate 90 degrees clockwise
+    mat2 rotationMatrix = mat2(0.0, -1.0, 1.0, 0.0);    
     vec2 rotatedTexCoord = rotationMatrix * TexCoord;
 
     vec3 textureColor = texture(BrickTex, rotatedTexCoord * TextureScale).rgb;
+    
     vec3 colour = vec3(0.0);    
     for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
     {        
         colour += phongModel(i, Position, adjustedNormal, textureColor.rgb);
     }
 
-     if (directionalLight.Enabled) {
+    if (directionalLight.Enabled) {
         colour += directionalLightModel(adjustedNormal, textureColor);
     }
-
-    //First calculate frag colour. Layout specified means this is sent to colour attachment 0
-    FragColour = vec4(colour, 1.0);
     
+    FragColour = vec4(colour, 1.0);    
 }
 
 vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     
+    //Two checks to make sure a disabled light isn't rendered
     if (!pointLights[light].Enabled) {
         return vec3(0.0f);
     }
 
     if (pointLights[light].Position == vec3(0.0f, 0.0f, 0.0f)) {        
         return vec3(0.0f);
-    }
-
+    }   
     
-    
-    vec3 lightPosView = vec3(view * vec4(pointLights[light].Position, 1.0));
-    vec3 LightDir = normalize(lightPosView - position);
-    vec3 viewPosView = vec3(view * vec4(ViewPos, 1.0));
+    vec3 lightPosView = vec3(view * vec4(pointLights[light].Position, 1.0)); //Convert light position to view space
+    vec3 LightDir = normalize(lightPosView - position); //Get light direction in view space
+    vec3 viewPosView = vec3(view * vec4(ViewPos, 1.0)); //Turn view pos from world to view space
    
-    float distance = length(lightPosView - position);
+    float distance = length(lightPosView - position); //Distance as view space light post to view space fragment position
 
     //Attenuation formula
-    float attenuation = 1.0 / (pointLights[light].Constant +
-                               pointLights[light].Linear * distance +
-                               pointLights[light].Quadratic * (distance * distance));
+    float attenuation = 1.0 / (pointLights[light].Constant + pointLights[light].Linear * distance +
+                                pointLights[light].Quadratic * (distance * distance));
 
     //Ambient
     vec3 AmbientLight = Material.Ka * pointLights[light].La * texColour * attenuation;
@@ -145,8 +112,7 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
     //Diffuse
     float sDotN = max(dot(n, LightDir), 0.0);
     vec3 DiffuseLight = Material.Kd * sDotN * pointLights[light].Ld * texColour * attenuation;
-
-    //View dir is usually cameraPos - FragPos. Camera pos is 0, so this becomes - pos
+  
     vec3 viewDir = normalize((viewPosView) - position);
     vec3 reflectDir = reflect(-LightDir, n);
 
@@ -163,9 +129,7 @@ vec3 phongModel(int light, vec3 position, vec3 n, vec3 texColour){
 
     vec3 SpecularLight = Material.Ks * pointLights[light].Ld * specular * attenuation;
 
-    return AmbientLight + DiffuseLight + SpecularLight;
-
-    
+    return AmbientLight + DiffuseLight + SpecularLight;    
 }
 
 vec3 directionalLightModel(vec3 n, vec3 texColour) {
