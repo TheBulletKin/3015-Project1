@@ -216,15 +216,15 @@ void SceneBasic_Uniform::initScene()
 
 	objectProg.use();
 	objectProg.setUniform("directionalLight.Direction", lightDirection);
-	objectProg.setUniform("directionalLight.La", lightAmbient * 0.6f);
-	objectProg.setUniform("directionalLight.Ld", lightDiffuse * 0.6f);
+	objectProg.setUniform("directionalLight.La", lightAmbient * 1.0f);
+	objectProg.setUniform("directionalLight.Ld", lightDiffuse * 0.7f);
 	objectProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
 	objectProg.setUniform("directionalLight.Enabled", true);
 
 	terrainProg.use();
 	terrainProg.setUniform("directionalLight.Direction", lightDirection);
-	terrainProg.setUniform("directionalLight.La", lightAmbient * 0.6f);
-	terrainProg.setUniform("directionalLight.Ld", lightDiffuse * 0.6f);
+	terrainProg.setUniform("directionalLight.La", lightAmbient * 1.0f);
+	terrainProg.setUniform("directionalLight.Ld", lightDiffuse * 0.67f);
 	terrainProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
 	terrainProg.setUniform("directionalLight.Enabled", true);
 
@@ -718,7 +718,7 @@ void SceneBasic_Uniform::pass1() {
 	glBindTexture(GL_TEXTURE_2D, brickID);
 	model = mat4(1.0f);
 	model = glm::scale(model, vec3(0.3f, 0.3f, 0.3f));
-	model = glm::translate(model, vec3(-7.0f, 8.0f, -27.0f));
+	model = glm::translate(model, vec3(-7.0f, 6.0f, -27.0f));
 	setMatrices(objectProg);
 	RuinMesh->render();
 

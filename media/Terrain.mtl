@@ -1,2 +1,12 @@
 # Blender 4.2.2 LTS MTL File: 'Terrain.blend'
 # www.blender.org
+
+newmtl ant01_NormalOnly
+Ns 58.037193
+Ka 1.000000 1.000000 1.000000
+Kd 0.060142 0.043052 0.025254
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
