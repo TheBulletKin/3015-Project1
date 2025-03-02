@@ -476,18 +476,18 @@ void SceneBasic_Uniform::update(float t)
 void SceneBasic_Uniform::render()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
 	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
-
+	glEnable(GL_DEPTH_TEST);
 	skyProg.use();
 	glDepthMask(GL_FALSE);
 	model = mat4(1.0f);
 	setMatrices(skyProg);
 	sky.render();
 	glDepthMask(GL_TRUE);
-
+	
 
 	pass1();
 
@@ -601,7 +601,7 @@ void SceneBasic_Uniform::setupFBO() {
 	glGenTextures(1, &renderTex);
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, renderTex);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, width, height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -611,10 +611,6 @@ void SceneBasic_Uniform::setupFBO() {
 		GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0
 	);
 	
-
-	//Attach this texture to the frame buffer
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0);
-
 
 	
 	//Render buffer object for depth and stencil attachments that won't be sampled by me
@@ -764,14 +760,14 @@ void SceneBasic_Uniform::pass1() {
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDisable(GL_DEPTH_TEST);
-	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	//glClear(GL_COLOR_BUFFER_BIT);
 	screenHdrProg.use();
 	model = mat4(1.0f);
 	view = mat4(1.0f);
 	projection = mat4(1.0f);
 	setMatrices(screenHdrProg);
-	screenHdrProg.setUniform("hdr", hdr);
+	screenHdrProg.setUniform("hdr", false);
 	screenHdrProg.setUniform("exposure", exposure);
 	glBindVertexArray(fsQuad);
 	glActiveTexture(GL_TEXTURE8);
