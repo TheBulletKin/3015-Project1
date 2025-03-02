@@ -1,5 +1,6 @@
 grass_02_1k - https://freestylized.com/material/grass_02/
 cliff_rocks_02_1k - https://freestylized.com/material/cliff_rocks_02/
-strone_bricks_wall_02 - https://freestylized.com/material/stones_bricks_wall_02/
+stone_bricks_wall_02 - https://freestylized.com/material/stones_bricks_wall_02/
+stone_bricks_wall_04 - https://freestylized.com/material/stones_bricks_wall_04/
 firefly - https://www.pngegg.com/en/png-dxdif
 night sky - https://ambientcg.com/view?id=NightSkyHDRI001

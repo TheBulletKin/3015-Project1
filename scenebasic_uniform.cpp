@@ -571,28 +571,9 @@ void SceneBasic_Uniform::setupFBO() {
 	* 5. Tell openGL that when rendering to the frame buffer, write colours into colour attachment 0.
 	*/
 
-	/* Refactor plan:
-	* Generate the HDR frame buffer
-	* Generate hdr texture (where base scene is first rendered to
-	* First render to a screen texture without any editing
-	* Use two shaders for this. Just to prove base functionality
-	*/
-
 	//Create FBO for first render pass
 	glGenFramebuffers(1, &hdrFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-
-	/* Before, the shader rendering the scene only had a frag colour output
-	* For bloom to work you need the base scene and then the bright colours.
-	* Can add 'brightColour' as an output colour in the shader so it can pass that along in one render pass
-	* This creates two textures that are 'linked' to that one frame buffer
-	* Since the shader now has layout locations 0 and 1 for fragColour and brightColour,
-	*  the texture assigned to colour attachment 0 will hold the fragColour,
-	*  and the texture assigned to colour attachment 1 will hold the brightColour
-	* (look in shader for more info)
-	* Texture unit 8 holds first, 9 holds bright pixels
-	*/
-
 
 	glGenTextures(1, &renderTex);
 	glActiveTexture(GL_TEXTURE8);
@@ -608,7 +589,6 @@ void SceneBasic_Uniform::setupFBO() {
 	);
 
 
-
 	//Render buffer object for depth and stencil attachments that won't be sampled by me
 	glGenRenderbuffers(1, &depthRbo);
 	glBindRenderbuffer(GL_RENDERBUFFER, depthRbo);
@@ -622,13 +602,6 @@ void SceneBasic_Uniform::setupFBO() {
 }
 
 void SceneBasic_Uniform::pass1() {
-	/* First pass undergoes the old render process, simply draws all objects to the scene as was originally required
-	*
-	*/
-
-	//Bind HDR framebuffer to render to hdrTex;
-	
-
 
 	view = camera.GetViewMatrix();
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);

@@ -47,7 +47,7 @@ uniform float FogStart;
 uniform float FogEnd;
 uniform vec3 FogColour;
 
-uniform float TextureScale = 20.0;
+uniform float TextureScale = 30.0;
 
 
 //position of fragment in view space

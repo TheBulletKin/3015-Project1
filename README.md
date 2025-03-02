@@ -1,23 +1,16 @@
 # 3015 Coursework 1 - Breath of the Mild 
 By Oliver Warry
 
+Demo video [here](https://youtu.be/KHnyvOIJeQM)
+
 ## Overview
 Inspired by Tears of the Kingdom, I wanted to recreate the terrain and visual style of a place in the game with this old ruin perched on a hill. 
 ![Inspiration](Documentation_images/inspo.jpg)
 
 ## Technical
-Developed with Visual Studio 2022
-OpenGL 4.4
+Developed with Visual Studio 2022 and OpenGL 4.4.
 ### External Dependencies
-[GLAD](https://github.com/Dav1dde/glad)
-
-[GLFW](https://www.glfw.org/)
-
-[GLM](https://github.com/g-truc/glm)
-
-[FastNoiseLite](https://github.com/Auburn/FastNoiseLite)
-
-[OpenGL](https://www.opengl.org/)
+[GLAD](https://github.com/Dav1dde/glad) | [GLFW](https://www.glfw.org/) | [GLM](https://github.com/g-truc/glm) | [FastNoiseLite](https://github.com/Auburn/FastNoiseLite) | [OpenGL](https://www.opengl.org/)
 
 ### Asset declaration
 Some textures were not directly created by me, being sources from other sites. All citations and sources are held in [TextureSources.txt](media/texture/TextureSources.txt)
