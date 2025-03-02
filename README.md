@@ -7,6 +7,9 @@ Demo video [here](https://youtu.be/KHnyvOIJeQM)
 Inspired by Tears of the Kingdom, I wanted to recreate the terrain and visual style of a place in the game with this old ruin perched on a hill. 
 ![Inspiration](Documentation_images/inspo.jpg)
 
+And this is my project outcome.
+![Demo image](Documentation_images/DEMO.png)
+
 ## Technical
 Developed with Visual Studio 2022 and OpenGL 4.4.
 ### External Dependencies
