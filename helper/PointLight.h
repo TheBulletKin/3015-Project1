@@ -1,11 +1,10 @@
 #ifndef POINTLIGHT_H
 #define POINTLIGHT_H
 
-#include <glad/glad.h> // holds all OpenGL type declarations
+#include <glad/glad.h> 
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
 
 #include <vector>
 #include <string>
@@ -13,17 +12,16 @@
 using namespace glm;
 using namespace std;
 
-
 class PointLight {
 public:    
-    float constant;      // Constant attenuation factor
-    float linear;        // Linear attenuation factor
-    float quadratic;     // Quadratic attenuation factor
-    vec3 ambient;        // Ambient color of the light
-    vec3 diffuse;        // Diffuse color of the light
-    vec3 specular;  
-    float brightness;
-    // Specular color of the light
+    float constant; // Constant attenuation factor
+    float linear; // Linear attenuation factor
+    float quadratic; // Quadratic attenuation factor
+    vec3 ambient; // Ambient color of the light
+    vec3 diffuse; // Diffuse color of the light
+    vec3 specular; // Diffuse color of the light
+    float brightness; //0-1 value, light multiplier for easing
+    
 
     // Constructor to initialize all members
     PointLight(float constant, float linear, float quadratic,
@@ -36,11 +34,9 @@ public:
         specular(specular)
     {
     }
-
     void SetIntensity(float brightness) {
         this->brightness = brightness;
-    }
-    
+    }    
 };
 
 #endif
