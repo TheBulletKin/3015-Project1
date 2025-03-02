@@ -170,7 +170,7 @@ void SceneBasic_Uniform::initScene()
 
 #pragma region Directional Light Setup
 
-	vec3 lightDirection = normalize(vec3(0.5f, -1.0f, 0.5f)); // Light coming from top-left
+	vec3 lightDirection = normalize(vec3(0.5f, -1.0f, 0.5f));
 	vec3 lightAmbient = vec3(0.2f, 0.2f, 0.4f);
 	vec3 lightDiffuse = vec3(0.3f, 0.3f, 0.5f);
 	vec3 lightSpecular = vec3(1.0f, 1.0f, 1.0f);
@@ -644,6 +644,7 @@ void SceneBasic_Uniform::setupFBO() {
 	glGenFramebuffers(1, &hdrFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
 
+	//Create blank texture to render to and set it as the FBO target
 	glGenTextures(1, &renderTex);
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, renderTex);
