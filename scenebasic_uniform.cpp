@@ -74,7 +74,7 @@ void SceneBasic_Uniform::initScene()
 	
 
 	glActiveTexture(GL_TEXTURE3);
-	skyCubeID = Texture::loadHdrCubeMap("media/texture/cubeMap/night");
+	skyCubeID = Texture::loadCubeMap("media/texture/cubeMap/night");
 
 	glActiveTexture(GL_TEXTURE5);
 	fireFlyTexID = Texture::loadTexture("media/texture/firefly/fireFlyTex.png");
@@ -475,20 +475,18 @@ void SceneBasic_Uniform::update(float t)
 
 void SceneBasic_Uniform::render()
 {
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
+	glDisable(GL_DEPTH_TEST);
 	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);	
+
+	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
+	glEnable(GL_DEPTH_TEST);
 	skyProg.use();
 	glDepthMask(GL_FALSE);
-	
 	model = mat4(1.0f);
 	setMatrices(skyProg);
 	sky.render();
 	glDepthMask(GL_TRUE);
-	
 	
 
 	pass1();
@@ -613,8 +611,7 @@ void SceneBasic_Uniform::setupFBO() {
 		GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, renderTex, 0
 	);
 	
-	GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0 };
-	glDrawBuffers(1, drawBuffers);
+
 	
 	//Render buffer object for depth and stencil attachments that won't be sampled by me
 	glGenRenderbuffers(1, &depthRbo);
@@ -633,9 +630,11 @@ void SceneBasic_Uniform::pass1() {
 	*
 	*/
 
-	
-	
-	
+	//Bind HDR framebuffer to render to hdrTex;
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 	view = camera.GetViewMatrix();
 	projection = glm::perspective(glm::radians(70.0f), (float)width / height, 0.3f, 100.0f);
 	
@@ -760,14 +759,15 @@ void SceneBasic_Uniform::pass1() {
 	//Second pass - HDR	
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		
-
+	glDisable(GL_DEPTH_TEST);
+	//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+	//glClear(GL_COLOR_BUFFER_BIT);
 	screenHdrProg.use();
 	model = mat4(1.0f);
 	view = mat4(1.0f);
 	projection = mat4(1.0f);
 	setMatrices(screenHdrProg);
-	screenHdrProg.setUniform("hdr", true);
+	screenHdrProg.setUniform("hdr", false);
 	screenHdrProg.setUniform("exposure", exposure);
 	glBindVertexArray(fsQuad);
 	glActiveTexture(GL_TEXTURE8);
