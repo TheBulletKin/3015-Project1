@@ -84,7 +84,7 @@ void main() {
 
     vec4 TexColour = texture(GrassTex, TexCoord * TextureScale);
 
-    //Triplanar texture mapping
+    //Slope texture blending
     /* The fragment's normal is essentially representing a direction by it's colour
     * Therefore the y component of worldNormal is high for flat surfaces, low for vertical ones 
     * Slopefactor is a 0 - 1 value that describes the weighting of that blend between grass and cliff
@@ -97,8 +97,7 @@ void main() {
     //Scale the textures
     vec3 grassTex = texture(GrassTex, TexCoord * TextureScale).rgb;
     vec3 rockTex = texture(CliffTex, TexCoord * TextureScale).rgb;
-
-    //Mix the textures based off the slope factor determined earlier
+  
     vec3 blendedTex = mix(rockTex, grassTex, slopeFactor);
 
 

@@ -475,7 +475,6 @@ void SceneBasic_Uniform::update(float t)
 
 void SceneBasic_Uniform::render()
 {
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
@@ -490,9 +489,6 @@ void SceneBasic_Uniform::render()
 
 
 	pass1();
-
-
-
 }
 
 void SceneBasic_Uniform::resize(int w, int h)
@@ -740,17 +736,8 @@ void SceneBasic_Uniform::pass1() {
 	TerrainMesh->render();
 
 
-	//prog.use();
-	//prog.setUniform("Material.Kd", 0.1f, 0.1f, 0.1f);
-	//prog.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
-	//prog.setUniform("Material.Ka", 0.1f, 0.1f, 0.1f);
-	//prog.setUniform("Material.Shininess", 64.0f);
 
-
-
-
-
-	//Second pass - HDR	
+	//Second pass - HDR		
 	/*
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glDisable(GL_DEPTH_TEST);
@@ -761,7 +748,7 @@ void SceneBasic_Uniform::pass1() {
 	view = mat4(1.0f);
 	projection = mat4(1.0f);
 	setMatrices(screenHdrProg);
-	screenHdrProg.setUniform("hdr", false);
+	screenHdrProg.setUniform("hdr", hdr);
 	screenHdrProg.setUniform("exposure", exposure);
 	glBindVertexArray(fsQuad);
 	glActiveTexture(GL_TEXTURE8);
@@ -771,12 +758,5 @@ void SceneBasic_Uniform::pass1() {
 
 }
 
-
-
-float SceneBasic_Uniform::gauss(float x, float sigma2) {
-	double coeff = 1.0 / (two_pi<double>() * sigma2);
-	double expon = -(x * x) / (2.0 * sigma2);
-	return (float)(coeff * exp(expon));
-}
 
 

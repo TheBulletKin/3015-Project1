@@ -1,8 +1,8 @@
 #version 460
 //Set up for vertex lighting
 
-layout ( points ) in; //Type of primitive to recieve
-layout ( triangle_strip, max_vertices = 4) out; //The type of primitive to produce
+layout ( points ) in;
+layout ( triangle_strip, max_vertices = 4) out;
 
 uniform float Size2; //half width of the quad
 

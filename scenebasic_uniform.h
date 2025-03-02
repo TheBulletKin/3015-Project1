@@ -53,7 +53,7 @@ private:
 
     int bloomBufWidth, bloomBufHeight;
     bool hdr = true;
-    float exposure = 0.9f;
+    float exposure = 1.5f;
     bool bloom = false;
 
     GLuint sprites;
