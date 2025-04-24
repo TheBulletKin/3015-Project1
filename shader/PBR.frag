@@ -8,6 +8,9 @@ in vec3 Position;
 in vec3 WorldPosition;
 in vec3 Normal;
 
+uniform mat4 view;
+uniform vec3 ViewPos;
+
 struct LightInfo {
     vec4 Position;
     vec3 I; //Light intensity
@@ -66,12 +69,14 @@ vec3 microfacetModel(int lightIdx, vec3 position, vec3 n){
     //L is light direction.
     vec3 l = vec3(0.0);
     vec3 lightI = Light[lightIdx].I;
-    if(Light[lightIdx].Position.w == 0.0) {  //W = 0 for directional lights
-        l = normalize(Light[lightIdx].Position.xyz);
+    //vec4 lightPosition = Light[lightIdx].Position;
+    vec4 lightPosition = view * Light[lightIdx].Position;
+    if(lightPosition.w == 0.0) {  //W = 0 for directional lights
+        l = normalize(lightPosition.xyz);
     }
     else {
         //Light direction is the vector of the fragment position to the light source
-        l = Light[lightIdx].Position.xyz - position;
+        l = lightPosition.xyz - position;
         float dist = length(l);
         l = normalize(l);
         lightI /= (dist * dist); //Inverse square falloff
@@ -79,7 +84,7 @@ vec3 microfacetModel(int lightIdx, vec3 position, vec3 n){
 
     //Position is the world space position of the fragment. V is the direction from that point to the camera.
     //Since the vertex shader uses ModelView matrix, it's in view space, camera origin is 0,0,0
-    vec3 v = normalize(-position);
+    vec3 v = normalize(0 - position);
     //Halfway vector. Adding the light direction vector to the vector of the fragment to the camera, normalising gives the vector inbetween
     vec3 h = normalize(v + l);
 

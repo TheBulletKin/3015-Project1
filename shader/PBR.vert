@@ -8,6 +8,7 @@ layout (location = 1) in vec3 VertexNormal;
 
 out vec3 Position;
 out vec3 Normal;
+out vec3 WorldPosition;
 
 
 uniform mat4 ModelViewMatrix;
@@ -29,7 +30,8 @@ void main()
   
     //Multiply by model and view to transform to view space
     Position = vec3(ModelViewMatrix * vec4(VertexPosition, 1.0));    
-   // Position = vec3(model * vec4(VertexPosition, 1.0)); 
+    //Position = vec3(model * vec4(VertexPosition, 1.0)); 
+    WorldPosition = vec3(model * vec4(VertexPosition, 1.0));
    
     
     //Normal Matrix is glm::transpose(glm::inverse(glm::mat3(mv))); in code.

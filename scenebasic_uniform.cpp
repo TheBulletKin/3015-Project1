@@ -152,12 +152,12 @@ void SceneBasic_Uniform::initScene()
 	PBRProg.setUniform("material.Rough", 0.3f);
 	PBRProg.setUniform("material.Metal", 0);
 	PBRProg.setUniform("material.Colour", vec3(0.4f));
-	PBRProg.setUniform("Light[0].I", vec3(25.0f));
-	PBRProg.setUniform("Light[0].Position", vec4(-10.0f, 13.0f, -20.0f, 1));
-	PBRProg.setUniform("Light[1].I", vec3(25.0f));
-	PBRProg.setUniform("Light[1].Position", vec4(-7.0f, 13.0f, -23.0f, 1));
-	PBRProg.setUniform("Light[2].I", vec3(25.0f));
-	PBRProg.setUniform("Light[2].Position", vec4( - 3.0f, 13.0f, -27.0f, 1));
+	PBRProg.setUniform("Light[0].I", vec3(2.0f));
+	PBRProg.setUniform("Light[0].Position", vec4(-3.5f, 3.0f, -8.0f, 1));
+	PBRProg.setUniform("Light[1].I", vec3(2.0f));
+	PBRProg.setUniform("Light[1].Position", vec4(-0.2f, 2.0f, -8.5f, 1));
+	PBRProg.setUniform("Light[2].I", vec3(0.2f));
+	PBRProg.setUniform("Light[2].Position", vec4(-1.0f, 0.5f, -6.8f, 1));
 
 	/* Example
 	PBRProg.setUniform("Light[0].L", vec3(45.0f));
