@@ -1,0 +1,121 @@
+#version 460
+
+layout (location = 0) out vec4 FragColour;
+
+const float PI = 3.14159265358979323846;
+
+in vec3 Position;
+in vec3 WorldPosition;
+in vec3 Normal;
+
+struct LightInfo {
+    vec4 Position;
+    vec3 I; //Light intensity
+}; 
+
+uniform LightInfo Light[3];
+
+struct MaterialInfo{
+    float Rough;
+    bool Metal;
+    vec3 Colour;
+};
+
+uniform MaterialInfo material;
+
+//PBR works around using roughness, metalness and colour
+
+//alpha is the surface roughness. The function works better when using a squared value
+//H is the halfway vector between the light direction and the view direction. N is normal.
+//So, if nDotH is high, it means the light is being reflected into the viewer's perspective from the fragment's normal
+//If surface microfacets are mostly aligned it means the surface roughness is low. GGX returns high.
+//Acts as a normal distribution, creating that long falloff effect on the surface
+float ggxDistribution(float nDotH){
+    float alpha2 = material.Rough * material.Rough * material.Rough * material.Rough;
+    float d = (nDotH * nDotH) * (alpha2 - 1) + 1;
+    return alpha2 / (PI * d * d);
+}
+
+//Geometry function
+//Surfaces with bump can block light from reaching parts of the surface behind it.
+//This calculates that effect
+float geomSmith(float dotProd){
+    float k = (material.Rough + 1.0) * (material.Rough + 1.0) / 8.0;
+    float denom = dotProd * (1 - k) + k;
+    return 1.0 / denom;
+}
+
+//Fresnel is the 'glow' around the edges of surfaces
+vec3 schlickFresnel(float lDotH) {
+    vec3 f0 = vec3(0.04);
+    if (material.Metal){
+        f0 = material.Colour;
+    }
+    return f0 + (1 - f0) * pow(1.0 - lDotH, 5);
+}
+
+//Computes the final light reflection for a point on a surface
+vec3 microfacetModel(int lightIdx, vec3 position, vec3 n){
+    
+    //Base diffuse colour, which is 0 by default if a metal
+    vec3 diffuseBrdf = vec3(0.0); //Metallic
+    if (!material.Metal){
+        diffuseBrdf = material.Colour;
+    }
+
+    //L is light direction.
+    vec3 l = vec3(0.0);
+    vec3 lightI = Light[lightIdx].I;
+    if(Light[lightIdx].Position.w == 0.0) {  //W = 0 for directional lights
+        l = normalize(Light[lightIdx].Position.xyz);
+    }
+    else {
+        //Light direction is the vector of the fragment position to the light source
+        l = Light[lightIdx].Position.xyz - position;
+        float dist = length(l);
+        l = normalize(l);
+        lightI /= (dist * dist); //Inverse square falloff
+    }
+
+    //Position is the world space position of the fragment. V is the direction from that point to the camera.
+    //Since the vertex shader uses ModelView matrix, it's in view space, camera origin is 0,0,0
+    vec3 v = normalize(-position);
+    //Halfway vector. Adding the light direction vector to the vector of the fragment to the camera, normalising gives the vector inbetween
+    vec3 h = normalize(v + l);
+
+    //Surface normal and halfway vector (direction of light from fragment and view position to fragment)
+    //Essentially how close the normal is to the angle of reflection
+    float nDotH = dot(n ,h);
+    //Light direction to that halfway vector, for fresnel
+    float lDotH = dot(l, h);
+    //Normal to the light direction, to find how much light actually hits the surface
+    float nDotL = max(dot(n, l), 0);
+    //Essentially how aligned the camera is with the surface normal
+    float nDotV = dot(n, v);
+
+    //Specular value of surface
+    vec3 specBrdf = 0.25 * ggxDistribution(nDotH) * schlickFresnel(lDotH) * geomSmith(nDotL) * geomSmith(nDotV);
+
+    return (diffuseBrdf + PI * specBrdf) * lightI * nDotL;
+}
+
+void main(){
+    vec3 sum = vec3(0.0);
+    vec3 n = normalize(Normal);
+
+    //Iterates over all light sources
+    for (int i = 0; i < 3; i++){
+        sum += microfacetModel(i, Position, n);
+    }
+
+    //Gamma correction
+    sum = pow(sum, vec3(1.0/2.2));
+
+    FragColour = vec4(sum, 1);
+}
+
+
+
+
+
+

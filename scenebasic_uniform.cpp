@@ -147,8 +147,30 @@ void SceneBasic_Uniform::initScene()
 
 #pragma endregion
 
+#pragma region PBR Test
+	PBRProg.use();
+	PBRProg.setUniform("material.Rough", 0.3f);
+	PBRProg.setUniform("material.Metal", 0);
+	PBRProg.setUniform("material.Colour", vec3(0.4f));
+	PBRProg.setUniform("Light[0].I", vec3(25.0f));
+	PBRProg.setUniform("Light[0].Position", vec4(-10.0f, 13.0f, -20.0f, 1));
+	PBRProg.setUniform("Light[1].I", vec3(25.0f));
+	PBRProg.setUniform("Light[1].Position", vec4(-7.0f, 13.0f, -23.0f, 1));
+	PBRProg.setUniform("Light[2].I", vec3(25.0f));
+	PBRProg.setUniform("Light[2].Position", vec4( - 3.0f, 13.0f, -27.0f, 1));
 
-	
+	/* Example
+	PBRProg.setUniform("Light[0].L", vec3(45.0f));
+	PBRProg.setUniform("Light[0].Position", view * lightPos);
+	PBRProg.setUniform("Light[1].L", vec3(0.3f));
+	PBRProg.setUniform("Light[1].Position", vec4(0, 0.15f, -1.0f, 0));
+	PBRProg.setUniform("Light[2].L", vec3(45.0f));
+	PBRProg.setUniform("Light[2].Position", view * vec4(-7, 3, 7, 1));
+	*/
+
+#pragma endregion
+
+
 #pragma region Material Setup
 
 	terrainProg.use();	
@@ -306,6 +328,9 @@ void SceneBasic_Uniform::compile()
 		terrainProg.compileShader("shader/terrain.vert");
 		terrainProg.compileShader("shader/terrain.frag");
 		terrainProg.link();
+		PBRProg.compileShader("shader/PBR.vert");
+		PBRProg.compileShader("shader/PBR.frag");
+		PBRProg.link();
 
 	}
 	catch (GLSLProgramException& e) {
@@ -321,19 +346,20 @@ void SceneBasic_Uniform::update(float t)
 
 	processInput(window);
 
+	/*
 	if (currentFireFlyCount < maxFireFlyCount)
 	{
 		fireFlySpawnTimer += deltaTime;
 	}
 	else {
 		fireFlySpawnTimer = 0.0f;
-	}
+	}*/
 
 	terrainProg.use();
 	terrainProg.setUniform("time", t / 1000);
 
 #pragma region New Firefly Spawning
-
+	/*
 	if (fireFlySpawnTimer >= fireFlySpawnCooldown && currentFireFlyCount < maxFireFlyCount)
 	{
 		PointLight* newLight = new PointLight(
@@ -365,10 +391,11 @@ void SceneBasic_Uniform::update(float t)
 
 		fireFlySpawnTimer = 0.0f;
 		fireFlySpawnCooldown = linearRand(3.0f, 6.0f);
-	}
+	}*/
 #pragma endregion
 
 #pragma region Firefly Update and Deletion
+	/*
 	for (size_t i = 0; i < fireFlies.size(); i++)
 	{
 		FireFly* fireFly = fireFlies[i];
@@ -410,7 +437,7 @@ void SceneBasic_Uniform::update(float t)
 				i--;
 			}
 		}
-	}
+	}*/
 #pragma endregion
 
 }
@@ -506,7 +533,8 @@ void SceneBasic_Uniform::render()
 #pragma region Object Rendering
 
 	//Ruin Rendering
-	objectProg.use();
+	//objectProg.use();
+	PBRProg.use();
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, brickTexID);
@@ -514,7 +542,8 @@ void SceneBasic_Uniform::render()
 	model = mat4(1.0f);
 	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
 	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
-	setMatrices(objectProg);
+	setMatrices(PBRProg);
+	//setMatrices(objectProg);
 	RuinMesh->render();
 
 	//Terrain rendering
@@ -532,7 +561,7 @@ void SceneBasic_Uniform::render()
 	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
 	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
 	setMatrices(terrainProg);
-	TerrainMesh->render();
+	//TerrainMesh->render();
 
 #pragma endregion
 
