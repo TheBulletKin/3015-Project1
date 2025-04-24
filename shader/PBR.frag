@@ -7,9 +7,11 @@ const float PI = 3.14159265358979323846;
 in vec3 Position;
 in vec3 WorldPosition;
 in vec3 Normal;
+in vec2 TexCoord;
 
 uniform mat4 view;
 uniform vec3 ViewPos;
+uniform float TextureScale = 20.0;
 
 struct LightInfo {
     vec4 Position;
@@ -25,6 +27,8 @@ struct MaterialInfo{
 };
 
 uniform MaterialInfo material;
+
+layout(binding = 1) uniform sampler2D BrickTex;
 
 //PBR works around using roughness, metalness and colour
 
@@ -58,13 +62,7 @@ vec3 schlickFresnel(float lDotH) {
 }
 
 //Computes the final light reflection for a point on a surface
-vec3 microfacetModel(int lightIdx, vec3 position, vec3 n){
-    
-    //Base diffuse colour, which is 0 by default if a metal
-    vec3 diffuseBrdf = vec3(0.0); //Metallic
-    if (!material.Metal){
-        diffuseBrdf = material.Colour;
-    }
+vec3 microfacetModel(int lightIdx, vec3 position, vec3 n, vec3 baseColour){
 
     //L is light direction.
     vec3 l = vec3(0.0);
@@ -101,16 +99,26 @@ vec3 microfacetModel(int lightIdx, vec3 position, vec3 n){
     //Specular value of surface
     vec3 specBrdf = 0.25 * ggxDistribution(nDotH) * schlickFresnel(lDotH) * geomSmith(nDotL) * geomSmith(nDotV);
 
-    return (diffuseBrdf + PI * specBrdf) * lightI * nDotL;
+    return (baseColour + PI * specBrdf) * lightI * nDotL;
 }
 
-void main(){
+void main(){   
     vec3 sum = vec3(0.0);
-    vec3 n = normalize(Normal);
+    vec3 n = normalize(Normal);   
 
+    mat2 rotationMatrix = mat2(0.0, -1.0, 1.0, 0.0);    
+    vec2 rotatedTexCoord = rotationMatrix * TexCoord;
+    vec3 textureColor = texture(BrickTex, rotatedTexCoord * TextureScale).rgb;
+    
+
+    vec3 baseColour = textureColor;
+    if (material.Metal) {
+        baseColour = material.Colour;
+    }
+    
     //Iterates over all light sources
     for (int i = 0; i < 3; i++){
-        sum += microfacetModel(i, Position, n);
+        sum += microfacetModel(i, Position, n, baseColour);
     }
 
     //Gamma correction

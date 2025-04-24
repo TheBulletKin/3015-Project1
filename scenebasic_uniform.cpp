@@ -149,12 +149,12 @@ void SceneBasic_Uniform::initScene()
 
 #pragma region PBR Test
 	PBRProg.use();
-	PBRProg.setUniform("material.Rough", 0.3f);
+	PBRProg.setUniform("material.Rough", 0.97f);
 	PBRProg.setUniform("material.Metal", 0);
 	PBRProg.setUniform("material.Colour", vec3(0.4f));
-	PBRProg.setUniform("Light[0].I", vec3(2.0f));
+	PBRProg.setUniform("Light[0].I", vec3(0.2f));
 	PBRProg.setUniform("Light[0].Position", vec4(-3.5f, 3.0f, -8.0f, 1));
-	PBRProg.setUniform("Light[1].I", vec3(2.0f));
+	PBRProg.setUniform("Light[1].I", vec3(0.2f));
 	PBRProg.setUniform("Light[1].Position", vec4(-0.2f, 2.0f, -8.5f, 1));
 	PBRProg.setUniform("Light[2].I", vec3(0.2f));
 	PBRProg.setUniform("Light[2].Position", vec4(-1.0f, 0.5f, -6.8f, 1));
