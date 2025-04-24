@@ -108,12 +108,12 @@ void main(){
 
     mat2 rotationMatrix = mat2(0.0, -1.0, 1.0, 0.0);    
     vec2 rotatedTexCoord = rotationMatrix * TexCoord;
-    vec3 textureColor = texture(BrickTex, rotatedTexCoord * TextureScale).rgb;
+    vec3 textureColour = texture(BrickTex, rotatedTexCoord * TextureScale).rgb;
     
 
-    vec3 baseColour = textureColor;
-    if (material.Metal) {
-        baseColour = material.Colour;
+    vec3 baseColour = vec3(0.0);
+    if (!material.Metal) {
+        baseColour = textureColour;
     }
     
     //Iterates over all light sources
