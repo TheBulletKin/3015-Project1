@@ -25,12 +25,16 @@ class SceneBasic_Uniform : public Scene
 {
 private:
     //Textures and shaders
-    GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg;
-    GLuint grassTexID, rockTexID, skyBoxTexID, cloudTexID, brickTexID, fireFlyTexID;
+    GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg;
+    GLuint grassTexID, rockTexID, skyBoxTexID, cloudTexID, brickTexID, fireFlyTexID, particleTexID;
     
     GLFWwindow* window;     
 
     float tPrev, lightAngle, lightRotationSpeed;
+
+    GLuint initVel, startTime, particles, nParticles;
+    vec3 emitterPos, emitterDir;
+    float particleLifetime, time;
    
     //Objects
     unique_ptr<ObjMesh> TerrainMesh;
