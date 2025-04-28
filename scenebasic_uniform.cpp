@@ -412,13 +412,16 @@ void SceneBasic_Uniform::initScene()
 
 	shadowProg.use();
 	shadowProg.setUniform("light.Intensity", vec3(0.85f));
-	shadowProg.setUniform("ShadowMap", 8);
+	//shadowProg.setUniform("ShadowMap", 8);
 
 	GLfloat border2[] = { 1.0f, 0.0f, 0.0f, 0.0f };
 	GLuint depthTex;
 	glGenTextures(1, &depthTex);
+	
+	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, depthTex);
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, shadowMapHeight, shadowMapHeight);
+
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, shadowMapWidth, shadowMapHeight);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -426,9 +429,6 @@ void SceneBasic_Uniform::initScene()
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border2);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
-
-	glActiveTexture(GL_TEXTURE8);
-	glBindTexture(GL_TEXTURE_2D, depthTex);
 
 	//FBOs
 	glGenFramebuffers(1, &shadowFBO);
@@ -924,36 +924,8 @@ glDepthMask(GL_TRUE);*/
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(2.5f, 10.f);
 
-	//Ruin Rendering
-	//objectProg.use();
-	PBRProg.use();
+	glDisable(GL_CULL_FACE);
 
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, brickTexID);
-
-	model = mat4(1.0f);
-	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
-	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
-	setMatrices(PBRProg);
-	//setMatrices(objectProg);
-	RuinMesh->render();
-
-	//Terrain rendering
-	terrainProg.use();
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, grassTexID);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, rockTexID);
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, cloudTexID);
-
-	model = mat4(1.0f);
-	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
-	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
-	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
-	setMatrices(terrainProg);
-	//TerrainMesh->render();
 		//Draw scene
 
 	glCullFace(GL_BACK);
@@ -967,37 +939,6 @@ glDepthMask(GL_TRUE);*/
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, width, height);
 	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass2Index);
-
-	//Ruin Rendering
-	//objectProg.use();
-	PBRProg.use();
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, brickTexID);
-
-	model = mat4(1.0f);
-	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
-	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
-	setMatrices(PBRProg);
-	//setMatrices(objectProg);
-	RuinMesh->render();
-
-	//Terrain rendering
-	terrainProg.use();
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, grassTexID);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, rockTexID);
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, cloudTexID);
-
-	model = mat4(1.0f);
-	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
-	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
-	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
-	setMatrices(terrainProg);
-	//TerrainMesh->render();
 	//Draw scene
 
 	objectProg.use();
@@ -1121,7 +1062,7 @@ void SceneBasic_Uniform::setupFBO() {
 
 	//Create blank texture to render to and set it as the FBO target
 	glGenTextures(1, &renderTex);
-	glActiveTexture(GL_TEXTURE8);
+	glActiveTexture(GL_TEXTURE9);
 	glBindTexture(GL_TEXTURE_2D, renderTex);
 	glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, width, height);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

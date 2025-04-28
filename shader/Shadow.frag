@@ -53,7 +53,7 @@ void shadeWithShadow(){
 
     float shadow = 1.0;
     if (ShadowCoord.z >= 0) {
-        shadow = textureProj(ShadowMap, ShadowCoord);
+        shadow = texture(ShadowMap, ShadowCoord.xyz);
     }
 
     //If in shadow, use ambient only
