@@ -15,6 +15,7 @@
 #include "helper/cube.h"
 #include "helper/FireFly.h"
 #include "helper/skybox.h"
+#include "helper/frustum.h"
 
 #include <random>
 #include <math.h>
@@ -25,7 +26,7 @@ class SceneBasic_Uniform : public Scene
 {
 private:
 	//Textures and shaders
-	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg;
+	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg, shadowProg;
 	GLuint grassTexID, rockTexID, skyBoxTexID, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID;
 
 	GLFWwindow* window;
@@ -33,6 +34,11 @@ private:
 	float tPrev, lightAngle, lightRotationSpeed;
 
 
+	//Shadows
+	GLuint shadowFBO, pass1Index, pass2Index;
+	int shadowMapWidth, shadowMapHeight;
+	mat4 lightPV, shadowBias;
+	Frustum lightFrustum;
 
 	//Particles
 	GLuint posBuf[2], velBuf[2], age[2];

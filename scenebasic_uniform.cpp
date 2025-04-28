@@ -71,7 +71,7 @@ void SceneBasic_Uniform::initScene()
 	fireFlyTexID = Texture::loadTexture("media/texture/firefly/fireFlyTex.png");
 
 	glActiveTexture(GL_TEXTURE6);
-	particleTexID = Texture::loadTexture("media/texture/particle/bluewater.png");
+	particleTexID = Texture::loadTexture("media/texture/particle/fire.png");
 
 	//Texture 7 for random particle tex lower down
 
@@ -391,6 +391,65 @@ void SceneBasic_Uniform::initScene()
 #pragma endregion
 
 
+#pragma region Shadows setup
+	shadowMapWidth = 512;
+	shadowMapHeight = 512;
+
+	GLuint programHandle = shadowProg.getHandle();
+	pass1Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "recordDepth");
+	pass2Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "shadeWithShadow");
+
+	shadowBias = mat4(vec4(0.5f, 0.0f, 0.0f, 0.0f),
+		vec4(0.0f, 0.5f, 0.0f, 0.0f),
+		vec4(0.0f, 0.0f, 0.5f, 0.0f),
+		vec4(0.5f, 0.5f, 0.5f, 1.0f));
+
+	float c = 1.65f;
+	vec3 lightPos = vec3(0.0f, c * 5.25f, c * 7.5f);
+	lightFrustum.orient(lightPos, vec3(0.0f), vec3(0.0f, 1.0f, 0.0f));
+	lightFrustum.setPerspective(50.0f, 1.0f, 1.0f, 25.0f);
+	lightPV = shadowBias * lightFrustum.getProjectionMatrix() * lightFrustum.getViewMatrix();
+
+	shadowProg.use();
+	shadowProg.setUniform("light.Intensity", vec3(0.85f));
+	shadowProg.setUniform("ShadowMap", 8);
+
+	GLfloat border2[] = { 1.0f, 0.0f, 0.0f, 0.0f };
+	GLuint depthTex;
+	glGenTextures(1, &depthTex);
+	glBindTexture(GL_TEXTURE_2D, depthTex);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, shadowMapHeight, shadowMapHeight);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border2);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, depthTex);
+
+	//FBOs
+	glGenFramebuffers(1, &shadowFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+		GL_TEXTURE_2D, depthTex, 0);
+
+	GLenum drawBuffers[] = { GL_NONE };
+	glDrawBuffers(1, drawBuffers);
+
+	GLenum result = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	if (result == GL_FRAMEBUFFER_COMPLETE) {
+
+	}
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+
+#pragma endregion
+
 #pragma region Directional Light Setup
 
 	vec3 lightDirection = normalize(vec3(0.5f, -1.0f, 0.5f));
@@ -541,6 +600,9 @@ void SceneBasic_Uniform::compile()
 		glTransformFeedbackVaryings(progHandle, 3, outputNames, GL_SEPARATE_ATTRIBS);
 
 		newParticleProg.link();
+		shadowProg.compileShader("shader/Shadow.vert");
+		shadowProg.compileShader("shader/Shadow.frag");
+		shadowProg.link();
 
 	}
 	catch (GLSLProgramException& e) {
@@ -843,6 +905,107 @@ glDepthMask(GL_TRUE);*/
 
 #pragma endregion
 
+#pragma region Shadows
+
+	view = mat4(1.0f);
+	view = translate(view, vec3(0.0f, 3.0f, 7.0f));
+	view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
+	shadowProg.use();
+	
+	//Pass 1 shadow map gen
+	view = lightFrustum.getViewMatrix();
+	projection = lightFrustum.getProjectionMatrix();
+	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, shadowMapWidth, shadowMapHeight);
+	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass1Index);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(2.5f, 10.f);
+
+	//Ruin Rendering
+	//objectProg.use();
+	PBRProg.use();
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, brickTexID);
+
+	model = mat4(1.0f);
+	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
+	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
+	setMatrices(PBRProg);
+	//setMatrices(objectProg);
+	RuinMesh->render();
+
+	//Terrain rendering
+	terrainProg.use();
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, grassTexID);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, rockTexID);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, cloudTexID);
+
+	model = mat4(1.0f);
+	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
+	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
+	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
+	setMatrices(terrainProg);
+	//TerrainMesh->render();
+		//Draw scene
+
+	glCullFace(GL_BACK);
+	glFlush();
+
+	view = camera.GetViewMatrix();
+	shadowProg.setUniform("light.Position", view* vec4(lightFrustum.getOrigin(), 1.0f));
+	projection = perspective(radians(70.0f), (float)width / height, 0.3f, 100.0f);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, width, height);
+	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass2Index);
+
+	//Ruin Rendering
+	//objectProg.use();
+	PBRProg.use();
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, brickTexID);
+
+	model = mat4(1.0f);
+	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
+	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
+	setMatrices(PBRProg);
+	//setMatrices(objectProg);
+	RuinMesh->render();
+
+	//Terrain rendering
+	terrainProg.use();
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, grassTexID);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, rockTexID);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, cloudTexID);
+
+	model = mat4(1.0f);
+	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
+	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
+	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
+	setMatrices(terrainProg);
+	//TerrainMesh->render();
+	//Draw scene
+
+	objectProg.use();
+	mat4 mv = view * lightFrustum.getInverseViewMatrix();
+	objectProg.setUniform("MVP", projection* mv);
+	lightFrustum.render();
+
+#pragma endregion
 #pragma region HDR Pass
 
 	//Second pass - HDR		
@@ -886,6 +1049,7 @@ void SceneBasic_Uniform::setMatrices(GLSLProgram& program)
 	program.setUniform("view", view);
 	program.setUniform("viewPos", camera.Position);
 	program.setUniform("projection", projection);
+	program.setUniform("ShadowMatrix", lightPV * model);
 
 	mat3 normalMatrix = transpose(inverse(mat3(mv)));
 
