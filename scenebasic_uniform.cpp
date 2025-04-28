@@ -41,6 +41,7 @@ void SceneBasic_Uniform::initScene()
 
 	compile();
 
+
 	glEnable(GL_DEPTH_TEST);
 
 	model = mat4(1.0f);
@@ -71,6 +72,9 @@ void SceneBasic_Uniform::initScene()
 
 	glActiveTexture(GL_TEXTURE6);
 	particleTexID = Texture::loadTexture("media/texture/particle/bluewater.png");
+
+	//Texture 7 for random particle tex lower down
+
 #pragma endregion
 
 
@@ -178,14 +182,14 @@ void SceneBasic_Uniform::initScene()
 
 #pragma region Material Setup
 
-	terrainProg.use();	
+	terrainProg.use();
 	terrainProg.setUniform("staticPointLights", numberOfStaticLights);
 	terrainProg.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
 	terrainProg.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
 	terrainProg.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
 	terrainProg.setUniform("Material.Shininess", 180.0f);
 
-	objectProg.use();	
+	objectProg.use();
 	objectProg.setUniform("staticPointLights", numberOfStaticLights);
 	objectProg.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
 	objectProg.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
@@ -193,7 +197,7 @@ void SceneBasic_Uniform::initScene()
 	objectProg.setUniform("Material.Shininess", 180.0f);
 
 #pragma endregion
-	
+
 
 #pragma region particles test
 
@@ -203,12 +207,125 @@ void SceneBasic_Uniform::initScene()
 	emitterPos = vec3(-2, 4, -3);
 	emitterDir = vec3(0, 1, 0);
 
+	mat3 emitterBasis = ParticleUtils::makeArbitraryBasis(emitterDir);
+
+	glActiveTexture(GL_TEXTURE7);
+	randomParticleTexID = ParticleUtils::createRandomTex1D(nParticles * 3);
+
 	newParticleProg.use();
 	newParticleProg.setUniform("ParticleLifetime", particleLifetime);
 	newParticleProg.setUniform("ParticleSize", 0.05f);
-	newParticleProg.setUniform("Gravity", vec3(0.0f, -2.0f, 0.0f));
+	newParticleProg.setUniform("Accel", vec3(0.0f, -0.5f, 0.0f));
 	newParticleProg.setUniform("EmitterPos", emitterPos);
+	newParticleProg.setUniform("EmitterBasis", emitterBasis);
 
+
+
+
+	glGenBuffers(2, posBuf);
+	glGenBuffers(2, velBuf);
+	glGenBuffers(2, age);
+
+	//Create buffers to fit vec3s for vel and pos, just float for age.
+	int size = nParticles * 3 * sizeof(GLfloat);
+	glBindBuffer(GL_ARRAY_BUFFER, posBuf[0]);
+	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY); //Dynamic copy indicates that the buffer will be frequently changed by the CPU
+	glBindBuffer(GL_ARRAY_BUFFER, posBuf[1]);
+	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
+	glBindBuffer(GL_ARRAY_BUFFER, velBuf[0]);
+	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
+	glBindBuffer(GL_ARRAY_BUFFER, velBuf[1]);
+	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
+	glBindBuffer(GL_ARRAY_BUFFER, age[0]);
+	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(float), 0, GL_DYNAMIC_COPY);
+	glBindBuffer(GL_ARRAY_BUFFER, age[1]);
+	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(float), 0, GL_DYNAMIC_COPY);
+
+	//Particle age container
+	vector<GLfloat> tempData(nParticles);
+	//Time between each particle spawn
+	float rate = particleLifetime / nParticles;
+	//Create ages for each particle, this time it actually is how long the particle has been alive for
+	for (int i = 0; i < nParticles; i++)
+	{
+		//tempData[i] = rate * (i - nParticles); 
+		tempData[i] = rate * i;
+	}
+	glBindBuffer(GL_ARRAY_BUFFER, age[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, nParticles * sizeof(float), tempData.data());
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glGenVertexArrays(2, particleArray);
+
+	//particle array 0
+	//Sets up the three buffers like i would vertex positions in a regular shader
+	glBindVertexArray(particleArray[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, posBuf[0]);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, velBuf[0]);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, age[0]);
+	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(2);
+
+	//particle array 1
+	glBindVertexArray(particleArray[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, posBuf[1]);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, velBuf[1]);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, age[1]);
+	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(2);
+
+	glBindVertexArray(0);
+
+	/*Feedback transforms explanation
+	* Normally you would supply values on the cpu side at the start of rendering.
+	* Eg, applying the time or colour values of shader uniforms at the start of Render().
+	* It would then work from vertex, to geometry, to fragment and whatnot.
+	* Would only use the results of the previous step, so the vertex shader could only use the values passed in from the CPU.
+	* But with transform feedbacks, the GPU can write back data that is processed by shaders and write it back into buffer objects.
+	* This data can be read by the CPU, but doing so blocks the GPU.
+	* So, instead of calculating all the particle positions on the CPU and then passing that in as a uniform or adjusting buffer data before using the GPU,
+	* the GPU can instead do all the calculations and use those results to then render the updated particle positions.
+	*/
+
+	/* Here specifially, it's relating to this part of the shader
+	*	layout(xfb_buffer = 0, xfb_offset = 0) out vec3 Position;
+	* it says that the values assigned to the above variable in the shader will be put into the buffer defined below
+	*/
+
+
+	//Feedback objects
+	glGenTransformFeedbacks(2, feedback);
+
+	//transform feedback 0
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback[0]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, posBuf[0]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, velBuf[0]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, age[0]);
+
+	//transform feedback 1
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback[1]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, posBuf[1]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, velBuf[1]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, age[1]);
+
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+
+
+
+	/*
 	glGenBuffers(1, &initVel);
 	glGenBuffers(1, &startTime);
 
@@ -218,7 +335,7 @@ void SceneBasic_Uniform::initScene()
 	glBindBuffer(GL_ARRAY_BUFFER, startTime);
 	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_STATIC_DRAW);
 
-	mat3 emitterBasis = ParticleUtils::makeArbitraryBasis(emitterDir);
+
 	vec3 v(0.0f);
 	float velocity, theta, phi;
 	vector<GLfloat> data(nParticles * 3);
@@ -268,6 +385,7 @@ void SceneBasic_Uniform::initScene()
 	glVertexAttribDivisor(1, 1);
 
 	glBindVertexArray(0);
+	*/
 
 
 #pragma endregion
@@ -394,7 +512,7 @@ void SceneBasic_Uniform::initScene()
 
 void SceneBasic_Uniform::compile()
 {
-	try {		
+	try {
 		objectProg.compileShader("shader/object.vert");
 		objectProg.compileShader("shader/object.frag");
 		objectProg.link();
@@ -416,6 +534,12 @@ void SceneBasic_Uniform::compile()
 		PBRProg.link();
 		newParticleProg.compileShader("shader/particleStream.vert");
 		newParticleProg.compileShader("shader/particleStream.frag");
+
+		//Transform feedback for newParticleProg
+		GLuint progHandle = newParticleProg.getHandle();
+		const char* outputNames[] = { "Position", "Velocity", "Age" };
+		glTransformFeedbackVaryings(progHandle, 3, outputNames, GL_SEPARATE_ATTRIBS);
+
 		newParticleProg.link();
 
 	}
@@ -445,8 +569,8 @@ void SceneBasic_Uniform::update(float t)
 	terrainProg.setUniform("time", t / 1000);
 
 #pragma region new particles test
-	time = t;
-	
+
+
 
 #pragma endregion
 
@@ -538,7 +662,7 @@ void SceneBasic_Uniform::render()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
+
 #pragma region Sky Rendering
 
 	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
@@ -549,6 +673,7 @@ void SceneBasic_Uniform::render()
 	setMatrices(skyProg);
 	sky.render();
 	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
 
 #pragma endregion
 
@@ -574,13 +699,13 @@ void SceneBasic_Uniform::render()
 		terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
 		terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
 
-		objectProg.use();		
+		objectProg.use();
 		objectProg.setUniform((lightUniformTag + ".Constant").c_str(), fireFly->pointLight->constant);
 		objectProg.setUniform((lightUniformTag + ".Linear").c_str(), fireFly->pointLight->linear);
 		objectProg.setUniform((lightUniformTag + ".Quadratic").c_str(), fireFly->pointLight->quadratic);
 
 		objectProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
-		objectProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);		
+		objectProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
 		objectProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
 		objectProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
 
@@ -600,17 +725,7 @@ void SceneBasic_Uniform::render()
 
 #pragma endregion
 
-#pragma region newParticles
-	glDepthMask(GL_FALSE);
-	newParticleProg.use();
-	setMatrices(newParticleProg);
-	newParticleProg.setUniform("Time", time);
-	glBindVertexArray(particles);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, nParticles);
-	glBindVertexArray(0);
-	glDepthMask(GL_TRUE);
 
-#pragma endregion
 
 #pragma region Shader Material Update
 
@@ -669,6 +784,65 @@ void SceneBasic_Uniform::render()
 
 #pragma endregion
 
+#pragma region newParticles
+/*
+glDepthMask(GL_FALSE);
+newParticleProg.use();
+setMatrices(newParticleProg);
+newParticleProg.setUniform("Time", time);
+glBindVertexArray(particles);
+glDrawArraysInstanced(GL_TRIANGLES, 0, 6, nParticles);
+glBindVertexArray(0);
+glDepthMask(GL_TRUE);*/
+
+
+	newParticleProg.use();
+	newParticleProg.setUniform("Time", time);
+	newParticleProg.setUniform("DeltaT", deltaTime);
+	model = mat4(1.0f);
+	model = translate(model, vec3(0.0f, 0.0f, -5.0f));
+	setMatrices(newParticleProg);
+	newParticleProg.setUniform("Pass", 1);
+
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_1D, randomParticleTexID);
+
+	glEnable(GL_RASTERIZER_DISCARD); //Tells it to not render the result to the fragment shader. Good for just doing processing.
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback[drawBuf]);
+	glBeginTransformFeedback(GL_POINTS);
+
+	glBindVertexArray(particleArray[1 - drawBuf]);
+	glVertexAttribDivisor(0, 0);
+	glVertexAttribDivisor(1, 0);
+	glVertexAttribDivisor(2, 0);
+	glDrawArrays(GL_POINTS, 0, nParticles);
+	glBindVertexArray(0);
+
+	glEndTransformFeedback();
+	glDisable(GL_RASTERIZER_DISCARD);
+
+	//Render pass
+	newParticleProg.setUniform("Pass", 2);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glDepthFunc(GL_LEQUAL);
+
+	glDepthMask(GL_FALSE);
+	glBindVertexArray(particleArray[drawBuf]);
+	glVertexAttribDivisor(0, 1);
+	glVertexAttribDivisor(1, 1);
+	glVertexAttribDivisor(2, 1);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, nParticles);
+	glBindVertexArray(0);
+
+	//glDepthFunc(GL_LESS);
+	glDisable(GL_BLEND);
+	glDepthMask(GL_TRUE);
+
+	drawBuf = 1 - drawBuf;
+
+#pragma endregion
+
 #pragma region HDR Pass
 
 	//Second pass - HDR		
@@ -690,7 +864,7 @@ void SceneBasic_Uniform::render()
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	*/
 #pragma endregion
-	
+
 }
 
 void SceneBasic_Uniform::resize(int w, int h)
@@ -716,7 +890,7 @@ void SceneBasic_Uniform::setMatrices(GLSLProgram& program)
 	mat3 normalMatrix = transpose(inverse(mat3(mv)));
 
 	program.setUniform("NormalMatrix", normalMatrix);
-	
+
 	program.setUniform("ViewPos", camera.Position);
 }
 
@@ -757,6 +931,10 @@ void SceneBasic_Uniform::processInput(GLFWwindow* window)
 		camera.ProcessKeyboard(LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+		camera.ProcessKeyboard(UP, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+		camera.ProcessKeyboard(DOWN, deltaTime);
 
 }
 
