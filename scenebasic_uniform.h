@@ -39,6 +39,7 @@ private:
 	int shadowMapWidth, shadowMapHeight;
 	mat4 lightPV, shadowBias;
 	Frustum lightFrustum;
+	vec3 lightPos;
 
 	//Particles
 	GLuint posBuf[2], velBuf[2], age[2];

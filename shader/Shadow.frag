@@ -29,6 +29,8 @@ in vec3 Position;
 in vec3 Normal;
 in vec4 ShadowCoord;
 
+uniform int Pass;
+
 vec3 phongModelDiffAndSpec(){
     vec3 n = Normal;
     vec3 s = normalize(vec3(light.Position) - Position);
@@ -43,46 +45,51 @@ vec3 phongModelDiffAndSpec(){
     return diffuse + spec;
 }
 
-//Subroutines here are sort of like a 'parent method'.
-//Define a subroutine as is done here, essentially setting this is an abstract parent method
-subroutine void RenderPassType();
-
-//Main will just call RenderPass and it'll choose whichever method is defined in the cpu code
-
-
-//Says it's part of that subroutine
-subroutine (RenderPassType)
 void shadeWithShadow(){
     vec3 ambient = light.Intensity * material.Ka;
     vec3 diffAndSpec = phongModelDiffAndSpec();
 
+    float sum = 0;
     float shadow = 1.0;
-    if (ShadowCoord.z >= 0) {
-        shadow = texture(ShadowMap, ShadowCoord.xyz);
+
+    //Don't text points behind the light source
+    if (ShadowCoord.z >= 0){
+        //Anti aliase shadows
+        for (int x = -1; x <= 1; ++x) {
+            for (int y = -1; y <= 1; ++y) {
+            sum += textureProjOffset(ShadowMap, ShadowCoord, ivec2(x, y));
+            }
+        }        
+        shadow = sum / 9.0;
     }
 
-    //If in shadow, use ambient only
-    FragColour = vec4(diffAndSpec * shadow + ambient, 1.0);
+    FragColour = vec4(ambient + diffAndSpec * shadow, 1.0);
+
+    //FragColour = vec4(shadow, shadow, shadow, 1.0);
 
     //Gamma correction
     FragColour = pow(FragColour, vec4(1.0 / 2.2));
-    FragColour = vec4(0.0, 1.0, 0.0, 1.0); // GREEN
+    //FragColour = vec4(0.0, 1.0, 0.0, 1.0); // Green - test
 }
 
-//Says it's part of that subroutine
-subroutine (RenderPassType)
 void recordDepth(){
     //Noting
-     FragColour = vec4(1.0, 0.0, 0.0, 1.0); // RED
+    //FragColour = vec4(1.0, 0.0, 0.0, 1.0); // Red - test
+    float depth = ShadowCoord.z;  
+    FragColour = vec4(depth, depth, depth, 1.0); 
 }
-
-subroutine uniform RenderPassType RenderPass;
 
 void main(){
     //Will call either shadeWithShadow or recordDepth, defined in the CPU code.
-    RenderPass();
+    //RenderPass();
     //recordDepth();
     //shadeWithShadow();
+
+    if (Pass == 1){
+        recordDepth();
+    } else if (Pass == 2){
+        shadeWithShadow();
+    }
 }
 
 

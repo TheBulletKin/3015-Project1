@@ -75,6 +75,62 @@ void Frustum::setPerspective( float fovy, float ar, float nearDist, float farDis
     glBindVertexArray(0);
 }
 
+void Frustum::setOrtho(float left, float right, float bottom, float top, float nearDist, float farDist) {
+    this->deleteBuffers();
+    this->mNear = nearDist;
+    this->mFar = farDist;
+
+    this->left = left;
+    this->right = right;
+    this->bottom = bottom;
+    this->top = top;
+
+    std::vector<GLfloat> vert = {
+        // Near plane
+        left, bottom, -nearDist,
+        right, bottom, -nearDist,
+        right, top, -nearDist,
+        left, top, -nearDist,
+
+        // Far plane
+        left, bottom, -farDist,
+        right, bottom, -farDist,
+        right, top, -farDist,
+        left, top, -farDist,
+    };
+
+    std::vector<GLuint> el = {
+        // Near plane
+        0, 1, 1, 2, 2, 3, 3, 0,
+        // Far plane
+        4, 5, 5, 6, 6, 7, 7, 4,
+        // Connecting near and far planes
+        0, 4, 1, 5, 2, 6, 3, 7
+    };
+
+    GLuint posBuf;
+    glGenBuffers(1, &posBuf);
+    buffers.push_back(posBuf);
+    glBindBuffer(GL_ARRAY_BUFFER, posBuf);
+    glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(GLfloat), vert.data(), GL_STATIC_DRAW);
+
+    GLuint elBuf;
+    glGenBuffers(1, &elBuf);
+    buffers.push_back(elBuf);
+    glBindBuffer(GL_ARRAY_BUFFER, elBuf);
+    glBufferData(GL_ARRAY_BUFFER, 24 * sizeof(GLuint), el.data(), GL_STATIC_DRAW);
+
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, posBuf);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elBuf);
+    glBindVertexArray(0);
+}
+
 mat4 Frustum::getViewMatrix() const {
     glm::mat4 rot(u.x, v.x, n.x, 0, u.y, v.y, n.y, 0, u.z, v.z, n.z, 0, 0, 0, 0, 1);
     glm::mat4 trans = glm::translate(glm::mat4(1.0f), glm::vec3(-center.x, -center.y, -center.z));
@@ -87,9 +143,16 @@ glm::mat4 Frustum::getInverseViewMatrix() const {
     return trans * rot;
 }
 
-mat4 Frustum::getProjectionMatrix() const
+mat4 Frustum::getProjectionMatrix(bool isOrtho) const
 {
-    return glm::perspective( glm::radians(fovy), ar, mNear, mFar );
+    if (isOrtho) {
+        // Use orthographic projection
+        return glm::ortho(left, right, bottom, top, mNear, mFar);
+    }
+    else {
+        // Use perspective projection
+        return glm::perspective(glm::radians(fovy), ar, mNear, mFar);
+    }
 }
 
 vec3 Frustum::getOrigin() const

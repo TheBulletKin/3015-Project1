@@ -392,34 +392,35 @@ void SceneBasic_Uniform::initScene()
 
 
 #pragma region Shadows setup
-	shadowMapWidth = 512;
-	shadowMapHeight = 512;
+	shadowMapWidth = 1028;
+	shadowMapHeight = 1028;
 
 	shadowProg.use();
 	GLuint programHandle = shadowProg.getHandle();
 	//Get the subroutine indexes so that the method to run can be changed at runtime
-	pass1Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "shadeWithShadow");
-	pass2Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "recordDepth");
+	//pass1Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "shadeWithShadow");
+	//pass2Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "recordDepth");
 
 	shadowBias = mat4(vec4(0.5f, 0.0f, 0.0f, 0.0f),
 		vec4(0.0f, 0.5f, 0.0f, 0.0f),
 		vec4(0.0f, 0.0f, 0.5f, 0.0f),
 		vec4(0.5f, 0.5f, 0.5f, 1.0f));
-
-	float c = 1.65f;
-	vec3 lightPos = vec3(7.0f, 5.25f, -7.5f);
+	
+	//Position of the light source (frustum centre)
+	lightPos = vec3(4.0f, 5.0f, -4.5f);
 	//Sets the camera at the lightPos, looking at the second argument
 	//This is where the shadow is cast from
-	lightFrustum.orient(lightPos, vec3(0.0f), vec3(0.0f, 1.0f, 0.0f));
-	lightFrustum.setPerspective(50.0f, 1.0f, 1.0f, 25.0f);
+	lightFrustum.orient(lightPos, vec3(-5.0f, 0.0f, -12.0f), vec3(0.0f, 1.0f, 0.0f));
+	//lightFrustum.setPerspective(50.0f, 1.0f, 5.0f, 10.0f);
+	lightFrustum.setOrtho(-5.0f, 5.0f, -5.0f, 5.0f, 2.0f, 10.0f);
 	//Light Project View matrix
 	//Shadow bias maps clip space coordinates of -1 to 1 to 0-1 texture space.
 	//Therefore used to transform any world space point to the shadowmap
 	//Bit like MVP going from world to view to clip space, since the shadow texture is going to be in line with the camera, essentially its own view space
-	lightPV = shadowBias * lightFrustum.getProjectionMatrix() * lightFrustum.getViewMatrix();
-
+	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
 	
-	shadowProg.setUniform("light.Intensity", vec3(5.0f));
+	
+	shadowProg.setUniform("light.Intensity", vec3(0.5f));
 	//shadowProg.setUniform("ShadowMap", 8);
 
 	vec3 shadowedObjColour = vec3(0.2f, 0.5f, 0.9f);
@@ -436,8 +437,8 @@ void SceneBasic_Uniform::initScene()
 	glBindTexture(GL_TEXTURE_2D, depthTex);
 
 	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, shadowMapWidth, shadowMapHeight);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //Regular texture filtering
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); //Regular texture filtering
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); //Avoid wrapping
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border2);
@@ -911,31 +912,39 @@ glDepthMask(GL_TRUE);*/
 	//view = translate(view, vec3(0.0f, 3.0f, 7.0f));
 	//view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
 	shadowProg.use();
-	vec3 lightPos = vec3(-2.0f, 2.25f, -3.5f);
+	
 	
 	//Pass 1 shadow map gen
 	model = mat4(1.0f);
-	model = translate(model, lightPos);
+	model = translate(model, lightFrustum.getOrigin());
 	view = lightFrustum.getViewMatrix();
-	projection = lightFrustum.getProjectionMatrix();
+	projection = lightFrustum.getProjectionMatrix(true);
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, shadowMapWidth, shadowMapHeight);
 	//Ensures the use of 'recordDepth' which does nothing as depth info is recorded
 	
-	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass2Index);
-	GLuint activeIndex;
-	glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
-	std::cout << "Active subroutine index: " << activeIndex << std::endl;
+	shadowProg.setUniform("Pass", 1);
+	//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass2Index);
+	//GLuint activeIndex;
+	//glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
+	//std::cout << "Active subroutine index: " << activeIndex << std::endl;
 	//Cull the front face of triangles instead of the usual back
 	//Helps prevent shadow artifacts
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	//Polygon offset shifts the depth values slightly so instances where the fragment sort of shadows itself
 	glEnable(GL_POLYGON_OFFSET_FILL);
-	glPolygonOffset(2.5f, 10.f);	
+	glPolygonOffset(2.0f, 3.0f);	
 
 	//Draw the scene objects using
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, depthTex);
+
+	//glActiveTexture(GL_TEXTURE2);
+	//glBindTexture(GL_TEXTURE_2D, brickTexID);
+
+
 	drawSolidSceneObjects();
 	//Draw scene
 
@@ -958,10 +967,11 @@ glDepthMask(GL_TRUE);*/
 	glViewport(0, 0, width, height);
 	//Ensures the use of 'shadeWithShadow', which uses phong and the shadow info
 	
-	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass1Index);
-	activeIndex;
-	glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
-	std::cout << "Active subroutine index: " << activeIndex << std::endl;
+	shadowProg.setUniform("Pass", 2);
+	//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass1Index);
+	
+	//glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
+	
 	//Draw scene
 	drawSolidSceneObjects();
 
@@ -970,8 +980,13 @@ glDepthMask(GL_TRUE);*/
 	//Copied from init
 	
 	model = mat4(1.0f);
-	model = translate(model, lightPos);	
-	setMatrices(objectProg);
+	model = translate(model, lightPos);
+
+	mat4 mv = view * lightFrustum.getInverseViewMatrix();
+	objectProg.setUniform("MVP", projection* mv);
+
+	
+	//setMatrices(objectProg);
 	lightFrustum.render();
 
 #pragma endregion
@@ -1094,6 +1109,8 @@ void SceneBasic_Uniform::setMatrices(GLSLProgram& program)
 	program.setUniform("view", view);
 	program.setUniform("viewPos", camera.Position);
 	program.setUniform("projection", projection);	
+	//LightPV is the projection view matrix for the light
+	//Essentially, transforming world space to light clip space
 	mat4 shadowMatrix = lightPV * model;
 	program.setUniform("ShadowMatrix", shadowMatrix);
 

@@ -30,6 +30,7 @@ void main()
     Position = (ModelViewMatrix * vec4(VertexPosition, 1.0)).xyz;
     Normal = normalize(NormalMatrix * VertexNormal);
     ShadowCoord = ShadowMatrix * vec4(VertexPosition, 1.0);
+    ShadowCoord /= ShadowCoord.w;
     gl_Position = MVP * vec4(VertexPosition, 1.0);
 
 }
