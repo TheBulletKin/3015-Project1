@@ -412,7 +412,7 @@ void SceneBasic_Uniform::initScene()
 	//This is where the shadow is cast from
 	lightFrustum.orient(lightPos, vec3(-5.0f, 0.0f, -12.0f), vec3(0.0f, 1.0f, 0.0f));
 	//lightFrustum.setPerspective(50.0f, 1.0f, 5.0f, 10.0f);
-	lightFrustum.setOrtho(-5.0f, 5.0f, -5.0f, 5.0f, 2.0f, 10.0f);
+	lightFrustum.setOrtho(-5.0f, 5.0f, -5.0f, 5.0f, 2.0f, 40.0f);
 	//Light Project View matrix
 	//Shadow bias maps clip space coordinates of -1 to 1 to 0-1 texture space.
 	//Therefore used to transform any world space point to the shadowmap
@@ -663,6 +663,27 @@ void SceneBasic_Uniform::update(float t)
 
 	terrainProg.use();
 	terrainProg.setUniform("time", t / 1000);
+
+#pragma region DayNightcycle
+
+	float timeOfDay = fmod(lastFrameTime / 70.0f, 1.0f); // Normalize time to [0, 1] (1 represents 24 hours)
+	float radius = 10.0f;  // How far the sun is from the center
+	float height = 10.0f;   // Maximum height of the sun (at noon)
+
+	// Calculate the sun's position
+	float x = radius * cos(timeOfDay * 2.0f * glm::pi<float>());
+	float z = radius * sin(timeOfDay * 2.0f * glm::pi<float>());
+	float y = height * sin(timeOfDay * glm::pi<float>());
+
+	// Set the light position to the sun's position
+	lightPos = glm::vec3(x, y, z);
+
+	lightFrustum.orient(lightPos, vec3(-5.0f, 0.0f, -12.0f), vec3(0.0f, 1.0f, 0.0f));
+	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
+
+	cout << to_string(timeOfDay) << endl;
+
+#pragma endregion
 
 #pragma region new particles test
 
