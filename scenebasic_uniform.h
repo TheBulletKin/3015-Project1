@@ -27,7 +27,7 @@ class SceneBasic_Uniform : public Scene
 private:
 	//Textures and shaders
 	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg, shadowProg;
-	GLuint grassTexID, rockTexID, skyBoxTexID, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID;
+	GLuint grassTexID, rockTexID, skyBoxTexID, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex;
 
 	GLFWwindow* window;
 
@@ -112,6 +112,8 @@ public:
 	void initScene();
 	void update(float t);
 	void render();
+	void drawSceneObjects();
+	void drawSolidSceneObjects();
 	void resize(int, int);
 };
 

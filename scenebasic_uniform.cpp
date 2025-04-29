@@ -150,9 +150,9 @@ void SceneBasic_Uniform::initScene()
 	glSamplerParameterfv(linearSampler, GL_TEXTURE_BORDER_COLOR, border);
 
 	//Means that when sampling from each of these texture units, it uses nearest
-	glBindSampler(8, nearestSampler);
-	glBindSampler(9, nearestSampler);
-	glBindSampler(10, nearestSampler);
+	//glBindSampler(8, nearestSampler);
+	//glBindSampler(9, nearestSampler);
+	//glBindSampler(10, nearestSampler);
 
 #pragma endregion
 
@@ -395,9 +395,11 @@ void SceneBasic_Uniform::initScene()
 	shadowMapWidth = 512;
 	shadowMapHeight = 512;
 
+	shadowProg.use();
 	GLuint programHandle = shadowProg.getHandle();
-	pass1Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "recordDepth");
-	pass2Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "shadeWithShadow");
+	//Get the subroutine indexes so that the method to run can be changed at runtime
+	pass1Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "shadeWithShadow");
+	pass2Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "recordDepth");
 
 	shadowBias = mat4(vec4(0.5f, 0.0f, 0.0f, 0.0f),
 		vec4(0.0f, 0.5f, 0.0f, 0.0f),
@@ -405,37 +407,68 @@ void SceneBasic_Uniform::initScene()
 		vec4(0.5f, 0.5f, 0.5f, 1.0f));
 
 	float c = 1.65f;
-	vec3 lightPos = vec3(0.0f, c * 5.25f, c * 7.5f);
+	vec3 lightPos = vec3(7.0f, 5.25f, -7.5f);
+	//Sets the camera at the lightPos, looking at the second argument
+	//This is where the shadow is cast from
 	lightFrustum.orient(lightPos, vec3(0.0f), vec3(0.0f, 1.0f, 0.0f));
 	lightFrustum.setPerspective(50.0f, 1.0f, 1.0f, 25.0f);
+	//Light Project View matrix
+	//Shadow bias maps clip space coordinates of -1 to 1 to 0-1 texture space.
+	//Therefore used to transform any world space point to the shadowmap
+	//Bit like MVP going from world to view to clip space, since the shadow texture is going to be in line with the camera, essentially its own view space
 	lightPV = shadowBias * lightFrustum.getProjectionMatrix() * lightFrustum.getViewMatrix();
 
-	shadowProg.use();
-	shadowProg.setUniform("light.Intensity", vec3(0.85f));
+	
+	shadowProg.setUniform("light.Intensity", vec3(5.0f));
 	//shadowProg.setUniform("ShadowMap", 8);
 
-	GLfloat border2[] = { 1.0f, 0.0f, 0.0f, 0.0f };
-	GLuint depthTex;
+	vec3 shadowedObjColour = vec3(0.2f, 0.5f, 0.9f);
+	shadowProg.setUniform("material.Ka", shadowedObjColour * 0.05f);
+	shadowProg.setUniform("material.Kd", shadowedObjColour);
+	shadowProg.setUniform("material.Ks", vec3(0.9f, 0.9f, 0.9f));
+	shadowProg.setUniform("material.Shininess", 150.0f);
+
+	//Colour used for sampling outside of the valid range
+	GLfloat border2[] = { 1.0f, 0.0f, 0.0f, 0.0f };	
 	glGenTextures(1, &depthTex);
 	
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, depthTex);
 
-	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, shadowMapWidth, shadowMapHeight);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT32F, shadowMapWidth, shadowMapHeight);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST); //Regular texture filtering
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); //Avoid wrapping
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border2);
+	//Compare mode essentially does the shadow calc for us. It enables depth comparison sampling for depth textures
+	/*Without this enabled, this would have to be in the shader:
+		float closestDepth = texture(shadowMap, shadowCoord.xy).r;
+		float currentDepth = shadowCoord.z;
+		float shadow = currentDepth > closestDepth ? 0.0 : 1.0;
+	 But with it, the shader just needs this:
+		float shadow = texture(shadowMap, shadowCoord.xyz);
+	 It will automatically give it the xyz coords from above. Shadow will then be 0 or 1 depending on if the fragment is in shadow or not
+	*/
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+	//If the reference point in world space (fragment being rendered) is less than the texel depth of that point on the shadow map,
+	// it is lit (1).
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+
+	//So in general, render from the light and create a depth map.
+	//Render from the actual camera and start working with a fragment.
+	//Perform the lightPV transform on the fragment to see where it lies on the depth map created
+	//Keep the fragment's depth information and compare it to that texel on the shadow map
+	//If the fragment position's depth is behind the shadow map's depth, it is in shadow.
 
 	//FBOs
+	//Render the scene (from the light's perspective) to the depthTex texture.
 	glGenFramebuffers(1, &shadowFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
 		GL_TEXTURE_2D, depthTex, 0);
 
+	//Ensure it doesn't write any colour
 	GLenum drawBuffers[] = { GL_NONE };
 	glDrawBuffers(1, drawBuffers);
 
@@ -811,40 +844,7 @@ void SceneBasic_Uniform::render()
 
 #pragma endregion
 
-#pragma region Object Rendering
 
-	//Ruin Rendering
-	//objectProg.use();
-	PBRProg.use();
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, brickTexID);
-
-	model = mat4(1.0f);
-	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
-	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
-	setMatrices(PBRProg);
-	//setMatrices(objectProg);
-	RuinMesh->render();
-
-	//Terrain rendering
-	terrainProg.use();
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, grassTexID);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, rockTexID);
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, cloudTexID);
-
-	model = mat4(1.0f);
-	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
-	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
-	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
-	setMatrices(terrainProg);
-	//TerrainMesh->render();
-
-#pragma endregion
 
 #pragma region newParticles
 /*
@@ -907,43 +907,71 @@ glDepthMask(GL_TRUE);*/
 
 #pragma region Shadows
 
-	view = mat4(1.0f);
-	view = translate(view, vec3(0.0f, 3.0f, 7.0f));
-	view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
+	//view = mat4(1.0f);
+	//view = translate(view, vec3(0.0f, 3.0f, 7.0f));
+	//view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
 	shadowProg.use();
+	vec3 lightPos = vec3(-2.0f, 2.25f, -3.5f);
 	
 	//Pass 1 shadow map gen
+	model = mat4(1.0f);
+	model = translate(model, lightPos);
 	view = lightFrustum.getViewMatrix();
 	projection = lightFrustum.getProjectionMatrix();
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, shadowMapWidth, shadowMapHeight);
-	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass1Index);
+	//Ensures the use of 'recordDepth' which does nothing as depth info is recorded
+	
+	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass2Index);
+	GLuint activeIndex;
+	glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
+	std::cout << "Active subroutine index: " << activeIndex << std::endl;
+	//Cull the front face of triangles instead of the usual back
+	//Helps prevent shadow artifacts
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
+	//Polygon offset shifts the depth values slightly so instances where the fragment sort of shadows itself
 	glEnable(GL_POLYGON_OFFSET_FILL);
-	glPolygonOffset(2.5f, 10.f);
+	glPolygonOffset(2.5f, 10.f);	
 
-	glDisable(GL_CULL_FACE);
-
-		//Draw scene
+	//Draw the scene objects using
+	drawSolidSceneObjects();
+	//Draw scene
 
 	glCullFace(GL_BACK);
+	glDisable(GL_CULL_FACE);
 	glFlush();
+	glDisable(GL_POLYGON_OFFSET_FILL);
+	
 
+	//Pass 2
+	shadowProg.use();
 	view = camera.GetViewMatrix();
+	
+	//shadowProg.setUniform("light.Position", vec4(lightPos, 1.0));
 	shadowProg.setUniform("light.Position", view* vec4(lightFrustum.getOrigin(), 1.0f));
 	projection = perspective(radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, width, height);
-	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass2Index);
+	//Ensures the use of 'shadeWithShadow', which uses phong and the shadow info
+	
+	glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass1Index);
+	activeIndex;
+	glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
+	std::cout << "Active subroutine index: " << activeIndex << std::endl;
 	//Draw scene
+	drawSolidSceneObjects();
 
 	objectProg.use();
-	mat4 mv = view * lightFrustum.getInverseViewMatrix();
-	objectProg.setUniform("MVP", projection* mv);
+	
+	//Copied from init
+	
+	model = mat4(1.0f);
+	model = translate(model, lightPos);	
+	setMatrices(objectProg);
 	lightFrustum.render();
 
 #pragma endregion
@@ -971,6 +999,82 @@ glDepthMask(GL_TRUE);*/
 
 }
 
+void SceneBasic_Uniform::drawSolidSceneObjects() {
+#pragma region Object Rendering
+
+	//Ruin Rendering
+	//objectProg.use();
+	
+	glActiveTexture(GL_TEXTURE8);
+	glBindTexture(GL_TEXTURE_2D, depthTex);
+	
+	//glActiveTexture(GL_TEXTURE2);
+	//glBindTexture(GL_TEXTURE_2D, brickTexID);
+
+	model = mat4(1.0f);
+	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
+	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
+	setMatrices(shadowProg);
+	//setMatrices(objectProg);
+	RuinMesh->render();
+
+	//Terrain rendering
+	terrainProg.use();
+
+	//glActiveTexture(GL_TEXTURE0);
+	//glBindTexture(GL_TEXTURE_2D, grassTexID);
+	//glActiveTexture(GL_TEXTURE1);
+	//glBindTexture(GL_TEXTURE_2D, rockTexID);
+	//glActiveTexture(GL_TEXTURE4);
+	//glBindTexture(GL_TEXTURE_2D, cloudTexID);
+
+	model = mat4(1.0f);
+	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
+	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
+	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
+	setMatrices(terrainProg);
+	//TerrainMesh->render();
+
+#pragma endregion
+}
+
+void SceneBasic_Uniform::drawSceneObjects() {
+#pragma region Object Rendering
+
+	//Ruin Rendering
+	//objectProg.use();
+	PBRProg.use();
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, brickTexID);
+
+	model = mat4(1.0f);
+	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
+	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
+	setMatrices(PBRProg);
+	//setMatrices(objectProg);
+	RuinMesh->render();
+
+	//Terrain rendering
+	terrainProg.use();
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, grassTexID);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, rockTexID);
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_2D, cloudTexID);
+
+	model = mat4(1.0f);
+	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
+	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
+	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
+	setMatrices(terrainProg);
+	//TerrainMesh->render();
+
+#pragma endregion
+}
+
 void SceneBasic_Uniform::resize(int w, int h)
 {
 	width = w;
@@ -989,8 +1093,9 @@ void SceneBasic_Uniform::setMatrices(GLSLProgram& program)
 	program.setUniform("model", model);
 	program.setUniform("view", view);
 	program.setUniform("viewPos", camera.Position);
-	program.setUniform("projection", projection);
-	program.setUniform("ShadowMatrix", lightPV * model);
+	program.setUniform("projection", projection);	
+	mat4 shadowMatrix = lightPV * model;
+	program.setUniform("ShadowMatrix", shadowMatrix);
 
 	mat3 normalMatrix = transpose(inverse(mat3(mv)));
 

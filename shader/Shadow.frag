@@ -43,9 +43,14 @@ vec3 phongModelDiffAndSpec(){
     return diffuse + spec;
 }
 
+//Subroutines here are sort of like a 'parent method'.
+//Define a subroutine as is done here, essentially setting this is an abstract parent method
 subroutine void RenderPassType();
-subroutine uniform RenderPassType RenderPass;
 
+//Main will just call RenderPass and it'll choose whichever method is defined in the cpu code
+
+
+//Says it's part of that subroutine
 subroutine (RenderPassType)
 void shadeWithShadow(){
     vec3 ambient = light.Intensity * material.Ka;
@@ -61,16 +66,23 @@ void shadeWithShadow(){
 
     //Gamma correction
     FragColour = pow(FragColour, vec4(1.0 / 2.2));
+    FragColour = vec4(0.0, 1.0, 0.0, 1.0); // GREEN
 }
 
+//Says it's part of that subroutine
 subroutine (RenderPassType)
 void recordDepth(){
     //Noting
+     FragColour = vec4(1.0, 0.0, 0.0, 1.0); // RED
 }
 
+subroutine uniform RenderPassType RenderPass;
+
 void main(){
-    //Will call either shade with shadow or record recordDepth
+    //Will call either shadeWithShadow or recordDepth, defined in the CPU code.
     RenderPass();
+    //recordDepth();
+    //shadeWithShadow();
 }
 
 
