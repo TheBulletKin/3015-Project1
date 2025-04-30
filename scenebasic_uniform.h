@@ -84,47 +84,133 @@ private:
 	vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.3f);
 	int numberOfStaticLights;
 	float timeOfDay = 0;
-	vec3 ambientDawnColour = vec3(0.8, 0.5, 0.3);
-	vec3 ambientDayColour = vec3(0.5, 0.7, 1.0);
-	vec3 ambientDuskColour = vec3(0.5, 0.2, 0.5);
-	vec3 ambientNightColour = vec3(0.1, 0.1, 0.3);
+	
+	
+	
 	vec3 currentAmbientColour;
+	vec3 currentSunColour;
 	vec3 sunTarget;
 	float sunDistance;
 	vec3 sunPos;
 	vec3 sunLightDirection;
 	float mainLightIntensity = 0.2;
 
-	
 	struct FogInfo {
 		vec3 fogColour;
 		float fogStart;
 		float fogEnd;
 	};
-	FogInfo dawnFog = {
-		ambientDawnColour * 0.3f,
-		10.0f,
-		25.0f
+
+	struct TimeOfDayInfo {		
+		string name;
+		vec3 ambientLightColour;
+		vec3 lightColour;
+		FogInfo fogInfo;
+		float mainLightIntensity; //Light intensity at the end of the ramp up time
+		float startTime;
+		float rampUpTime;
 	};
 
-	FogInfo nightFog = {
-		ambientNightColour * 0.5f,
-		10.0f,
-		40.0f
+	TimeOfDayInfo dawnInfo = {
+		"dawn",
+		vec3(0.6f, 0.45f, 0.3f),
+		vec3(1.0f, 0.8f, 0.6f),
+		{
+			vec3(0.6f, 0.45f, 0.3f) * 0.3f,
+			10.0f,
+			25.0f
+		},
+		0.08f, // Light intensity - When in this time state it will target the next intensity and interpolate based on ramp up time
+		0.01f, //Start time
+		0.09f //Ramp up time
 	};
 
-	FogInfo dayFog = {
-		ambientDayColour * 0.5f,
-		25.0f,
-		60.0f
+	TimeOfDayInfo dayInfo = {
+		"day",
+		vec3(0.5f, 0.65f, 0.9f),
+		vec3(1.0f, 1.0f, 0.95f),
+		{
+			vec3(0.5f, 0.65f, 0.9f) * 0.3f,
+			25.0f,
+			60.0f
+		},
+		0.3f, // Light intensity
+		0.1f, //Start time
+		0.3f //Ramp up time
 	};
 
-	FogInfo duskFog = {
-		ambientDuskColour * 0.5f,
-		25.0f,
-		60.0f
+	TimeOfDayInfo duskInfo = {
+		"dusk",
+		vec3(0.5, 0.7, 1.0),
+		vec3(1.0f, 0.4f, 0.2f),
+		{
+			vec3(0.5, 0.7, 1.0) * 0.3f,
+			25.0f,
+			60.0f
+		},
+		0.0f, // Light intensity
+		0.9f, //Start time
+		0.08f //Ramp up time
 	};
-	
+
+	TimeOfDayInfo moonRiseInfo = {
+		"moonrise",
+		vec3(0.2f, 0.2f, 0.35f),
+		vec3(0.6, 0.6, 1.0),
+		{
+			vec3(0.2f, 0.2f, 0.35f) * 0.3f,
+			10.0f,
+			40.0f
+		},
+		0.02f, // Light intensity
+		1.0f,//Start time
+		0.1f //Ramp up time
+	};
+
+	TimeOfDayInfo nightInfo = {
+		"night",
+		vec3(0.1f, 0.1f, 0.2f),
+		vec3(0.4f, 0.4f, 0.8f),
+		{
+			vec3(0.1f, 0.1f, 0.2f) * 0.3f,
+			10.0f,
+			40.0f
+		},
+		0.05f, //Light intensity
+		1.15f, //Start time
+		0.3f //Ramp up time
+	};
+
+	TimeOfDayInfo moonsetInfo = {
+		"moonset",
+		vec3(0.15f, 0.15f, 0.25f),
+		vec3(0.5f, 0.5f, 0.9f),
+		{
+			vec3(0.15f, 0.15f, 0.25f) * 0.3f,
+			10.0f,
+			40.0f
+		},
+		0.00f, //Light intensity
+		1.93f, //Start time
+		0.06f //Ramp up time
+	}; 
+
+	TimeOfDayInfo timesOfDay[6] = {
+		dawnInfo,
+		dayInfo,
+		duskInfo,
+		moonRiseInfo,
+		nightInfo,
+		moonsetInfo		
+	};
+
+	TimeOfDayInfo prevTimeOfDay = timesOfDay[5];
+	TimeOfDayInfo currentTimeOfDay = timesOfDay[0];
+	TimeOfDayInfo nextTimeOfDay = timesOfDay[1];
+	int timeOfDayIndex;
+
+
+
 
 	struct Point {
 		float x, y, z;
@@ -155,7 +241,7 @@ private:
 	vec3 hsvToRgb(vec3 hsv);
 	vec3 mixHSV(vec3 colorA, vec3 colorB, float t);
 public:
-	
+
 
 	SceneBasic_Uniform();
 	void initScene();
@@ -172,7 +258,7 @@ public:
 	void renderParticles();
 	void updateDayNightCycle(float deltaTime);
 	void updateShaders();
-	void updateFogColours(FogInfo currentFog, FogInfo toFog, float t);
+	void updateDayNightShaders(TimeOfDayInfo currentState, TimeOfDayInfo toState, float t);
 	void drawSolidSceneObjects();
 	void resize(int, int);
 };

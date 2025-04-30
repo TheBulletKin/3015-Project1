@@ -1,4 +1,4 @@
-#include "scenebasic_uniform.h"
+﻿#include "scenebasic_uniform.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -1286,12 +1286,19 @@ vec3 SceneBasic_Uniform::mixHSV(vec3 colorA, vec3 colorB, float t) {
 	return hsvToRgb(mixedHSV);
 }
 
-void SceneBasic_Uniform::updateFogColours(FogInfo currentFog, FogInfo toFog, float t) {
-	float fogStart = mix(currentFog.fogStart, toFog.fogStart, t);
-	float fogEnd = mix(currentFog.fogEnd, toFog.fogEnd, t);
-	vec3 fogColour = mixHSV(currentFog.fogColour, toFog.fogColour, t);
-	
-	
+void SceneBasic_Uniform::updateDayNightShaders(TimeOfDayInfo prevState, TimeOfDayInfo currentState, float t) {
+	float fogStart = mix(prevState.fogInfo.fogStart, currentState.fogInfo.fogStart, t);
+	float fogEnd = mix(prevState.fogInfo.fogEnd, currentState.fogInfo.fogEnd, t);
+	vec3 fogColour = mixHSV(prevState.fogInfo.fogColour, currentState.fogInfo.fogColour, t);
+
+	currentAmbientColour = mixHSV(prevState.ambientLightColour, currentState.ambientLightColour, t);
+	mainLightIntensity = mix(prevState.mainLightIntensity, currentState.mainLightIntensity, t);
+
+	cout << "time of day: " << timeOfDay << endl;
+	cout << "light intensity: " << mainLightIntensity << endl;
+	cout << currentState.name << endl << endl;
+
+
 	PBRProg.use();
 	PBRProg.setUniform("fogStart", fogStart);
 	PBRProg.setUniform("fogEnd", fogEnd);
@@ -1315,6 +1322,81 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	// Dusk (0.75 - 1) 
 	// Night(1 - 1.75) 
 	// Dawn night (1.75 - 2)
+
+	//Get the next index to look at
+	//get the next start time to wait for
+	//get the start time of the current day segment
+	//if the current time exceeds next start time, change day segment
+	//For interpolation, instead of looking at current start time to next, look at current start time
+	//  to that, plus the ramp up time
+
+	int prevIndex = (timeOfDayIndex - 1 + 6) % 6;
+	int nextIndex = (timeOfDayIndex + 1) % 6;
+
+	float prevStartTime = timesOfDay[timeOfDayIndex].startTime;
+	float nextStartTime = timesOfDay[nextIndex].startTime;
+
+	if (nextStartTime < prevStartTime) {
+		// Wrapping from something like 1.8 to 0.1
+		if (timeOfDay >= nextStartTime && timeOfDay < prevStartTime) {	
+			prevTimeOfDay = currentTimeOfDay;
+			currentTimeOfDay = nextTimeOfDay;
+			timeOfDayIndex = nextIndex;
+			nextTimeOfDay = timesOfDay[(timeOfDayIndex + 1) % 6];
+		}
+	}
+	else {
+		if (timeOfDay >= nextStartTime) {
+			prevTimeOfDay = currentTimeOfDay;
+			currentTimeOfDay = nextTimeOfDay;
+			timeOfDayIndex = nextIndex;
+			nextTimeOfDay = timesOfDay[(timeOfDayIndex + 1) % 6];
+		}
+	}
+
+
+	float currentStartTime = timesOfDay[timeOfDayIndex].startTime;
+	float rampUpDuration = timesOfDay[timeOfDayIndex].rampUpTime;
+
+	//If time of day (0.25) is passed next start time (0.23)
+	//Change the current day to the target
+	//Change the current index to the target index
+	//Target is the next index
+
+
+	prevIndex = (timeOfDayIndex - 1) % 6;
+	nextStartTime = timesOfDay[prevIndex].startTime;
+	currentStartTime = timesOfDay[timeOfDayIndex].startTime;
+	rampUpDuration = timesOfDay[timeOfDayIndex].rampUpTime;
+
+
+
+
+
+
+
+
+	float t;
+	if (rampUpDuration == 0) //Set duration to 0 when there is no ramp up
+	{
+		t = 1.0f;
+	}
+	else {
+		//If current time is 0.2 and from time is 0.1, ramp up 0.45,
+		//Then that's (0.2 - 0.1) / 0.45
+		// (0.1) / 0.45 = 0.2. How far along that duration it is
+		float adjustedTime = timeOfDay;
+		if (timeOfDay < currentStartTime) {
+			adjustedTime += 2.0f; // handle wrap-around
+		}
+
+		t = (adjustedTime - currentStartTime) / rampUpDuration;
+		t = clamp(t, 0.0f, 1.0f);
+		cout << t << endl;
+	}
+
+
+	updateDayNightShaders(prevTimeOfDay, currentTimeOfDay, t);
 
 
 	float dawnStart = 0.01f;
@@ -1341,6 +1423,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	//Bear in mind timeOfDay goes from 0-2
 	//Need to interpolate between 0 and 1, so shift the values of time and threshold to that scale
 	//Interpolate between colour values using this
+	/*
 	cout << timeOfDay << endl;
 	if (timeOfDay < dayStart) {
 		//Dawn has started, slowly moving to dawn colour
@@ -1349,7 +1432,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		cout << localT << endl << endl;
 		currentAmbientColour = mixHSV(ambientNightColour, ambientDawnColour, localT);
 		mainLightIntensity = mix(0.0f, dawnLightIntensity, localT);
-		updateFogColours(nightFog, dawnFog, localT);
+		updateDayNightShaders(nightFog, dawnFog, localT);
 	}
 	else if (timeOfDay < dayFull) {
 		//Day starting, moving from dawn colour to day colour
@@ -1358,7 +1441,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		cout << localT << endl << endl;
 		currentAmbientColour = mixHSV(ambientDawnColour, ambientDayColour, localT);
 		mainLightIntensity = mix(dawnLightIntensity, dayLightIntensity, localT);
-		updateFogColours(dawnFog, dayFog, localT);
+		updateDayNightShaders(dawnFog, dayFog, localT);
 	}
 	else if (timeOfDay < duskStart) {
 		//Day began, keep day colour
@@ -1374,7 +1457,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		cout << localT << endl << endl;
 		currentAmbientColour = mixHSV(ambientDayColour, ambientDuskColour, localT);
 		mainLightIntensity = mix(dayLightIntensity, 0.0f, localT);
-		updateFogColours(dayFog, duskFog, localT);
+		updateDayNightShaders(dayFog, duskFog, localT);
 	}
 	else if (timeOfDay < nightFull) {
 		// Transition from dusk to night
@@ -1382,7 +1465,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		cout << "Moving to night" << endl;
 		cout << localT << endl << endl;
 		currentAmbientColour = mixHSV(ambientDuskColour, ambientNightColour, localT);
-		updateFogColours(duskFog, nightFog, localT);
+		updateDayNightShaders(duskFog, nightFog, localT);
 
 	}
 	else if (timeOfDay < moonSetStart) {
@@ -1392,7 +1475,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		cout << localT << endl << endl;
 		currentAmbientColour = mixHSV(ambientNightColour, ambientNightColour, localT);
 		mainLightIntensity = mix(0.0f, moonLightIntensity, localT);
-		
+
 	}
 	else {
 		//Day starting, moving from dawn colour to day colour
@@ -1401,7 +1484,9 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		cout << localT << endl << endl;
 		currentAmbientColour = mixHSV(ambientNightColour, ambientNightColour, localT);
 		mainLightIntensity = mix(moonLightIntensity, 0.0f, localT);
-	}
+	}*/
+
+
 
 	/* Will first need an angle from the horizon to place the light
 	* Since time of day is 0-2, can potentially divide by 2 to use as an interpolation value
@@ -1414,7 +1499,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	else {
 		angle = radians(((timeOfDay - 1.0f) / 2.0f) * 360.0f);
 	}
-	cout << to_string(mainLightIntensity) << endl << endl;
+
 
 	//float angle = radians((timeOfDay / 2.0f) * 360.0f);
 	vec3 sunElevationVector = normalize(vec3(0.0f, sin(angle), cos(angle)));
@@ -1429,9 +1514,9 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	lightFrustum.orient(sunPos, sunTarget, vec3(0.0f, 1.0f, 0.0f));
 	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
 
-	PBRProg.use();	
+	PBRProg.use();
 	PBRProg.setUniform("Light[3].Position", vec4(-sunLightDirection, 0.0f));
-	PBRProg.setUniform("Light[3].Ambient", currentAmbientColour * 0.06f);
+	PBRProg.setUniform("Light[3].Ambient", currentAmbientColour * 0.3f);
 	PBRProg.setUniform("Light[3].Intensity", vec3(mainLightIntensity));
 
 }
