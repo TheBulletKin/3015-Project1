@@ -552,8 +552,8 @@ void SceneBasic_Uniform::initParticles() {
 	
 	
 	time = 0;
-	particleLifetime = 5.5f;
-	nParticles = 8000;
+	particleLifetime = 10.0f;
+	nParticles = 40;
 
 	nEmitters = 4;
 	vec3 particleEmitters[4] = {
@@ -578,8 +578,8 @@ void SceneBasic_Uniform::initParticles() {
 
 	newParticleProg.use();
 	newParticleProg.setUniform("ParticleLifetime", particleLifetime);
-	newParticleProg.setUniform("ParticleSize", 0.05f);
-	newParticleProg.setUniform("Accel", vec3(0.0f, -0.5f, 0.0f));
+	newParticleProg.setUniform("ParticleSize", 0.1f);
+	newParticleProg.setUniform("Accel", vec3(0.0f, -0.14f, 0.0f));
 
 
 

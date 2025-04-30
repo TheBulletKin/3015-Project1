@@ -53,27 +53,49 @@ const vec2 texCoords[] = vec2[](
 
 //Random texture is a 1D texture of random values, acts sort of like a seed.
 vec3 randomInitialVelocity(int index){
-    float theta = mix(0.0, PI / 8.0, texelFetch(RandomTex, 3 * gl_VertexID, 0).r);
+    float theta = mix(0.0, PI / 4.0, texelFetch(RandomTex, 3 * gl_VertexID, 0).r);
     float phi = mix(0.0, 2.0 * PI, texelFetch(RandomTex, 3 * gl_VertexID + 1, 0).r);
-    float velocity = mix(1.25, 1.5, texelFetch(RandomTex, 3 * gl_VertexID + 2, 0).r);
+    float velocity = mix(0.55, 1.0, texelFetch(RandomTex, 3 * gl_VertexID + 2, 0).r);
     vec3 v = vec3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
     return normalize(EmitterBasis[index] * v) * velocity;
 }
 
 void update(){
     int i = EmitterIndex;
-    if (VertexAge < 0 || VertexAge > ParticleLifetime){
+
+    if (VertexAge < 0.0){
+        //Initial spawn
         Position = EmitterPos[i];
         Velocity = randomInitialVelocity(i);
-        if (VertexAge < 0)
-            Age = VertexAge + DeltaT;
-        else
-            Age = -0.1f;
+        float r = texelFetch(RandomTex, 3 * gl_VertexID + 2, 0).r;
+        Age = mix(4.5f, ParticleLifetime, r);
+    }
+    else if (VertexAge > ParticleLifetime) {
+        //Particle needs to be respawns
+        Position = EmitterPos[i];
+        Velocity = randomInitialVelocity(i);
+        float r = texelFetch(RandomTex, 3 * gl_VertexID + 2, 0).r;
+        Age = mix(4.5f, ParticleLifetime, r);
+        
+        
+        
+        float respawnChance = DeltaT / ParticleLifetime;
+        //Get a random texture value
+        float r2 = texelFetch(RandomTex, 3 * gl_VertexID + 2, 0).r;
+        if (r2 < respawnChance) {
+            
+        } else {
+          // Position = VertexPosition;
+            //Velocity = VertexVelocity;
+           // Age = mix(0.0f, ParticleLifetime, r);
+            //Age = VertexAge + DeltaT;
+        }
     } else {
         Position = VertexPosition + VertexVelocity * DeltaT;
         Velocity = VertexVelocity + Accel * DeltaT;
         Age = VertexAge + DeltaT;
     }
+    
 }
 
 void render(){
@@ -81,7 +103,17 @@ void render(){
     vec3 viewSpacePos = vec3(0.0);
     if (VertexAge >= 0.0){
         viewSpacePos = (ModelViewMatrix * vec4(VertexPosition,1)).xyz + offsets[gl_VertexID] * ParticleSize;
-        Transp = clamp(1.0 - VertexAge / ParticleLifetime, 0, 1);
+        if  (VertexAge > 5.0f){
+            float fadeDuration = ParticleLifetime - 5.0f;
+            float fadeAge = VertexAge - 5.0f;
+            float t = 1 - (fadeAge / fadeDuration );        
+            Transp = clamp(t, 0, 1);
+        }
+        else {
+            Transp = 1.0f;
+        }
+       
+        
     }
     TexCoord = texCoords[gl_VertexID];
 
