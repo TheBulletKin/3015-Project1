@@ -579,8 +579,8 @@ void SceneBasic_Uniform::initParticles() {
 	newParticleProg.setUniform("ParticleLifetime", particleLifetime);
 	newParticleProg.setUniform("ParticleSize", 0.05f);
 	newParticleProg.setUniform("Accel", vec3(0.0f, -0.5f, 0.0f));
-	newParticleProg.setUniform("EmitterPos", particleEmitters);
-	newParticleProg.setUniform("EmitterBasis", emitterBases);
+	newParticleProg.setUniform("EmitterPos", particleEmitters[0]);
+	newParticleProg.setUniform("EmitterBasis", emitterBases[0]);
 
 
 
@@ -645,7 +645,6 @@ void SceneBasic_Uniform::initParticles() {
 	glBindBuffer(GL_ARRAY_BUFFER, age[0]);
 	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(2);
-	glBindVertexArray(particleArray[0]);
 
 	glBindBuffer(GL_ARRAY_BUFFER, emitterIndexBuf[0]);
 	glVertexAttribIPointer(3, 1, GL_INT, 0, 0);
@@ -1161,7 +1160,7 @@ void SceneBasic_Uniform::renderParticles()
 	glDepthMask(GL_TRUE);*/
 
 
-	newParticleProg.use();
+	/*newParticleProg.use();
 	newParticleProg.setUniform("Time", time);
 	newParticleProg.setUniform("DeltaT", deltaTime);
 	model = mat4(1.0f);
@@ -1206,7 +1205,65 @@ void SceneBasic_Uniform::renderParticles()
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 
+	drawBuf = 1 - drawBuf;*/
+
+	
+	/*
+	glDepthMask(GL_FALSE);
+	newParticleProg.use();
+	setMatrices(newParticleProg);
+	newParticleProg.setUniform("Time", time);
+	glBindVertexArray(particles);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, nParticles);
+	glBindVertexArray(0);
+	glDepthMask(GL_TRUE);*/
+
+
+	newParticleProg.use();
+	newParticleProg.setUniform("Time", time);
+	newParticleProg.setUniform("DeltaT", deltaTime);
+	model = mat4(1.0f);
+	model = translate(model, vec3(0.0f, 0.0f, -5.0f));
+	setMatrices(newParticleProg);
+	newParticleProg.setUniform("Pass", 1);
+
+	glActiveTexture(GL_TEXTURE7);
+	glBindTexture(GL_TEXTURE_1D, randomParticleTexID);
+
+	glEnable(GL_RASTERIZER_DISCARD); //Tells it to not render the result to the fragment shader. Good for just doing processing.
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback[drawBuf]);
+	glBeginTransformFeedback(GL_POINTS);
+
+	glBindVertexArray(particleArray[1 - drawBuf]);
+	glVertexAttribDivisor(0, 0);
+	glVertexAttribDivisor(1, 0);
+	glVertexAttribDivisor(2, 0);
+	glDrawArrays(GL_POINTS, 0, nParticles);
+	glBindVertexArray(0);
+
+	glEndTransformFeedback();
+	glDisable(GL_RASTERIZER_DISCARD);
+
+	//Render pass
+	newParticleProg.setUniform("Pass", 2);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glDepthFunc(GL_LEQUAL);
+
+	glDepthMask(GL_FALSE);
+	glBindVertexArray(particleArray[drawBuf]);
+	glVertexAttribDivisor(0, 1);
+	glVertexAttribDivisor(1, 1);
+	glVertexAttribDivisor(2, 1);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, nParticles);
+	glBindVertexArray(0);
+
+	//glDepthFunc(GL_LESS);
+	glDisable(GL_BLEND);
+	glDepthMask(GL_TRUE);
+
 	drawBuf = 1 - drawBuf;
+	
 }
 
 //Found online. Used to make the interpolation between colours better
