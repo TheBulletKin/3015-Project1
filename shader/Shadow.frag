@@ -74,7 +74,7 @@ void shadeWithShadow(){
 }
 
 void recordDepth(){
-    //Noting
+    //Will not apply any fancy lighting to the object
     //FragColour = vec4(1.0, 0.0, 0.0, 1.0); // Red - test
     float depth = ShadowCoord.z;  
     FragColour = vec4(depth, depth, depth, 1.0); 

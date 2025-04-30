@@ -12,13 +12,17 @@ in vec2 TexCoord;
 uniform mat4 view;
 uniform vec3 ViewPos;
 uniform float TextureScale = 20.0;
+uniform int Pass;
+in vec4 ShadowCoord;
 
 struct LightInfo {
     vec4 Position;
-    vec3 I; //Light intensity
+    vec3 Intensity;
+    vec3 Ambient;
 }; 
 
-uniform LightInfo Light[3];
+uniform LightInfo Light[4]; //Three points, one main
+
 
 struct MaterialInfo{
     float Rough;
@@ -29,6 +33,7 @@ struct MaterialInfo{
 uniform MaterialInfo material;
 
 layout(binding = 1) uniform sampler2D BrickTex;
+layout(binding = 8) uniform sampler2DShadow ShadowMap;
 
 //PBR works around using roughness, metalness and colour
 
@@ -63,10 +68,9 @@ vec3 schlickFresnel(float lDotH) {
 
 //Computes the final light reflection for a point on a surface
 vec3 microfacetModel(int lightIdx, vec3 position, vec3 n, vec3 baseColour){
-
     //L is light direction.
     vec3 l = vec3(0.0);
-    vec3 lightI = Light[lightIdx].I;
+    vec3 lightI = Light[lightIdx].Intensity;
     //vec4 lightPosition = Light[lightIdx].Position;
     vec4 lightPosition = view * Light[lightIdx].Position;
     if(lightPosition.w == 0.0) {  //W = 0 for directional lights
@@ -102,7 +106,40 @@ vec3 microfacetModel(int lightIdx, vec3 position, vec3 n, vec3 baseColour){
     return (baseColour + PI * specBrdf) * lightI * nDotL;
 }
 
-void main(){   
+
+
+void depthPass()
+{
+    //debug
+    float depth = ShadowCoord.z;  
+    FragColour = vec4(depth, depth, depth, 1.0);
+}
+
+vec3 determineShadow(vec3 sum){
+    float pcfSum = 0;
+    float shadow = 1.0;
+
+    if (ShadowCoord.z >= 0){
+        //Anti alias shadows
+        for (int x = -1; x <= 1; ++x) {
+            for (int y = -1; y <= 1; ++y) {
+            pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2(x, y));
+            }
+        }
+        
+        shadow = pcfSum / 9.0;
+    }
+
+    //FragColour = vec4(Light[3].Ambient + sum * shadow, 1.0);
+    vec3 ambient = Light[3].Ambient;
+    vec3 shadowedLight = sum * shadow;
+    return ambient + shadowedLight;
+    
+   
+}
+
+void renderPass()
+{
     vec3 sum = vec3(0.0);
     vec3 n = normalize(Normal);   
 
@@ -116,15 +153,26 @@ void main(){
         baseColour = textureColour;
     }
     
-    //Iterates over all light sources
+    //Directional light in
+   // vec3 dirLight = microfacetModel(3, Position, n, baseColour);
+    //vec3 lit = determineShadow(dirLight);
+    vec3 lit = vec3(0);
     for (int i = 0; i < 3; i++){
-        sum += microfacetModel(i, Position, n, baseColour);
+        lit += microfacetModel(i, Position, n, baseColour);
     }
 
-    //Gamma correction
-    sum = pow(sum, vec3(1.0/2.2));
+    FragColour = vec4(lit, 1.0);
+    FragColour = pow(FragColour, vec4(1.0 / 2.2)); // gamma correction
+}
 
-    FragColour = vec4(sum, 1);
+
+
+void main(){   
+    if (Pass == 1){
+        depthPass();
+    } else if (Pass == 2){
+        renderPass();
+    }
 }
 
 

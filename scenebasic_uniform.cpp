@@ -289,7 +289,7 @@ void SceneBasic_Uniform::render()
 	//view = mat4(1.0f);
 	//view = translate(view, vec3(0.0f, 3.0f, 7.0f));
 	//view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
-	shadowProg.use();
+	PBRProg.use();
 
 
 	//Pass 1 shadow map gen
@@ -302,7 +302,7 @@ void SceneBasic_Uniform::render()
 	glViewport(0, 0, shadowMapWidth, shadowMapHeight);
 	//Ensures the use of 'recordDepth' which does nothing as depth info is recorded
 
-	shadowProg.setUniform("Pass", 1);
+	PBRProg.setUniform("Pass", 1);
 	//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass2Index);
 	//GLuint activeIndex;
 	//glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
@@ -333,11 +333,16 @@ void SceneBasic_Uniform::render()
 
 
 	//Pass 2
-	shadowProg.use();
+	PBRProg.use();
 	view = camera.GetViewMatrix();
 
 	//shadowProg.setUniform("light.Position", vec4(lightPos, 1.0));
-	shadowProg.setUniform("light.Position", view * vec4(lightFrustum.getOrigin(), 1.0f));
+	//Set the directional light to point from the light frustum to the world centre
+	
+	vec3 target = vec3(-5.0f, 0.0f, -12.0f);
+	vec3 direction = normalize(target - lightFrustum.getOrigin());
+	vec3 viewDir = normalize(mat3(view) * direction);
+	PBRProg.setUniform("light[3].Position", vec4(viewDir, 0.0f));
 	projection = perspective(radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -345,7 +350,7 @@ void SceneBasic_Uniform::render()
 	glViewport(0, 0, width, height);
 	//Ensures the use of 'shadeWithShadow', which uses phong and the shadow info
 
-	shadowProg.setUniform("Pass", 2);
+	PBRProg.setUniform("Pass", 2);
 	//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass1Index);
 
 	//glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
@@ -403,11 +408,11 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 
 	//glActiveTexture(GL_TEXTURE2);
 	//glBindTexture(GL_TEXTURE_2D, brickTexID);
-
+	PBRProg.use();
 	model = mat4(1.0f);
 	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
 	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
-	setMatrices(shadowProg);
+	setMatrices(PBRProg);
 	//setMatrices(objectProg);
 	RuinMesh->render();
 
@@ -763,15 +768,15 @@ void SceneBasic_Uniform::initShadows() {
 	//Bit like MVP going from world to view to clip space, since the shadow texture is going to be in line with the camera, essentially its own view space
 	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
 
-
-	shadowProg.setUniform("light.Intensity", vec3(0.5f));
+	PBRProg.use();
+	PBRProg.setUniform("light.Intensity", vec3(0.5f));
 	//shadowProg.setUniform("ShadowMap", 8);
 
 	vec3 shadowedObjColour = vec3(0.2f, 0.5f, 0.9f);
-	shadowProg.setUniform("material.Ka", shadowedObjColour * 0.05f);
-	shadowProg.setUniform("material.Kd", shadowedObjColour);
-	shadowProg.setUniform("material.Ks", vec3(0.9f, 0.9f, 0.9f));
-	shadowProg.setUniform("material.Shininess", 150.0f);
+	PBRProg.setUniform("material.Ka", shadowedObjColour * 0.05f);
+	PBRProg.setUniform("material.Kd", shadowedObjColour);
+	PBRProg.setUniform("material.Ks", vec3(0.9f, 0.9f, 0.9f));
+	PBRProg.setUniform("material.Shininess", 150.0f);
 
 	//Colour used for sampling outside of the valid range
 	GLfloat border2[] = { 1.0f, 0.0f, 0.0f, 0.0f };
@@ -831,12 +836,16 @@ void SceneBasic_Uniform::initMaterials()
 	PBRProg.setUniform("material.Rough", 0.97f);
 	PBRProg.setUniform("material.Metal", 0);
 	PBRProg.setUniform("material.Colour", vec3(0.4f));
-	PBRProg.setUniform("Light[0].I", vec3(0.2f));
-	PBRProg.setUniform("Light[0].Position", vec4(-3.5f, 3.0f, -8.0f, 1));
-	PBRProg.setUniform("Light[1].I", vec3(0.2f));
+	PBRProg.setUniform("Light[0].Intensity", vec3(0.02f));
+	PBRProg.setUniform("Light[0].Position", vec4(-2.5f, 2.0f, -8.5f, 1));
+	PBRProg.setUniform("Light[1].Intensity", vec3(0.02f));
 	PBRProg.setUniform("Light[1].Position", vec4(-0.2f, 2.0f, -8.5f, 1));
-	PBRProg.setUniform("Light[2].I", vec3(0.2f));
+	PBRProg.setUniform("Light[2].Intensity", vec3(0.02f));
 	PBRProg.setUniform("Light[2].Position", vec4(-1.0f, 0.5f, -6.8f, 1));
+
+	PBRProg.setUniform("Light[3].Intensity", vec3(7.0f));
+	PBRProg.setUniform("Light[3].Ambient", vec3(0.0f, 0.0f, 0.0f));
+	PBRProg.setUniform("Light[3].Position", vec4(lightPos, 0.0));
 
 	/* Example
 	PBRProg.setUniform("Light[0].L", vec3(45.0f));
