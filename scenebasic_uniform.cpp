@@ -1272,7 +1272,7 @@ vec3 SceneBasic_Uniform::hsvToRgb(vec3 hsv) {
 	return rgb + vec3(m);
 }
 
-vec3 SceneBasic_Uniform::mixAmbientHSV(vec3 colorA, vec3 colorB, float t) {
+vec3 SceneBasic_Uniform::mixHSV(vec3 colorA, vec3 colorB, float t) {
 	vec3 hsvA = rgbToHsv(colorA);
 	vec3 hsvB = rgbToHsv(colorB);
 
@@ -1286,11 +1286,16 @@ vec3 SceneBasic_Uniform::mixAmbientHSV(vec3 colorA, vec3 colorB, float t) {
 	return hsvToRgb(mixedHSV);
 }
 
-void SceneBasic_Uniform::updateFogColours(SceneBasic_Uniform::FogInfo fogInfo ) {
+void SceneBasic_Uniform::updateFogColours(FogInfo currentFog, FogInfo toFog, float t) {
+	float fogStart = mix(currentFog.fogStart, toFog.fogStart, t);
+	float fogEnd = mix(currentFog.fogEnd, toFog.fogEnd, t);
+	vec3 fogColour = mixHSV(currentFog.fogColour, toFog.fogColour, t);
+	
+	
 	PBRProg.use();
-	PBRProg.setUniform("fogStart", fogInfo.fogStart);
-	PBRProg.setUniform("fogEnd", fogInfo.fogEnd);
-	PBRProg.setUniform("fogColour", fogInfo.fogColour);
+	PBRProg.setUniform("fogStart", fogStart);
+	PBRProg.setUniform("fogEnd", fogEnd);
+	PBRProg.setUniform("fogColour", fogColour);
 }
 
 void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
@@ -1342,40 +1347,42 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		float localT = (timeOfDay - dawnStart) / dawnDuration;
 		cout << "Dawning" << endl;
 		cout << localT << endl << endl;
-		currentAmbientColour = mixAmbientHSV(ambientNightColour, ambientDawnColour, localT);
+		currentAmbientColour = mixHSV(ambientNightColour, ambientDawnColour, localT);
 		mainLightIntensity = mix(0.0f, dawnLightIntensity, localT);
-		updateFogColours(dawnFog);
+		updateFogColours(nightFog, dawnFog, localT);
 	}
 	else if (timeOfDay < dayFull) {
 		//Day starting, moving from dawn colour to day colour
 		float localT = (timeOfDay - dayStart) / dayStartDuration;
 		cout << "Moving to day" << endl;
 		cout << localT << endl << endl;
-		currentAmbientColour = mixAmbientHSV(ambientDawnColour, ambientDayColour, localT);
+		currentAmbientColour = mixHSV(ambientDawnColour, ambientDayColour, localT);
 		mainLightIntensity = mix(dawnLightIntensity, dayLightIntensity, localT);
+		updateFogColours(dawnFog, dayFog, localT);
 	}
 	else if (timeOfDay < duskStart) {
 		//Day began, keep day colour
 		float localT = (timeOfDay - dayFull) / dayDuration;
 		cout << "Full day" << endl;
 		cout << localT << endl << endl;
-		currentAmbientColour = mixAmbientHSV(ambientDayColour, ambientDayColour, localT);
+		currentAmbientColour = mixHSV(ambientDayColour, ambientDayColour, localT);
 	}
 	else if (timeOfDay < nightStart) {
 		// Transition from day to dusk
 		float localT = (timeOfDay - duskStart) / duskDuration;
 		cout << "Sun setting" << endl;
 		cout << localT << endl << endl;
-		currentAmbientColour = mixAmbientHSV(ambientDayColour, ambientDuskColour, localT);
+		currentAmbientColour = mixHSV(ambientDayColour, ambientDuskColour, localT);
 		mainLightIntensity = mix(dayLightIntensity, 0.0f, localT);
+		updateFogColours(dayFog, duskFog, localT);
 	}
 	else if (timeOfDay < nightFull) {
 		// Transition from dusk to night
 		float localT = (timeOfDay - nightStart) / nightStartDuration;
 		cout << "Moving to night" << endl;
 		cout << localT << endl << endl;
-		currentAmbientColour = mixAmbientHSV(ambientDuskColour, ambientNightColour, localT);
-		
+		currentAmbientColour = mixHSV(ambientDuskColour, ambientNightColour, localT);
+		updateFogColours(duskFog, nightFog, localT);
 
 	}
 	else if (timeOfDay < moonSetStart) {
@@ -1383,16 +1390,16 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		float localT = (timeOfDay - nightFull) / nightDuration;
 		cout << "Full night" << endl;
 		cout << localT << endl << endl;
-		currentAmbientColour = mixAmbientHSV(ambientNightColour, ambientNightColour, localT);
+		currentAmbientColour = mixHSV(ambientNightColour, ambientNightColour, localT);
 		mainLightIntensity = mix(0.0f, moonLightIntensity, localT);
-		updateFogColours(nightFog);
+		
 	}
 	else {
 		//Day starting, moving from dawn colour to day colour
 		float localT = (timeOfDay - moonSetStart) / moonSetDuration;
 		cout << "Moon setting" << endl;
 		cout << localT << endl << endl;
-		currentAmbientColour = mixAmbientHSV(ambientNightColour, ambientNightColour, localT);
+		currentAmbientColour = mixHSV(ambientNightColour, ambientNightColour, localT);
 		mainLightIntensity = mix(moonLightIntensity, 0.0f, localT);
 	}
 

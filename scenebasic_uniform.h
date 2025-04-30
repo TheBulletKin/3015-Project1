@@ -109,8 +109,20 @@ private:
 
 	FogInfo nightFog = {
 		ambientNightColour * 0.5f,
-		5.0f,
-		10.0f
+		10.0f,
+		40.0f
+	};
+
+	FogInfo dayFog = {
+		ambientDayColour * 0.5f,
+		25.0f,
+		60.0f
+	};
+
+	FogInfo duskFog = {
+		ambientDuskColour * 0.5f,
+		25.0f,
+		60.0f
 	};
 	
 
@@ -141,7 +153,7 @@ private:
 	void setupFBO();
 	vec3 rgbToHsv(vec3 c);
 	vec3 hsvToRgb(vec3 hsv);
-	vec3 mixAmbientHSV(vec3 colorA, vec3 colorB, float t);
+	vec3 mixHSV(vec3 colorA, vec3 colorB, float t);
 public:
 	
 
@@ -160,7 +172,7 @@ public:
 	void renderParticles();
 	void updateDayNightCycle(float deltaTime);
 	void updateShaders();
-	void updateFogColours(FogInfo fogInfo);
+	void updateFogColours(FogInfo currentFog, FogInfo toFog, float t);
 	void drawSolidSceneObjects();
 	void resize(int, int);
 };
