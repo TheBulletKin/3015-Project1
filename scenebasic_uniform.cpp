@@ -271,15 +271,16 @@ void SceneBasic_Uniform::render()
 
 
 
-	renderFireflies();
-	renderParticles();
+	//renderFireflies();
+	
 
 	//view = mat4(1.0f);
 	//view = translate(view, vec3(0.0f, 3.0f, 7.0f));
 	//view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
 	PBRProg.use();
 
-
+	/*
+	* 
 	//Pass 1 shadow map gen
 	model = mat4(1.0f);
 	model = translate(model, lightFrustum.getOrigin());
@@ -311,7 +312,7 @@ void SceneBasic_Uniform::render()
 	//glBindTexture(GL_TEXTURE_2D, brickTexID);
 
 
-	drawSolidSceneObjects();
+	//drawSolidSceneObjects();
 	//Draw scene
 
 	glCullFace(GL_BACK);
@@ -342,7 +343,7 @@ void SceneBasic_Uniform::render()
 	//glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
 
 	//Draw scene
-	drawSolidSceneObjects();
+	//drawSolidSceneObjects();
 
 	objectProg.use();
 
@@ -357,6 +358,12 @@ void SceneBasic_Uniform::render()
 
 	//setMatrices(objectProg);
 	lightFrustum.render();
+
+	*/
+
+	drawSceneObjects();
+
+	renderParticles();
 
 
 #pragma region HDR Pass
@@ -400,7 +407,7 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
 	setMatrices(PBRProg);
 	//setMatrices(objectProg);
-	RuinMesh->render();
+	//RuinMesh->render();
 
 	//Terrain rendering
 	terrainProg.use();
@@ -427,7 +434,7 @@ void SceneBasic_Uniform::drawSceneObjects() {
 
 	//Ruin Rendering
 	//objectProg.use();
-	PBRProg.use();
+	objectProg.use();
 
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, brickTexID);
@@ -435,7 +442,7 @@ void SceneBasic_Uniform::drawSceneObjects() {
 	model = mat4(1.0f);
 	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
 	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
-	setMatrices(PBRProg);
+	setMatrices(objectProg);
 	//setMatrices(objectProg);
 	RuinMesh->render();
 
@@ -539,13 +546,31 @@ void SceneBasic_Uniform::setupFBO() {
 }
 
 void SceneBasic_Uniform::initParticles() {
+	//For particles, it holds all the information about the position, velocity and age in buffers
+	//Currently works for only one particle emitter.
+	
+	
 	time = 0;
 	particleLifetime = 5.5f;
 	nParticles = 8000;
-	emitterPos = vec3(-2, 4, -3);
-	emitterDir = vec3(0, 1, 0);
 
-	mat3 emitterBasis = ParticleUtils::makeArbitraryBasis(emitterDir);
+	nEmitters = 4;
+	vec3 particleEmitters[4] = {
+		vec3(-2, 4, -7),
+		vec3(-1, 2, -3),
+		vec3(-3, 3, -2),
+		vec3(-4, 4, -3.5),
+	};
+
+	mat3 emitterBases[4] = {
+		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
+		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
+		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
+		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0))
+	};
+	
+
+	
 
 	glActiveTexture(GL_TEXTURE7);
 	randomParticleTexID = ParticleUtils::createRandomTex1D(nParticles * 3);
@@ -554,8 +579,8 @@ void SceneBasic_Uniform::initParticles() {
 	newParticleProg.setUniform("ParticleLifetime", particleLifetime);
 	newParticleProg.setUniform("ParticleSize", 0.05f);
 	newParticleProg.setUniform("Accel", vec3(0.0f, -0.5f, 0.0f));
-	newParticleProg.setUniform("EmitterPos", emitterPos);
-	newParticleProg.setUniform("EmitterBasis", emitterBasis);
+	newParticleProg.setUniform("EmitterPos", particleEmitters);
+	newParticleProg.setUniform("EmitterBasis", emitterBases);
 
 
 
@@ -563,6 +588,12 @@ void SceneBasic_Uniform::initParticles() {
 	glGenBuffers(2, posBuf);
 	glGenBuffers(2, velBuf);
 	glGenBuffers(2, age);
+	glGenBuffers(2, emitterIndexBuf);
+
+	vector<GLint> emitterIndices(nParticles);
+	for (int i = 0; i < nParticles; ++i) {
+		emitterIndices[i] = i % nEmitters;
+	}
 
 	//Create buffers to fit vec3s for vel and pos, just float for age.
 	int size = nParticles * 3 * sizeof(GLfloat);
@@ -578,6 +609,10 @@ void SceneBasic_Uniform::initParticles() {
 	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(float), 0, GL_DYNAMIC_COPY);
 	glBindBuffer(GL_ARRAY_BUFFER, age[1]);
 	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(float), 0, GL_DYNAMIC_COPY);
+	glBindBuffer(GL_ARRAY_BUFFER, emitterIndexBuf[0]);
+	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(GLint), emitterIndices.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, emitterIndexBuf[1]);
+	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(GLint), emitterIndices.data(), GL_STATIC_DRAW);
 
 	//Particle age container
 	vector<GLfloat> tempData(nParticles);
@@ -610,6 +645,11 @@ void SceneBasic_Uniform::initParticles() {
 	glBindBuffer(GL_ARRAY_BUFFER, age[0]);
 	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(2);
+	glBindVertexArray(particleArray[0]);
+
+	glBindBuffer(GL_ARRAY_BUFFER, emitterIndexBuf[0]);
+	glVertexAttribIPointer(3, 1, GL_INT, 0, 0);
+	glEnableVertexAttribArray(3);
 
 	//particle array 1
 	glBindVertexArray(particleArray[1]);
@@ -624,6 +664,10 @@ void SceneBasic_Uniform::initParticles() {
 	glBindBuffer(GL_ARRAY_BUFFER, age[1]);
 	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(2);
+
+	glBindBuffer(GL_ARRAY_BUFFER, emitterIndexBuf[1]);
+	glVertexAttribIPointer(3, 1, GL_INT, 0, 0);
+	glEnableVertexAttribArray(3);
 
 	glBindVertexArray(0);
 
@@ -661,69 +705,7 @@ void SceneBasic_Uniform::initParticles() {
 
 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 
-
-
-	/*
-	glGenBuffers(1, &initVel);
-	glGenBuffers(1, &startTime);
-
-	int size = nParticles * sizeof(float);
-	glBindBuffer(GL_ARRAY_BUFFER, initVel);
-	glBufferData(GL_ARRAY_BUFFER, size * 3, 0, GL_STATIC_DRAW);
-	glBindBuffer(GL_ARRAY_BUFFER, startTime);
-	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_STATIC_DRAW);
-
-
-	vec3 v(0.0f);
-	float velocity, theta, phi;
-	vector<GLfloat> data(nParticles * 3);
-	Random* random = new Random();
-
-	for (uint32_t i = 0; i < nParticles; i++)
-	{
-		theta = mix(0.0f, pi<float>() / 20.0f, random->nextFloat());
-		phi = mix(0.0f, two_pi<float>(), random->nextFloat());
-
-		v.x = sinf(theta) * cosf(phi);
-		v.y = cosf(theta);
-		v.z = sinf(theta) * sinf(phi);
-
-		velocity = mix(1.25f, 1.5f, random->nextFloat());
-		v = normalize(emitterBasis * v) * velocity;
-
-		data[3 * i] = v.x;
-		data[3 * i + 1] = v.y;
-		data[3 * i + 2] = v.z;
-	}
-
-	glBindBuffer(GL_ARRAY_BUFFER, initVel);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, size * 3, data.data());
-
-	float rate = particleLifetime / nParticles;
-	for (int i = 0; i < nParticles, i++;) {
-		data[i] = rate * i;
-	}
-
-	glBindBuffer(GL_ARRAY_BUFFER, startTime);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, nParticles * sizeof(float), data.data());
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	glGenVertexArrays(1, &particles);
-	glBindVertexArray(particles);
-	glBindBuffer(GL_ARRAY_BUFFER, initVel);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, startTime);
-	glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(1);
-
-	glVertexAttribDivisor(0, 1);
-	glVertexAttribDivisor(1, 1);
-
-	glBindVertexArray(0);
-	*/
+	
 }
 
 void SceneBasic_Uniform::initShadows() {
@@ -1198,6 +1180,7 @@ void SceneBasic_Uniform::renderParticles()
 	glVertexAttribDivisor(0, 0);
 	glVertexAttribDivisor(1, 0);
 	glVertexAttribDivisor(2, 0);
+	glVertexAttribDivisor(3, 0);
 	glDrawArrays(GL_POINTS, 0, nParticles);
 	glBindVertexArray(0);
 
@@ -1208,17 +1191,18 @@ void SceneBasic_Uniform::renderParticles()
 	newParticleProg.setUniform("Pass", 2);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glDepthFunc(GL_LEQUAL);
+	glDepthFunc(GL_LEQUAL);
 
 	glDepthMask(GL_FALSE);
 	glBindVertexArray(particleArray[drawBuf]);
 	glVertexAttribDivisor(0, 1);
 	glVertexAttribDivisor(1, 1);
 	glVertexAttribDivisor(2, 1);
+	glVertexAttribDivisor(3, 1);
 	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, nParticles);
 	glBindVertexArray(0);
 
-	//glDepthFunc(GL_LESS);
+	glDepthFunc(GL_LESS);
 	glDisable(GL_BLEND);
 	glDepthMask(GL_TRUE);
 

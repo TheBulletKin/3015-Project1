@@ -43,12 +43,12 @@ private:
 
 	//Particles
 	GLuint posBuf[2], velBuf[2], age[2];
+	GLuint emitterIndexBuf[2];
 	GLuint particleArray[2];
 	GLuint feedback[2];
 
 	GLuint drawBuf;
-	GLuint initVel, startTime, particles, nParticles;
-	vec3 emitterPos, emitterDir;
+	GLuint initVel, startTime, particles, nParticles, nEmitters;	
 	float particleLifetime, time;
 
 	//Objects

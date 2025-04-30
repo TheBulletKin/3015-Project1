@@ -5,9 +5,13 @@ const float PI = 3.14159265359;
 layout (location = 0) in vec3 VertexPosition;
 layout (location = 1) in vec3 VertexVelocity;
 layout (location = 2) in float VertexAge;
+layout (location = 3) in int EmitterIndex;
 
 //Which pass of the shader is currently being ran
 uniform int Pass;
+
+uniform vec3 EmitterPos[4];
+uniform mat3 EmitterBasis[4];
 
 //Output to transform feedback buffers update pass
 layout(xfb_buffer = 0, xfb_offset = 0) out vec3 Position;
@@ -22,8 +26,6 @@ uniform float DeltaT; //Deltatime between frames
 uniform vec3 Accel; //Particle acceleration ( gravity)
 uniform float ParticleLifetime;
 uniform float ParticleSize = 1.0;
-uniform vec3 EmitterPos;
-uniform mat3 EmitterBasis;
 
 uniform mat4 ModelViewMatrix;
 uniform mat4 projection;
@@ -50,33 +52,27 @@ const vec2 texCoords[] = vec2[](
 );
 
 //Random texture is a 1D texture of random values, acts sort of like a seed.
-vec3 randomInitialVelocity(){
+vec3 randomInitialVelocity(int index){
     float theta = mix(0.0, PI / 8.0, texelFetch(RandomTex, 3 * gl_VertexID, 0).r);
     float phi = mix(0.0, 2.0 * PI, texelFetch(RandomTex, 3 * gl_VertexID + 1, 0).r);
     float velocity = mix(1.25, 1.5, texelFetch(RandomTex, 3 * gl_VertexID + 2, 0).r);
     vec3 v = vec3(sin(theta) * cos(phi), cos(theta), sin(theta) * sin(phi));
-    //Emitter basis is the provided direction. This whole method gives it some variance
-    return normalize(EmitterBasis * v) * velocity;
+    return normalize(EmitterBasis[index] * v) * velocity;
 }
 
 void update(){
+    int i = EmitterIndex;
     if (VertexAge < 0 || VertexAge > ParticleLifetime){
-        //Hasn't spawned yet or is dead
-        Position = EmitterPos;
-        Velocity = randomInitialVelocity();
+        Position = EmitterPos[i];
+        Velocity = randomInitialVelocity(i);
         if (VertexAge < 0)
-        {
-            Age = VertexAge + DeltaT; //Effective spawns it
-        } else
-        {
+            Age = VertexAge + DeltaT;
+        else
             Age = -0.1f;
-        }
-    } else
-    {
-        //Particle is alive
-        Position = VertexPosition + VertexVelocity * DeltaT; //Use velocity to alter position
-        Velocity = VertexVelocity + Accel * DeltaT; //Use accel to alter velocity
-        Age = VertexAge + DeltaT; //Increment age over time
+    } else {
+        Position = VertexPosition + VertexVelocity * DeltaT;
+        Velocity = VertexVelocity + Accel * DeltaT;
+        Age = VertexAge + DeltaT;
     }
 }
 
