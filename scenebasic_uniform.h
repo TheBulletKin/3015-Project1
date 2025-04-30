@@ -78,6 +78,7 @@ private:
 	float fireFlySpawnTimer;
 	int fireFlySpawnCooldown;
 	int currentFireFlyCount;
+	int fireFlyLightIndex;
 	int maxFireFlyCount;
 	vec3 fireFlyLightColour = vec3(0.53, 0.67, 0.33);
 	vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.3f);
@@ -114,6 +115,14 @@ public:
 	void update(float t);
 	void render();
 	void drawSceneObjects();
+	void initParticles();
+	void initShadows();
+	void initMaterials();
+	void initLights();
+	void initTextures();
+	void initPostProcessing();
+	void renderFireflies();
+	void renderParticles();
 	void drawSolidSceneObjects();
 	void resize(int, int);
 };

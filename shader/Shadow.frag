@@ -59,7 +59,8 @@ void shadeWithShadow(){
             for (int y = -1; y <= 1; ++y) {
             sum += textureProjOffset(ShadowMap, ShadowCoord, ivec2(x, y));
             }
-        }        
+        }
+        
         shadow = sum / 9.0;
     }
 
