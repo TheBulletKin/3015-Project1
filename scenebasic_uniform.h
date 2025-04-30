@@ -95,6 +95,25 @@ private:
 	vec3 sunLightDirection;
 	float mainLightIntensity = 0.2;
 
+	
+	struct FogInfo {
+		vec3 fogColour;
+		float fogStart;
+		float fogEnd;
+	};
+	FogInfo dawnFog = {
+		ambientDawnColour * 0.3f,
+		10.0f,
+		25.0f
+	};
+
+	FogInfo nightFog = {
+		ambientNightColour * 0.5f,
+		5.0f,
+		10.0f
+	};
+	
+
 	struct Point {
 		float x, y, z;
 	};
@@ -124,6 +143,8 @@ private:
 	vec3 hsvToRgb(vec3 hsv);
 	vec3 mixAmbientHSV(vec3 colorA, vec3 colorB, float t);
 public:
+	
+
 	SceneBasic_Uniform();
 	void initScene();
 	void update(float t);
@@ -139,6 +160,7 @@ public:
 	void renderParticles();
 	void updateDayNightCycle(float deltaTime);
 	void updateShaders();
+	void updateFogColours(FogInfo fogInfo);
 	void drawSolidSceneObjects();
 	void resize(int, int);
 };

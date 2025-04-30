@@ -15,6 +15,10 @@ uniform float TextureScale = 20.0;
 uniform int Pass;
 in vec4 ShadowCoord;
 
+uniform vec3 fogColour;
+uniform float fogStart;
+uniform float fogEnd;
+
 struct LightInfo {
     vec4 Position;
     vec3 Intensity;
@@ -142,6 +146,10 @@ vec3 determineShadow(vec3 sum){
    
 }
 
+float calculateFogFactor(float distance){   
+    return clamp((distance - fogStart) / (fogEnd - fogStart), 0.0, 1.0);
+}
+
 void renderPass()
 {
     vec3 sum = vec3(0.0);
@@ -170,7 +178,15 @@ void renderPass()
 
     lit += Light[3].Ambient;
 
-    FragColour = vec4(lit, 1.0);
+    
+    float distanceToCamera = length(WorldPosition - ViewPos);   
+    float fogFactor = calculateFogFactor(distanceToCamera);
+
+    // Apply fog: mix lighting result with fog color based on fog factor
+    vec3 finalColour = mix(lit, fogColour, fogFactor);
+
+    FragColour = vec4(finalColour, 1.0);
+   // FragColour = vec4(lit, 1.0);
     //FragColour = pow(FragColour, vec4(1.0 / 2.2)); // gamma correction
 }
 

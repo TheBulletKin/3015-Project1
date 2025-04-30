@@ -62,9 +62,6 @@ void SceneBasic_Uniform::initScene()
 
 
 
-
-
-
 #pragma region Firefly Sprites
 	glGenVertexArrays(1, &spritesVAO);
 	glGenBuffers(1, &spritesInstanceVBO);
@@ -1289,6 +1286,13 @@ vec3 SceneBasic_Uniform::mixAmbientHSV(vec3 colorA, vec3 colorB, float t) {
 	return hsvToRgb(mixedHSV);
 }
 
+void SceneBasic_Uniform::updateFogColours(SceneBasic_Uniform::FogInfo fogInfo ) {
+	PBRProg.use();
+	PBRProg.setUniform("fogStart", fogInfo.fogStart);
+	PBRProg.setUniform("fogEnd", fogInfo.fogEnd);
+	PBRProg.setUniform("fogColour", fogInfo.fogColour);
+}
+
 void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 {
 
@@ -1324,7 +1328,8 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	float nightDuration = moonSetStart - nightFull;
 	float moonSetDuration = 2.0f - moonSetStart;
 
-	float dayLightIntensity = 0.7f;
+	float dayLightIntensity = 0.3f;
+	float dawnLightIntensity = 0.08f;
 	float moonLightIntensity = 0.08f;
 
 	//Rough solution but it works
@@ -1338,7 +1343,8 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		cout << "Dawning" << endl;
 		cout << localT << endl << endl;
 		currentAmbientColour = mixAmbientHSV(ambientNightColour, ambientDawnColour, localT);
-		mainLightIntensity = mix(0.0f, dayLightIntensity, localT);
+		mainLightIntensity = mix(0.0f, dawnLightIntensity, localT);
+		updateFogColours(dawnFog);
 	}
 	else if (timeOfDay < dayFull) {
 		//Day starting, moving from dawn colour to day colour
@@ -1346,7 +1352,8 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		cout << "Moving to day" << endl;
 		cout << localT << endl << endl;
 		currentAmbientColour = mixAmbientHSV(ambientDawnColour, ambientDayColour, localT);
-		}
+		mainLightIntensity = mix(dawnLightIntensity, dayLightIntensity, localT);
+	}
 	else if (timeOfDay < duskStart) {
 		//Day began, keep day colour
 		float localT = (timeOfDay - dayFull) / dayDuration;
@@ -1378,6 +1385,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		cout << localT << endl << endl;
 		currentAmbientColour = mixAmbientHSV(ambientNightColour, ambientNightColour, localT);
 		mainLightIntensity = mix(0.0f, moonLightIntensity, localT);
+		updateFogColours(nightFog);
 	}
 	else {
 		//Day starting, moving from dawn colour to day colour
@@ -1414,12 +1422,14 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	lightFrustum.orient(sunPos, sunTarget, vec3(0.0f, 1.0f, 0.0f));
 	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
 
-	PBRProg.use();
+	PBRProg.use();	
 	PBRProg.setUniform("Light[3].Position", vec4(-sunLightDirection, 0.0f));
 	PBRProg.setUniform("Light[3].Ambient", currentAmbientColour * 0.06f);
 	PBRProg.setUniform("Light[3].Intensity", vec3(mainLightIntensity));
 
 }
+
+
 
 void SceneBasic_Uniform::updateShaders()
 {
