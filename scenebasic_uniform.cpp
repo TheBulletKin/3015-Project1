@@ -749,7 +749,7 @@ void SceneBasic_Uniform::initShadows() {
 	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
 
 	PBRProg.use();
-	PBRProg.setUniform("light.Intensity", vec3(0.5f));
+	
 	//shadowProg.setUniform("ShadowMap", 8);
 
 	vec3 shadowedObjColour = vec3(0.2f, 0.5f, 0.9f);
@@ -1499,8 +1499,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	}
 	else {
 		angle = radians(((timeOfDay - 1.0f) / 2.0f) * 360.0f);
-	}
-
+	}	
 
 	//float angle = radians((timeOfDay / 2.0f) * 360.0f);
 	vec3 sunElevationVector = normalize(vec3(0.0f, sin(angle), cos(angle)));
