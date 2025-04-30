@@ -130,10 +130,14 @@ vec3 determineShadow(vec3 sum){
         shadow = pcfSum / 9.0;
     }
 
-    //FragColour = vec4(Light[3].Ambient + sum * shadow, 1.0);
-    vec3 ambient = Light[3].Ambient;
-    vec3 shadowedLight = sum * shadow;
-    return ambient + shadowedLight;
+   // FragColour = vec4(Light[3].Ambient + sum * shadow, 1.0);
+    //vec3 ambient = Light[3].Ambient * 0.1;
+
+    // Shadow only reduces direct light, not ambient
+    vec3 lit = sum * shadow;
+
+    // Gamma correct *after* combining all lighting components
+    return pow(lit, vec3(1.0 / 2.2));
     
    
 }
@@ -153,16 +157,21 @@ void renderPass()
         baseColour = textureColour;
     }
     
-    //Directional light in
-   // vec3 dirLight = microfacetModel(3, Position, n, baseColour);
-    //vec3 lit = determineShadow(dirLight);
-    vec3 lit = vec3(0);
+    
+    // Directional light (with shadow)
+    vec3 dirLight = microfacetModel(3, Position, n, baseColour);
+    vec3 lit = determineShadow(dirLight); // includes ambient + shadowing
+    
+    
+    // Add other lights (no shadow)
     for (int i = 0; i < 3; i++){
         lit += microfacetModel(i, Position, n, baseColour);
     }
 
+    lit += Light[3].Ambient;
+
     FragColour = vec4(lit, 1.0);
-    FragColour = pow(FragColour, vec4(1.0 / 2.2)); // gamma correction
+    //FragColour = pow(FragColour, vec4(1.0 / 2.2)); // gamma correction
 }
 
 

@@ -340,9 +340,9 @@ void SceneBasic_Uniform::render()
 	//Set the directional light to point from the light frustum to the world centre
 	
 	vec3 target = vec3(-5.0f, 0.0f, -12.0f);
-	vec3 direction = normalize(target - lightFrustum.getOrigin());
+	vec3 direction = normalize(lightFrustum.getOrigin() - target);
 	vec3 viewDir = normalize(mat3(view) * direction);
-	PBRProg.setUniform("light[3].Position", vec4(viewDir, 0.0f));
+	PBRProg.setUniform("Light[3].Position", vec4(direction, 0.0f));
 	projection = perspective(radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -836,16 +836,16 @@ void SceneBasic_Uniform::initMaterials()
 	PBRProg.setUniform("material.Rough", 0.97f);
 	PBRProg.setUniform("material.Metal", 0);
 	PBRProg.setUniform("material.Colour", vec3(0.4f));
-	PBRProg.setUniform("Light[0].Intensity", vec3(0.02f));
+	PBRProg.setUniform("Light[0].Intensity", vec3(0.2f));
 	PBRProg.setUniform("Light[0].Position", vec4(-2.5f, 2.0f, -8.5f, 1));
-	PBRProg.setUniform("Light[1].Intensity", vec3(0.02f));
+	PBRProg.setUniform("Light[1].Intensity", vec3(0.2f));
 	PBRProg.setUniform("Light[1].Position", vec4(-0.2f, 2.0f, -8.5f, 1));
-	PBRProg.setUniform("Light[2].Intensity", vec3(0.02f));
+	PBRProg.setUniform("Light[2].Intensity", vec3(0.2f));
 	PBRProg.setUniform("Light[2].Position", vec4(-1.0f, 0.5f, -6.8f, 1));
 
-	PBRProg.setUniform("Light[3].Intensity", vec3(7.0f));
-	PBRProg.setUniform("Light[3].Ambient", vec3(0.0f, 0.0f, 0.0f));
-	PBRProg.setUniform("Light[3].Position", vec4(lightPos, 0.0));
+	PBRProg.setUniform("Light[3].Intensity", vec3(0.2f));
+	PBRProg.setUniform("Light[3].Ambient", vec3(0.01f, 0.01f, 0.03f));
+	//PBRProg.setUniform("Light[3].Position", vec4(lightPos, 1.0));
 
 	/* Example
 	PBRProg.setUniform("Light[0].L", vec3(45.0f));
