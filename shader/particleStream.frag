@@ -7,5 +7,6 @@ layout(binding = 6) uniform sampler2D ParticleTex;
 
 void main(){
     FragColour = texture(ParticleTex, TexCoord);
+    FragColour = pow(FragColour, vec4(1.0 / 2.2));
     FragColour.a *= Transp;
 }

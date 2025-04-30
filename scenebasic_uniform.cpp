@@ -252,19 +252,7 @@ void SceneBasic_Uniform::render()
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-#pragma region Sky Rendering
 
-	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
-	glEnable(GL_DEPTH_TEST);
-	skyProg.use();
-	glDepthMask(GL_FALSE);
-	model = mat4(1.0f);
-	setMatrices(skyProg);
-	sky.render();
-	glDepthMask(GL_TRUE);
-	glDepthFunc(GL_LESS);
-
-#pragma endregion
 
 	view = camera.GetViewMatrix();
 	projection = perspective(radians(70.0f), (float)width / height, 0.3f, 100.0f);
@@ -279,8 +267,8 @@ void SceneBasic_Uniform::render()
 	//view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
 	PBRProg.use();
 
-	/*
-	* 
+	
+	
 	//Pass 1 shadow map gen
 	model = mat4(1.0f);
 	model = translate(model, lightFrustum.getOrigin());
@@ -312,7 +300,7 @@ void SceneBasic_Uniform::render()
 	//glBindTexture(GL_TEXTURE_2D, brickTexID);
 
 
-	//drawSolidSceneObjects();
+	drawSolidSceneObjects();
 	//Draw scene
 
 	glCullFace(GL_BACK);
@@ -343,7 +331,7 @@ void SceneBasic_Uniform::render()
 	//glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
 
 	//Draw scene
-	//drawSolidSceneObjects();
+	drawSolidSceneObjects();
 
 	objectProg.use();
 
@@ -359,11 +347,25 @@ void SceneBasic_Uniform::render()
 	//setMatrices(objectProg);
 	lightFrustum.render();
 
-	*/
+	
 
-	drawSceneObjects();
+	//drawSceneObjects();
 
 	renderParticles();
+
+#pragma region Sky Rendering
+
+	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
+	glEnable(GL_DEPTH_TEST);
+	skyProg.use();
+	glDepthMask(GL_FALSE);
+	model = mat4(1.0f);
+	setMatrices(skyProg);
+	sky.render();
+	glDepthMask(GL_TRUE);
+	glDepthFunc(GL_LESS);
+
+#pragma endregion
 
 
 #pragma region HDR Pass
@@ -407,7 +409,7 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
 	setMatrices(PBRProg);
 	//setMatrices(objectProg);
-	//RuinMesh->render();
+	RuinMesh->render();
 
 	//Terrain rendering
 	terrainProg.use();
@@ -419,12 +421,13 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	//glActiveTexture(GL_TEXTURE4);
 	//glBindTexture(GL_TEXTURE_2D, cloudTexID);
 
+	PBRProg.use();
 	model = mat4(1.0f);
 	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
 	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
 	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
-	setMatrices(terrainProg);
-	//TerrainMesh->render();
+	setMatrices(PBRProg);
+	TerrainMesh->render();
 
 #pragma endregion
 }
@@ -738,7 +741,7 @@ void SceneBasic_Uniform::initShadows() {
 	//This is where the shadow is cast from
 	lightFrustum.orient(lightPos, vec3(-5.0f, 0.0f, -12.0f), vec3(0.0f, 1.0f, 0.0f));
 	//lightFrustum.setPerspective(50.0f, 1.0f, 5.0f, 10.0f);
-	lightFrustum.setOrtho(-5.0f, 5.0f, -5.0f, 5.0f, 2.0f, 30.0f);
+	lightFrustum.setOrtho(-20.0f, 20.0f, -20.0f, 20.0f, 2.0f, 100.0f);
 	//Light Project View matrix
 	//Shadow bias maps clip space coordinates of -1 to 1 to 0-1 texture space.
 	//Therefore used to transform any world space point to the shadowmap
@@ -1159,63 +1162,7 @@ void SceneBasic_Uniform::renderFireflies()
 
 void SceneBasic_Uniform::renderParticles()
 {
-	/*
-	glDepthMask(GL_FALSE);
-	newParticleProg.use();
-	setMatrices(newParticleProg);
-	newParticleProg.setUniform("Time", time);
-	glBindVertexArray(particles);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, nParticles);
-	glBindVertexArray(0);
-	glDepthMask(GL_TRUE);*/
-
-
-	/*newParticleProg.use();
-	newParticleProg.setUniform("Time", time);
-	newParticleProg.setUniform("DeltaT", deltaTime);
-	model = mat4(1.0f);
-	model = translate(model, vec3(0.0f, 0.0f, -5.0f));
-	setMatrices(newParticleProg);
-	newParticleProg.setUniform("Pass", 1);
-
-	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_1D, randomParticleTexID);
-
-	glEnable(GL_RASTERIZER_DISCARD); //Tells it to not render the result to the fragment shader. Good for just doing processing.
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback[drawBuf]);
-	glBeginTransformFeedback(GL_POINTS);
-
-	glBindVertexArray(particleArray[1 - drawBuf]);
-	glVertexAttribDivisor(0, 0);
-	glVertexAttribDivisor(1, 0);
-	glVertexAttribDivisor(2, 0);
-	glVertexAttribDivisor(3, 0);
-	glDrawArrays(GL_POINTS, 0, nParticles);
-	glBindVertexArray(0);
-
-	glEndTransformFeedback();
-	glDisable(GL_RASTERIZER_DISCARD);
-
-	//Render pass
-	newParticleProg.setUniform("Pass", 2);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glDepthFunc(GL_LEQUAL);
-
-	glDepthMask(GL_FALSE);
-	glBindVertexArray(particleArray[drawBuf]);
-	glVertexAttribDivisor(0, 1);
-	glVertexAttribDivisor(1, 1);
-	glVertexAttribDivisor(2, 1);
-	glVertexAttribDivisor(3, 1);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, nParticles);
-	glBindVertexArray(0);
-
-	glDepthFunc(GL_LESS);
-	glDisable(GL_BLEND);
-	glDepthMask(GL_TRUE);
-
-	drawBuf = 1 - drawBuf;*/
+	
 
 	
 	/*
@@ -1343,6 +1290,7 @@ void SceneBasic_Uniform::updateDayNightShaders(TimeOfDayInfo prevState, TimeOfDa
 	vec3 fogColour = mixHSV(prevState.fogInfo.fogColour, currentState.fogInfo.fogColour, t);
 
 	currentAmbientColour = mixHSV(prevState.ambientLightColour, currentState.ambientLightColour, t);
+	currentSunColour = mixHSV(prevState.lightColour, currentState.lightColour, t);
 	mainLightIntensity = mix(prevState.mainLightIntensity, currentState.mainLightIntensity, t);
 
 	cout << "time of day: " << timeOfDay << endl;
@@ -1354,6 +1302,8 @@ void SceneBasic_Uniform::updateDayNightShaders(TimeOfDayInfo prevState, TimeOfDa
 	PBRProg.setUniform("fogStart", fogStart);
 	PBRProg.setUniform("fogEnd", fogEnd);
 	PBRProg.setUniform("fogColour", fogColour);
+	PBRProg.setUniform("Light[3].Ambient", currentAmbientColour * 0.08f);
+	PBRProg.setUniform("Light[3].Intensity", currentSunColour * mainLightIntensity);
 }
 
 void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
@@ -1567,8 +1517,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 
 	PBRProg.use();
 	PBRProg.setUniform("Light[3].Position", vec4(-sunLightDirection, 0.0f));
-	PBRProg.setUniform("Light[3].Ambient", currentAmbientColour * 0.3f);
-	PBRProg.setUniform("Light[3].Intensity", vec3(mainLightIntensity));
+	
 
 }
 

@@ -162,7 +162,7 @@ private:
 			10.0f,
 			40.0f
 		},
-		0.02f, // Light intensity
+		0.00f, // Light intensity
 		1.0f,//Start time
 		0.1f //Ramp up time
 	};
