@@ -149,19 +149,12 @@ void SceneBasic_Uniform::update(float t)
 	terrainProg.setUniform("time", t / 1000);
 
 #pragma region DayNightcycle
-	
-	//+= deltatime will properly increment the timer by seconds
-	//Using values of 0-2 to interpolate sun position, so divide time passed by duration
-	float secondsInFullCycle = 120.0f;
-	timeOfDay += deltaTime / secondsInFullCycle;	
-	if (timeOfDay >= 2.0f)
-	{
-		timeOfDay = 0;
-	}
-	
-	updateDayNightCycle();
-	
-	
+
+
+
+	updateDayNightCycle(deltaTime);
+
+
 
 	//cout << to_string(timeOfDay) << endl;
 
@@ -283,7 +276,7 @@ void SceneBasic_Uniform::render()
 
 	renderFireflies();
 	renderParticles();
-	
+
 	//view = mat4(1.0f);
 	//view = translate(view, vec3(0.0f, 3.0f, 7.0f));
 	//view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
@@ -336,8 +329,8 @@ void SceneBasic_Uniform::render()
 
 	//shadowProg.setUniform("light.Position", vec4(lightPos, 1.0));
 	//Set the directional light to point from the light frustum to the world centre
-	
-	
+
+
 	//PBRProg.setUniform("Light[3].Position", vec4(direction, 0.0f));
 	projection = perspective(radians(70.0f), (float)width / height, 0.01f, 100.0f);
 
@@ -356,7 +349,7 @@ void SceneBasic_Uniform::render()
 
 	objectProg.use();
 
-	
+
 
 	model = mat4(1.0f);
 	model = translate(model, lightPos);
@@ -545,7 +538,7 @@ void SceneBasic_Uniform::processInput(GLFWwindow* window)
 }
 
 void SceneBasic_Uniform::setupFBO() {
-	
+
 }
 
 void SceneBasic_Uniform::initParticles() {
@@ -1235,47 +1228,187 @@ void SceneBasic_Uniform::renderParticles()
 	drawBuf = 1 - drawBuf;
 }
 
-void SceneBasic_Uniform::updateDayNightCycle()
+//Found online. Used to make the interpolation between colours better
+//https://www.alanzucconi.com/2016/01/06/colour-interpolation/
+vec3 SceneBasic_Uniform::rgbToHsv(vec3 c) {
+	float maxVal = std::max(c.r, std::max(c.g, c.b));
+	float minVal = std::min(c.r, std::min(c.g, c.b));
+	float delta = maxVal - minVal;
+
+	float h = 0.0f;
+	if (delta > 0.00001f) {
+		if (maxVal == c.r) {
+			h = 60.0f * fmod(((c.g - c.b) / delta), 6.0f);
+		}
+		else if (maxVal == c.g) {
+			h = 60.0f * (((c.b - c.r) / delta) + 2.0f);
+		}
+		else {
+			h = 60.0f * (((c.r - c.g) / delta) + 4.0f);
+		}
+	}
+
+	float s = (maxVal == 0.0f) ? 0.0f : delta / maxVal;
+	float v = maxVal;
+
+	if (h < 0.0f) h += 360.0f;
+	return vec3(h / 360.0f, s, v);
+}
+vec3 SceneBasic_Uniform::hsvToRgb(vec3 hsv) {
+	float h = hsv.x * 360.0f;
+	float s = hsv.y;
+	float v = hsv.z;
+
+	float c = v * s;
+	float x = c * (1 - fabs(fmod(h / 60.0f, 2) - 1));
+	float m = v - c;
+
+	vec3 rgb;
+
+	if (h >= 0 && h < 60)      rgb = vec3(c, x, 0);
+	else if (h < 120)          rgb = vec3(x, c, 0);
+	else if (h < 180)          rgb = vec3(0, c, x);
+	else if (h < 240)          rgb = vec3(0, x, c);
+	else if (h < 300)          rgb = vec3(x, 0, c);
+	else                       rgb = vec3(c, 0, x);
+
+	return rgb + vec3(m);
+}
+
+vec3 SceneBasic_Uniform::mixAmbientHSV(vec3 colorA, vec3 colorB, float t) {
+	vec3 hsvA = rgbToHsv(colorA);
+	vec3 hsvB = rgbToHsv(colorB);
+
+	float hueDiff = hsvB.x - hsvA.x;
+	if (hueDiff > 0.5f) hsvA.x += 1.0f;
+	else if (hueDiff < -0.5f) hsvB.x += 1.0f;
+
+	vec3 mixedHSV = mix(hsvA, hsvB, t);
+	mixedHSV.x = fmod(mixedHSV.x, 1.0f);
+
+	return hsvToRgb(mixedHSV);
+}
+
+void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 {
+
+	//+= deltatime will properly increment the timer by seconds
+	//Using values of 0-2 to interpolate sun position, so divide time passed by duration
+	float secondsInFullCycle = 30.0f;
+	timeOfDay += deltaTime / secondsInFullCycle;
+	if (timeOfDay >= 2.0f)
+	{
+		timeOfDay = 0;
+	}
+
 	// Dawn (0 - 0.25) 
 	// Day (0.25 - 0.75) 
 	// Dusk (0.75 - 1) 
 	// Night(1 - 1.75) 
 	// Dawn night (1.75 - 2)
-	if (timeOfDay >= 0 && timeOfDay < 0.25)
-	{
-		currentAmbientColour = ambientDawnColour;
+
+
+	float dawnStart = 0.01f;
+	float dayStart = 0.08;
+	float dayFull = 0.12;
+	float duskStart = 0.8f;
+	float nightStart = 0.9;
+	float nightFull = 1.0;
+	float moonSetStart = 1.9;
+
+	float dawnDuration = dayStart - dawnStart;
+	float dayStartDuration = dayFull - dayStart;
+	float dayDuration = duskStart - dayFull;
+	float duskDuration = nightStart - duskStart;
+	float nightStartDuration = nightFull - nightStart;
+	float nightDuration = moonSetStart - nightFull;
+	float moonSetDuration = 2.0f - moonSetStart;
+
+	float dayLightIntensity = 0.7f;
+	float moonLightIntensity = 0.08f;
+
+	//Rough solution but it works
+	//Bear in mind timeOfDay goes from 0-2
+	//Need to interpolate between 0 and 1, so shift the values of time and threshold to that scale
+	//Interpolate between colour values using this
+	cout << timeOfDay << endl;
+	if (timeOfDay < dayStart) {
+		//Dawn has started, slowly moving to dawn colour
+		float localT = (timeOfDay - dawnStart) / dawnDuration;
+		cout << "Dawning" << endl;
+		cout << localT << endl << endl;
+		currentAmbientColour = mixAmbientHSV(ambientNightColour, ambientDawnColour, localT);
+		mainLightIntensity = mix(0.0f, dayLightIntensity, localT);
 	}
-	else if (timeOfDay >= 0.25 && timeOfDay < 0.75) {
-		currentAmbientColour = ambientDayColour;
+	else if (timeOfDay < dayFull) {
+		//Day starting, moving from dawn colour to day colour
+		float localT = (timeOfDay - dayStart) / dayStartDuration;
+		cout << "Moving to day" << endl;
+		cout << localT << endl << endl;
+		currentAmbientColour = mixAmbientHSV(ambientDawnColour, ambientDayColour, localT);
+		}
+	else if (timeOfDay < duskStart) {
+		//Day began, keep day colour
+		float localT = (timeOfDay - dayFull) / dayDuration;
+		cout << "Full day" << endl;
+		cout << localT << endl << endl;
+		currentAmbientColour = mixAmbientHSV(ambientDayColour, ambientDayColour, localT);
 	}
-	else if (timeOfDay >= 0.75 && timeOfDay < 1) {
-		currentAmbientColour = ambientDuskColour;
+	else if (timeOfDay < nightStart) {
+		// Transition from day to dusk
+		float localT = (timeOfDay - duskStart) / duskDuration;
+		cout << "Sun setting" << endl;
+		cout << localT << endl << endl;
+		currentAmbientColour = mixAmbientHSV(ambientDayColour, ambientDuskColour, localT);
+		mainLightIntensity = mix(dayLightIntensity, 0.0f, localT);
 	}
-	else if (timeOfDay >= 1 && timeOfDay < 1.75) {
-		currentAmbientColour = ambientNightColour;
+	else if (timeOfDay < nightFull) {
+		// Transition from dusk to night
+		float localT = (timeOfDay - nightStart) / nightStartDuration;
+		cout << "Moving to night" << endl;
+		cout << localT << endl << endl;
+		currentAmbientColour = mixAmbientHSV(ambientDuskColour, ambientNightColour, localT);
+		
+
 	}
-	else if (timeOfDay >= 1.75 && timeOfDay < 2) {
-		currentAmbientColour = ambientDawnColour;
+	else if (timeOfDay < moonSetStart) {
+		//Day starting, moving from dawn colour to day colour
+		float localT = (timeOfDay - nightFull) / nightDuration;
+		cout << "Full night" << endl;
+		cout << localT << endl << endl;
+		currentAmbientColour = mixAmbientHSV(ambientNightColour, ambientNightColour, localT);
+		mainLightIntensity = mix(0.0f, moonLightIntensity, localT);
+	}
+	else {
+		//Day starting, moving from dawn colour to day colour
+		float localT = (timeOfDay - moonSetStart) / moonSetDuration;
+		cout << "Moon setting" << endl;
+		cout << localT << endl << endl;
+		currentAmbientColour = mixAmbientHSV(ambientNightColour, ambientNightColour, localT);
+		mainLightIntensity = mix(moonLightIntensity, 0.0f, localT);
 	}
 
 	/* Will first need an angle from the horizon to place the light
 	* Since time of day is 0-2, can potentially divide by 2 to use as an interpolation value
 	* With an angle, use sin and cos to determine direction vector
 	*/
+	float angle;
+	if (timeOfDay < 1.0f) {
+		angle = radians((timeOfDay / 2.0f) * 360.0f);
+	}
+	else {
+		angle = radians(((timeOfDay - 1.0f) / 2.0f) * 360.0f);
+	}
+	cout << to_string(mainLightIntensity) << endl << endl;
 
-	float angle = radians((timeOfDay / 2.0f) * 360.0f);
-	cout << to_string(timeOfDay) << endl;
-	cout << to_string(angle) << endl << endl;
+	//float angle = radians((timeOfDay / 2.0f) * 360.0f);
 	vec3 sunElevationVector = normalize(vec3(0.0f, sin(angle), cos(angle)));
 	sunTarget = vec3(-5.0f, 0.0f, -8.0f);
 	sunDistance = 15.0f;
-	sunPos = sunElevationVector * sunDistance;
-	cout << to_string(sunPos.x) << endl;
-	cout << to_string(sunPos.y) << endl;
-	cout << to_string(sunPos.z) << endl << endl;
+	sunPos = sunTarget + sunElevationVector * sunDistance;
+
 	sunLightDirection = normalize(sunTarget - sunPos);
-	
+
 	vec3 viewDir = normalize(mat3(view) * -sunLightDirection);
 	//Place at first argument, look at second argument
 	lightFrustum.orient(sunPos, sunTarget, vec3(0.0f, 1.0f, 0.0f));
@@ -1283,6 +1416,8 @@ void SceneBasic_Uniform::updateDayNightCycle()
 
 	PBRProg.use();
 	PBRProg.setUniform("Light[3].Position", vec4(-sunLightDirection, 0.0f));
+	PBRProg.setUniform("Light[3].Ambient", currentAmbientColour * 0.06f);
+	PBRProg.setUniform("Light[3].Intensity", vec3(mainLightIntensity));
 
 }
 

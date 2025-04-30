@@ -84,15 +84,16 @@ private:
 	vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.3f);
 	int numberOfStaticLights;
 	float timeOfDay = 0;
-	vec3 ambientDawnColour = vec3(0.94, 0.79, 0.66);
-	vec3 ambientDayColour = vec3(0.57, 0.69, 0.72);
-	vec3 ambientDuskColour = vec3(0.60, 0.54, 0.83);
-	vec3 ambientNightColour = vec3(0.23, 0.25, 0.30);
+	vec3 ambientDawnColour = vec3(0.8, 0.5, 0.3);
+	vec3 ambientDayColour = vec3(0.5, 0.7, 1.0);
+	vec3 ambientDuskColour = vec3(0.5, 0.2, 0.5);
+	vec3 ambientNightColour = vec3(0.1, 0.1, 0.3);
 	vec3 currentAmbientColour;
 	vec3 sunTarget;
 	float sunDistance;
 	vec3 sunPos;
 	vec3 sunLightDirection;
+	float mainLightIntensity = 0.2;
 
 	struct Point {
 		float x, y, z;
@@ -119,6 +120,9 @@ private:
 	static void mouseCallback(GLFWwindow* window, double xposIn, double yposIn);
 	void processInput(GLFWwindow* window);
 	void setupFBO();
+	vec3 rgbToHsv(vec3 c);
+	vec3 hsvToRgb(vec3 hsv);
+	vec3 mixAmbientHSV(vec3 colorA, vec3 colorB, float t);
 public:
 	SceneBasic_Uniform();
 	void initScene();
@@ -133,7 +137,7 @@ public:
 	void initPostProcessing();
 	void renderFireflies();
 	void renderParticles();
-	void updateDayNightCycle();
+	void updateDayNightCycle(float deltaTime);
 	void updateShaders();
 	void drawSolidSceneObjects();
 	void resize(int, int);
