@@ -83,6 +83,16 @@ private:
 	vec3 fireFlyLightColour = vec3(0.53, 0.67, 0.33);
 	vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.3f);
 	int numberOfStaticLights;
+	float timeOfDay = 0;
+	vec3 ambientDawnColour = vec3(0.94, 0.79, 0.66);
+	vec3 ambientDayColour = vec3(0.57, 0.69, 0.72);
+	vec3 ambientDuskColour = vec3(0.60, 0.54, 0.83);
+	vec3 ambientNightColour = vec3(0.23, 0.25, 0.30);
+	vec3 currentAmbientColour;
+	vec3 sunTarget;
+	float sunDistance;
+	vec3 sunPos;
+	vec3 sunLightDirection;
 
 	struct Point {
 		float x, y, z;
@@ -123,6 +133,8 @@ public:
 	void initPostProcessing();
 	void renderFireflies();
 	void renderParticles();
+	void updateDayNightCycle();
+	void updateShaders();
 	void drawSolidSceneObjects();
 	void resize(int, int);
 };

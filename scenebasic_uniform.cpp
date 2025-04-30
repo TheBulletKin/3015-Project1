@@ -49,7 +49,7 @@ void SceneBasic_Uniform::initScene()
 	view = lookAt(vec3(0.0f, 1.0f, 2.0f), vec3(0.0f, 1.0f, -4.0f), vec3(0.0f, 1.0f, 0.0f)); //First is where the eye is, second is the coordinate it is looking at, last is up vector
 	projection = perspective(radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
-
+	timeOfDay = 0;
 
 	initTextures();
 	setupFBO();
@@ -149,23 +149,21 @@ void SceneBasic_Uniform::update(float t)
 	terrainProg.setUniform("time", t / 1000);
 
 #pragma region DayNightcycle
+	
+	//+= deltatime will properly increment the timer by seconds
+	//Using values of 0-2 to interpolate sun position, so divide time passed by duration
+	float secondsInFullCycle = 120.0f;
+	timeOfDay += deltaTime / secondsInFullCycle;	
+	if (timeOfDay >= 2.0f)
+	{
+		timeOfDay = 0;
+	}
+	
+	updateDayNightCycle();
+	
+	
 
-	float timeOfDay = fmod(lastFrameTime / 70.0f, 1.0f); // Normalize time to [0, 1] (1 represents 24 hours)
-	float radius = 10.0f;  // How far the sun is from the center
-	float height = 10.0f;   // Maximum height of the sun (at noon)
-
-	// Calculate the sun's position
-	float x = radius * cos(timeOfDay * 2.0f * glm::pi<float>());
-	float z = radius * sin(timeOfDay * 2.0f * glm::pi<float>());
-	float y = height * sin(timeOfDay * glm::pi<float>());
-
-	// Set the light position to the sun's position
-	lightPos = glm::vec3(x, y, z);
-
-	lightFrustum.orient(lightPos, vec3(-5.0f, 0.0f, -12.0f), vec3(0.0f, 1.0f, 0.0f));
-	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
-
-	cout << to_string(timeOfDay) << endl;
+	//cout << to_string(timeOfDay) << endl;
 
 #pragma endregion
 
@@ -339,11 +337,9 @@ void SceneBasic_Uniform::render()
 	//shadowProg.setUniform("light.Position", vec4(lightPos, 1.0));
 	//Set the directional light to point from the light frustum to the world centre
 	
-	vec3 target = vec3(-5.0f, 0.0f, -12.0f);
-	vec3 direction = normalize(lightFrustum.getOrigin() - target);
-	vec3 viewDir = normalize(mat3(view) * direction);
-	PBRProg.setUniform("Light[3].Position", vec4(direction, 0.0f));
-	projection = perspective(radians(70.0f), (float)width / height, 0.3f, 100.0f);
+	
+	//PBRProg.setUniform("Light[3].Position", vec4(direction, 0.0f));
+	projection = perspective(radians(70.0f), (float)width / height, 0.01f, 100.0f);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1237,6 +1233,62 @@ void SceneBasic_Uniform::renderParticles()
 	glDepthMask(GL_TRUE);
 
 	drawBuf = 1 - drawBuf;
+}
+
+void SceneBasic_Uniform::updateDayNightCycle()
+{
+	// Dawn (0 - 0.25) 
+	// Day (0.25 - 0.75) 
+	// Dusk (0.75 - 1) 
+	// Night(1 - 1.75) 
+	// Dawn night (1.75 - 2)
+	if (timeOfDay >= 0 && timeOfDay < 0.25)
+	{
+		currentAmbientColour = ambientDawnColour;
+	}
+	else if (timeOfDay >= 0.25 && timeOfDay < 0.75) {
+		currentAmbientColour = ambientDayColour;
+	}
+	else if (timeOfDay >= 0.75 && timeOfDay < 1) {
+		currentAmbientColour = ambientDuskColour;
+	}
+	else if (timeOfDay >= 1 && timeOfDay < 1.75) {
+		currentAmbientColour = ambientNightColour;
+	}
+	else if (timeOfDay >= 1.75 && timeOfDay < 2) {
+		currentAmbientColour = ambientDawnColour;
+	}
+
+	/* Will first need an angle from the horizon to place the light
+	* Since time of day is 0-2, can potentially divide by 2 to use as an interpolation value
+	* With an angle, use sin and cos to determine direction vector
+	*/
+
+	float angle = radians((timeOfDay / 2.0f) * 360.0f);
+	cout << to_string(timeOfDay) << endl;
+	cout << to_string(angle) << endl << endl;
+	vec3 sunElevationVector = normalize(vec3(0.0f, sin(angle), cos(angle)));
+	sunTarget = vec3(-5.0f, 0.0f, -8.0f);
+	sunDistance = 15.0f;
+	sunPos = sunElevationVector * sunDistance;
+	cout << to_string(sunPos.x) << endl;
+	cout << to_string(sunPos.y) << endl;
+	cout << to_string(sunPos.z) << endl << endl;
+	sunLightDirection = normalize(sunTarget - sunPos);
+	
+	vec3 viewDir = normalize(mat3(view) * -sunLightDirection);
+	//Place at first argument, look at second argument
+	lightFrustum.orient(sunPos, sunTarget, vec3(0.0f, 1.0f, 0.0f));
+	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
+
+	PBRProg.use();
+	PBRProg.setUniform("Light[3].Position", vec4(-sunLightDirection, 0.0f));
+
+}
+
+void SceneBasic_Uniform::updateShaders()
+{
+
 }
 
 
