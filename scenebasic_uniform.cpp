@@ -545,6 +545,7 @@ void SceneBasic_Uniform::setupFBO() {
 
 }
 
+
 void SceneBasic_Uniform::initParticles() {
 	//For particles, it holds all the information about the position, velocity and age in buffers
 	//Currently works for only one particle emitter.
@@ -579,8 +580,17 @@ void SceneBasic_Uniform::initParticles() {
 	newParticleProg.setUniform("ParticleLifetime", particleLifetime);
 	newParticleProg.setUniform("ParticleSize", 0.05f);
 	newParticleProg.setUniform("Accel", vec3(0.0f, -0.5f, 0.0f));
-	newParticleProg.setUniform("EmitterPos", particleEmitters[0]);
-	newParticleProg.setUniform("EmitterBasis", emitterBases[0]);
+
+
+
+	for (int i = 0; i < nEmitters; i++)
+	{
+		string arrayString = "EmitterPos[" + to_string(i) + "]";
+		newParticleProg.setUniform(arrayString.c_str(), particleEmitters[i]);
+		arrayString = "EmitterBasis[" + to_string(i) + "]";
+		newParticleProg.setUniform(arrayString.c_str(), emitterBases[i]);
+	}
+	
 
 
 

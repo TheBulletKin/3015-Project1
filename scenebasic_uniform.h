@@ -237,6 +237,7 @@ private:
 	static void mouseCallback(GLFWwindow* window, double xposIn, double yposIn);
 	void processInput(GLFWwindow* window);
 	void setupFBO();
+	void setArrayUniforms();
 	vec3 rgbToHsv(vec3 c);
 	vec3 hsvToRgb(vec3 hsv);
 	vec3 mixHSV(vec3 colorA, vec3 colorB, float t);
