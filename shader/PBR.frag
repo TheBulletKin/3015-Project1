@@ -36,7 +36,7 @@ struct MaterialInfo{
 
 uniform MaterialInfo material;
 
-layout(binding = 1) uniform sampler2D BrickTex;
+layout(binding = 1) uniform sampler2D MainTex;
 layout(binding = 8) uniform sampler2DShadow ShadowMap;
 
 //PBR works around using roughness, metalness and colour
@@ -157,7 +157,8 @@ void renderPass()
 
     mat2 rotationMatrix = mat2(0.0, -1.0, 1.0, 0.0);    
     vec2 rotatedTexCoord = rotationMatrix * TexCoord;
-    vec3 textureColour = texture(BrickTex, rotatedTexCoord * TextureScale).rgb;
+    vec3 textureColour = texture(MainTex, rotatedTexCoord * TextureScale).rgb;
+    textureColour = texture(MainTex, TexCoord * TextureScale).rgb;
     
 
     vec3 baseColour = vec3(0.0);

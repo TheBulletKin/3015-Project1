@@ -27,7 +27,7 @@ class SceneBasic_Uniform : public Scene
 private:
 	//Textures and shaders
 	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg, shadowProg;
-	GLuint grassTexID, rockTexID, skyBoxTexID, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex;
+	GLuint grassTexID, rockTexID, skyBoxTexID, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex, torchTexID;
 
 	GLFWwindow* window;
 
@@ -54,6 +54,7 @@ private:
 	//Objects
 	unique_ptr<ObjMesh> TerrainMesh;
 	unique_ptr<ObjMesh> RuinMesh;
+	unique_ptr<ObjMesh> StandingTorch;	
 
 	//Post processing
 	GLuint fsQuad;

@@ -25,6 +25,7 @@ SceneBasic_Uniform::SceneBasic_Uniform() : sky(100.0f)
 {
 	TerrainMesh = ObjMesh::load("media/Terrain.obj", true);
 	RuinMesh = ObjMesh::load("media/Ruin.obj", true);
+	StandingTorch = ObjMesh::load("media/StandingTorch.obj", true);
 }
 
 void SceneBasic_Uniform::initScene()
@@ -421,6 +422,14 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	//setMatrices(objectProg);
 	RuinMesh->render();
 
+
+
+	
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, torchTexID);
+	PBRProg.setUniform("TextureScale", 1.0f);
+	StandingTorch->render();
+
 	//Terrain rendering
 	terrainProg.use();
 
@@ -437,6 +446,9 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
 	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
 	setMatrices(PBRProg);
+	PBRProg.setUniform("TextureScale", 20.0f);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, rockTexID);
 	TerrainMesh->render();
 
 #pragma endregion
@@ -457,7 +469,10 @@ void SceneBasic_Uniform::drawSceneObjects() {
 	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
 	setMatrices(objectProg);
 	//setMatrices(objectProg);
-	RuinMesh->render();
+	//RuinMesh->render();
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, torchTexID);
+	StandingTorch->render();
 
 	//Terrain rendering
 	terrainProg.use();
@@ -977,6 +992,9 @@ void SceneBasic_Uniform::initTextures()
 
 	glActiveTexture(GL_TEXTURE6);
 	particleTexID = Texture::loadTexture("media/texture/particle/fire.png");
+
+	glActiveTexture(GL_TEXTURE8);
+	torchTexID = Texture::loadTexture("media/texture/StandingTorchTextures/Merged_Cylinder_004_albedo.jpeg");
 
 	//Texture 7 for random particle tex lower down
 
