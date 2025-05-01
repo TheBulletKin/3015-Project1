@@ -520,7 +520,7 @@ void SceneBasic_Uniform::drawSceneObjects() {
 
 	model = mat4(1.0f);
 	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
-	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
+	model = scale(model, vec3(0.1f, 0.1f, 0.1f));
 	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
 	setMatrices(terrainProg);
 	//TerrainMesh->render();
@@ -1395,6 +1395,7 @@ void SceneBasic_Uniform::updateDayNightShaders(TimeOfDayInfo prevState, TimeOfDa
 	currentAmbientColour = mixHSV(prevState.ambientLightColour, currentState.ambientLightColour, t);
 	currentSunColour = mixHSV(prevState.lightColour, currentState.lightColour, t);
 	mainLightIntensity = mix(prevState.mainLightIntensity, currentState.mainLightIntensity, t);
+	ambientLightIntensity = mix(prevState.ambientLightIntensity, currentState.ambientLightIntensity, t);
 
 	//cout << "time of day: " << timeOfDay << endl;
 	//cout << "light intensity: " << mainLightIntensity << endl;
@@ -1405,7 +1406,7 @@ void SceneBasic_Uniform::updateDayNightShaders(TimeOfDayInfo prevState, TimeOfDa
 	PBRProg.setUniform("fogStart", fogStart);
 	PBRProg.setUniform("fogEnd", fogEnd);
 	PBRProg.setUniform("fogColour", fogColour);
-	PBRProg.setUniform("DirLight.Ambient", currentAmbientColour * 0.08f);
+	PBRProg.setUniform("DirLight.Ambient", currentAmbientColour * ambientLightIntensity * 0.4f);
 	PBRProg.setUniform("DirLight.Intensity", currentSunColour * mainLightIntensity);
 }
 
@@ -1414,7 +1415,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 
 	//+= deltatime will properly increment the timer by seconds
 	//Using values of 0-2 to interpolate sun position, so divide time passed by duration
-	float secondsInFullCycle = 120.0f;
+	float secondsInFullCycle = 60.0f;
 	timeOfDay += deltaTime / secondsInFullCycle;
 	if (timeOfDay >= 2.0f)
 	{

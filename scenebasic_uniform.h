@@ -119,6 +119,7 @@ private:
 	vec3 sunPos;
 	vec3 sunLightDirection;
 	float mainLightIntensity = 0.2;
+	float ambientLightIntensity = 0.2;
 
 	struct FogInfo {
 		vec3 fogColour;
@@ -132,6 +133,7 @@ private:
 		vec3 lightColour;
 		FogInfo fogInfo;
 		float mainLightIntensity; //Light intensity at the end of the ramp up time
+		float ambientLightIntensity;
 		float startTime;
 		float rampUpTime;
 	};
@@ -145,9 +147,10 @@ private:
 			10.0f,
 			25.0f
 		},
-		0.17f, // Light intensity - When in this time state it will target the next intensity and interpolate based on ramp up time
+		0.17f, // Light intensity 
+		0.12f,
 		0.01f, //Start time
-		0.09f //Ramp up time
+		0.02f //Ramp up time
 	};
 
 	TimeOfDayInfo dayInfo = {
@@ -159,9 +162,10 @@ private:
 			25.0f,
 			60.0f
 		},
-		0.3f, // Light intensity
-		0.1f, //Start time
-		0.3f //Ramp up time
+		0.6f, // Light intensity
+		0.12f,
+		0.05f, //Start time
+		0.05f //Ramp up time
 	};
 
 	TimeOfDayInfo duskInfo = {
@@ -174,6 +178,7 @@ private:
 			60.0f
 		},
 		0.0f, // Light intensity
+		0.12f,
 		0.9f, //Start time
 		0.08f //Ramp up time
 	};
@@ -188,6 +193,7 @@ private:
 			40.0f
 		},
 		0.01f, // Light intensity
+		0.12f,
 		1.0f,//Start time
 		0.1f //Ramp up time
 	};
@@ -202,6 +208,7 @@ private:
 			40.0f
 		},
 		0.04f, //Light intensity
+		0.12f,
 		1.08f, //Start time
 		0.1f //Ramp up time
 	};
@@ -216,6 +223,7 @@ private:
 			40.0f
 		},
 		0.03f, //Light intensity
+		0.12f,
 		1.93f, //Start time
 		0.06f //Ramp up time
 	};
