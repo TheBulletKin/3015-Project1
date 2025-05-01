@@ -13,6 +13,7 @@ uniform mat4 view;
 uniform vec3 ViewPos;
 uniform float TextureScale = 20.0;
 uniform int Pass;
+uniform int DirLightIndex;
 in vec4 ShadowCoord;
 
 uniform vec3 fogColour;
@@ -25,8 +26,9 @@ struct LightInfo {
     vec3 Ambient;
 }; 
 
-uniform LightInfo Light[4]; //Three points, one main
-
+int numberOfTorches = 5;
+uniform LightInfo Light[5]; //Three points, one main
+uniform LightInfo DirLight;
 
 struct MaterialInfo{
     float Rough;
@@ -74,9 +76,17 @@ vec3 schlickFresnel(float lDotH) {
 vec3 microfacetModel(int lightIdx, vec3 position, vec3 n, vec3 baseColour){
     //L is light direction.
     vec3 l = vec3(0.0);
-    vec3 lightI = Light[lightIdx].Intensity;
-    //vec4 lightPosition = Light[lightIdx].Position;
-    vec4 lightPosition = view * Light[lightIdx].Position;
+    vec3 lightI = vec3(0.0);
+    vec4 lightPosition = vec4(0.0);
+    if (lightIdx == -1) { //Is directional
+        lightI = DirLight.Intensity;        
+        lightPosition = view * DirLight.Position;
+    } else {
+        lightI = Light[lightIdx].Intensity;
+        //vec4 lightPosition = Light[lightIdx].Position;
+        lightPosition = view * Light[lightIdx].Position;
+    }
+    
     if(lightPosition.w == 0.0) {  //W = 0 for directional lights
         l = normalize(lightPosition.xyz);
     }
@@ -134,13 +144,12 @@ vec3 determineShadow(vec3 sum){
         shadow = pcfSum / 9.0;
     }
 
-   // FragColour = vec4(Light[3].Ambient + sum * shadow, 1.0);
+    //FragColour = vec4(Light[3].Ambient + sum * shadow, 1.0);
     //vec3 ambient = Light[3].Ambient * 0.1;
-
-    // Shadow only reduces direct light, not ambient
+    
     vec3 lit = sum * shadow;
 
-    // Gamma correct *after* combining all lighting components
+    // Gamma correct combining all lighting components
     return pow(lit, vec3(1.0 / 2.2));
     
    
@@ -167,23 +176,23 @@ void renderPass()
     }
     
     
-    // Directional light (with shadow)
-    vec3 dirLight = microfacetModel(3, Position, n, baseColour);
+    // Direction light (needs dirLight index)
+    vec3 dirLight = microfacetModel(-1, Position, n, baseColour);
     vec3 lit = determineShadow(dirLight); // includes ambient + shadowing
     
     
-    // Add other lights (no shadow)
-    for (int i = 0; i < 3; i++){
+    // All other lights
+    for (int i = 0; i < numberOfTorches - 1; i++){
         lit += microfacetModel(i, Position, n, baseColour);
     }
 
-    lit += Light[3].Ambient;
+    //Dir light index
+    lit += DirLight.Ambient;
 
     
     float distanceToCamera = length(WorldPosition - ViewPos);   
     float fogFactor = calculateFogFactor(distanceToCamera);
 
-    // Apply fog: mix lighting result with fog color based on fog factor
     vec3 finalColour = mix(lit, fogColour, fogFactor);
 
     FragColour = vec4(finalColour, 1.0);

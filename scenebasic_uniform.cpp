@@ -164,6 +164,31 @@ void SceneBasic_Uniform::update(float t)
 
 #pragma endregion
 
+	//Update torch light intensities
+
+
+
+	PBRProg.use();
+
+	int i = 0;
+	for (const TorchInfo& torch : torches)
+	{
+		float noiseInput = t * 25.0f + i; // time-based noise with index offset
+		float noiseVal = torchNoise.GetNoise(noiseInput, 0.0f); // returns value in [-1, 1]
+		float normalized = (noiseVal + 1.0f) / 2.0f; // convert to [0, 1]
+		float mixed = mix(torchMinIntensity, torchMaxIntensity, normalized);
+
+		
+		//cout << mixed << endl;
+		string arrayString = "Light[" + to_string(i) + "].Intensity";
+		PBRProg.setUniform(arrayString.c_str(), torchBrightColour * mixed);
+		arrayString = "Light[" + to_string(i) + "].Position";
+		vec3 shiftedPos = torch.position + vec3(0, 0.7f, 0);
+		PBRProg.setUniform(arrayString.c_str(), vec4(shiftedPos, 1.0f));
+		i++;
+	}
+
+
 #pragma region new particles test
 
 
@@ -364,14 +389,14 @@ void SceneBasic_Uniform::render()
 
 
 	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
-	
+
 	skyProg.use();
 	glDepthMask(GL_FALSE);
 	model = mat4(1.0f);
 	setMatrices(skyProg);
 	sky.render();
 	glDepthMask(GL_TRUE);
-	
+
 	view = camera.GetViewMatrix();
 
 	renderParticles();
@@ -424,11 +449,20 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 
 
 
-	
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, torchTexID);
-	PBRProg.setUniform("TextureScale", 1.0f);
-	StandingTorch->render();
+	for (TorchInfo torch : torches) {
+
+		model = mat4(1.0f);
+		model = translate(model, vec3(torch.position.x, torch.position.y, torch.position.z));
+		model = scale(model, vec3(0.1f, 0.1f, 0.1f));
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, torchTexID);
+		setMatrices(PBRProg);
+		PBRProg.setUniform("TextureScale", 1.0f);
+		StandingTorch->render();
+	}
+
+
 
 	//Terrain rendering
 	terrainProg.use();
@@ -572,7 +606,7 @@ void SceneBasic_Uniform::processInput(GLFWwindow* window)
 }
 
 void SceneBasic_Uniform::attemptPickup() {
-	
+
 	if (gameEnded) {
 		cout << "game ended, cannot collect any more!" << endl;
 		return;
@@ -594,7 +628,7 @@ void SceneBasic_Uniform::attemptPickup() {
 		float interactDistance = 5.0f;
 		float distance = length(cookingPotLocation - camera.Position);
 		if (distance < interactDistance && hasCookedItem == false) {
-			cout << "cooked item from ingredients" << endl << endl;	
+			cout << "cooked item from ingredients" << endl << endl;
 			hasCookedItem = true;
 		}
 	}
@@ -610,17 +644,13 @@ void SceneBasic_Uniform::initParticles() {
 	//Currently works for only one particle emitter.
 
 
-	time = 0;
 	particleLifetime = 10.0f;
 	nParticles = 80;
 
 	nEmitters = 4;
-	vec3 particleEmitters[4] = {
-		vec3(-2, 4, -7),
-		vec3(-1, 2, -3),
-		vec3(-3, 3, -2),
-		vec3(-4, 4, -3.5),
-	};
+
+
+
 
 	mat3 emitterBases[4] = {
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
@@ -645,7 +675,7 @@ void SceneBasic_Uniform::initParticles() {
 	for (int i = 0; i < nEmitters; i++)
 	{
 		string arrayString = "EmitterPos[" + to_string(i) + "]";
-		newParticleProg.setUniform(arrayString.c_str(), particleEmitters[i]);
+		newParticleProg.setUniform(arrayString.c_str(), vec3(torches[i].position));
 		arrayString = "EmitterBasis[" + to_string(i) + "]";
 		newParticleProg.setUniform(arrayString.c_str(), emitterBases[i]);
 	}
@@ -797,7 +827,7 @@ void SceneBasic_Uniform::initShadows() {
 	//This is where the shadow is cast from
 	lightFrustum.orient(lightPos, vec3(-5.0f, 0.0f, -12.0f), vec3(0.0f, 1.0f, 0.0f));
 	//lightFrustum.setPerspective(50.0f, 1.0f, 5.0f, 10.0f);
-	lightFrustum.setOrtho(-20.0f, 20.0f, -20.0f, 20.0f, 2.0f, 100.0f);
+	lightFrustum.setOrtho(-10.0f, 10.0f, -10.0f, 10.0f, 2.0f, 100.0f);
 	//Light Project View matrix
 	//Shadow bias maps clip space coordinates of -1 to 1 to 0-1 texture space.
 	//Therefore used to transform any world space point to the shadowmap
@@ -872,16 +902,24 @@ void SceneBasic_Uniform::initMaterials()
 	PBRProg.setUniform("material.Rough", 0.97f);
 	PBRProg.setUniform("material.Metal", 0);
 	PBRProg.setUniform("material.Colour", vec3(0.4f));
+	/*
 	PBRProg.setUniform("Light[0].Intensity", vec3(0.2f));
 	PBRProg.setUniform("Light[0].Position", vec4(-2.5f, 2.0f, -8.5f, 1));
 	PBRProg.setUniform("Light[1].Intensity", vec3(0.2f));
 	PBRProg.setUniform("Light[1].Position", vec4(-0.2f, 2.0f, -8.5f, 1));
 	PBRProg.setUniform("Light[2].Intensity", vec3(0.2f));
 	PBRProg.setUniform("Light[2].Position", vec4(-1.0f, 0.5f, -6.8f, 1));
+	PBRProg.setUniform("Light[3].Intensity", vec3(0.2f));
+	PBRProg.setUniform("Light[3].Position", vec4(-1.0f, 0.5f, -6.8f, 1));
 
 	PBRProg.setUniform("Light[3].Intensity", vec3(0.2f));
 	PBRProg.setUniform("Light[3].Ambient", vec3(0.01f, 0.01f, 0.03f));
-	//PBRProg.setUniform("Light[3].Position", vec4(lightPos, 1.0));
+	PBRProg.setUniform("Light[3].Position", vec4(lightPos, 1.0));*/
+
+	//Directional light
+	//PBRProg.setUniform("Light[4].Intensity", vec3(0.2f));
+	//PBRProg.setUniform("Light[4].Ambient", vec3(0.01f, 0.01f, 0.03f));
+	//PBRProg.setUniform("Light[4].Position", vec4(lightPos, 0.0f));
 
 	/* Example
 	PBRProg.setUniform("Light[0].L", vec3(45.0f));
@@ -942,6 +980,12 @@ void SceneBasic_Uniform::initLights()
 	terrainProg.setUniform("FogColour", vec3(0.25, 0.31, 0.46));
 
 #pragma endregion
+
+
+
+	torchNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	torchNoise.SetFrequency(0.5f);
+
 
 #pragma region Point Light Setup
 
@@ -1239,7 +1283,7 @@ void SceneBasic_Uniform::renderParticles()
 	newParticleProg.setUniform("Time", time);
 	newParticleProg.setUniform("DeltaT", deltaTime);
 	model = mat4(1.0f);
-	model = translate(model, vec3(0.0f, 0.0f, -5.0f));
+	model = translate(model, vec3(0.0f, 0.4f, 0.0f));
 	setMatrices(newParticleProg);
 	newParticleProg.setUniform("Pass", 1);
 
@@ -1361,8 +1405,8 @@ void SceneBasic_Uniform::updateDayNightShaders(TimeOfDayInfo prevState, TimeOfDa
 	PBRProg.setUniform("fogStart", fogStart);
 	PBRProg.setUniform("fogEnd", fogEnd);
 	PBRProg.setUniform("fogColour", fogColour);
-	PBRProg.setUniform("Light[3].Ambient", currentAmbientColour * 0.08f);
-	PBRProg.setUniform("Light[3].Intensity", currentSunColour * mainLightIntensity);
+	PBRProg.setUniform("DirLight.Ambient", currentAmbientColour * 0.08f);
+	PBRProg.setUniform("DirLight.Intensity", currentSunColour * mainLightIntensity);
 }
 
 void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
@@ -1370,7 +1414,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 
 	//+= deltatime will properly increment the timer by seconds
 	//Using values of 0-2 to interpolate sun position, so divide time passed by duration
-	float secondsInFullCycle = 30.0f;
+	float secondsInFullCycle = 120.0f;
 	timeOfDay += deltaTime / secondsInFullCycle;
 	if (timeOfDay >= 2.0f)
 	{
@@ -1565,6 +1609,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	sunTarget = vec3(-5.0f, 0.0f, -8.0f);
 	sunDistance = 15.0f;
 	sunPos = sunTarget + sunElevationVector * sunDistance;
+	sunPos.x += 10.0f;
 
 	sunLightDirection = normalize(sunTarget - sunPos);
 
@@ -1574,7 +1619,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
 
 	PBRProg.use();
-	PBRProg.setUniform("Light[3].Position", vec4(-sunLightDirection, 0.0f));
+	PBRProg.setUniform("DirLight.Position", vec4(-sunLightDirection, 0.0f));
 
 
 }

@@ -89,6 +89,27 @@ private:
 	float gameEndTime = 30;
 	bool gameEnded = false;
 
+	
+
+	float torchMaxIntensity = 1.0f;
+	float torchMinIntensity = 0.2f;
+	vec3 torchBrightColour = vec3(1.0f, 0.6f, 0.4f);
+	vec3 torchDimColour = vec3(1.0f, 1.0f, 1.0f);
+	struct TorchInfo{
+		vec3 position;
+		float intensity;		
+	};
+
+	TorchInfo torches[4] = {
+	{ vec3(-2, 0.3, -7) },
+	{ vec3(-1, 0.1f, -6) },
+	{ vec3(-3, 0.3, -2) },
+	{ vec3(-4, 0.3, -3.5)}
+	};
+
+	FastNoiseLite torchNoise;
+	
+
 
 
 	vec3 currentAmbientColour;
@@ -124,7 +145,7 @@ private:
 			10.0f,
 			25.0f
 		},
-		0.08f, // Light intensity - When in this time state it will target the next intensity and interpolate based on ramp up time
+		0.17f, // Light intensity - When in this time state it will target the next intensity and interpolate based on ramp up time
 		0.01f, //Start time
 		0.09f //Ramp up time
 	};
@@ -166,7 +187,7 @@ private:
 			10.0f,
 			40.0f
 		},
-		0.00f, // Light intensity
+		0.01f, // Light intensity
 		1.0f,//Start time
 		0.1f //Ramp up time
 	};
@@ -180,7 +201,7 @@ private:
 			10.0f,
 			40.0f
 		},
-		0.05f, //Light intensity
+		0.04f, //Light intensity
 		1.08f, //Start time
 		0.1f //Ramp up time
 	};
@@ -194,7 +215,7 @@ private:
 			10.0f,
 			40.0f
 		},
-		0.00f, //Light intensity
+		0.03f, //Light intensity
 		1.93f, //Start time
 		0.06f //Ramp up time
 	};
