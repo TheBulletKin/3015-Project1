@@ -48,7 +48,7 @@ private:
 	GLuint feedback[2];
 
 	GLuint drawBuf;
-	GLuint initVel, startTime, particles, nParticles, nEmitters;	
+	GLuint initVel, startTime, particles, nParticles, nEmitters;
 	float particleLifetime, time;
 
 	//Objects
@@ -84,9 +84,12 @@ private:
 	vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.3f);
 	int numberOfStaticLights;
 	float timeOfDay = 0;
-	
-	
-	
+	float gameTimer = 0;
+	float gameEndTime = 30;
+	bool gameEnded = false;
+
+
+
 	vec3 currentAmbientColour;
 	vec3 currentSunColour;
 	vec3 sunTarget;
@@ -101,7 +104,7 @@ private:
 		float fogEnd;
 	};
 
-	struct TimeOfDayInfo {		
+	struct TimeOfDayInfo {
 		string name;
 		vec3 ambientLightColour;
 		vec3 lightColour;
@@ -177,8 +180,8 @@ private:
 			40.0f
 		},
 		0.05f, //Light intensity
-		1.15f, //Start time
-		0.3f //Ramp up time
+		1.08f, //Start time
+		0.1f //Ramp up time
 	};
 
 	TimeOfDayInfo moonsetInfo = {
@@ -193,7 +196,7 @@ private:
 		0.00f, //Light intensity
 		1.93f, //Start time
 		0.06f //Ramp up time
-	}; 
+	};
 
 	TimeOfDayInfo timesOfDay[6] = {
 		dawnInfo,
@@ -201,13 +204,50 @@ private:
 		duskInfo,
 		moonRiseInfo,
 		nightInfo,
-		moonsetInfo		
+		moonsetInfo
 	};
 
 	TimeOfDayInfo prevTimeOfDay = timesOfDay[5];
 	TimeOfDayInfo currentTimeOfDay = timesOfDay[0];
 	TimeOfDayInfo nextTimeOfDay = timesOfDay[1];
 	int timeOfDayIndex;
+
+	struct Collectable {
+		string name;
+		vec3 location;
+		bool isActive;
+		//model (for rendering)
+	};
+
+	int maxCollectables = 4;
+	int collectedItems = 0;
+	bool collectedAllItems = false;
+	Collectable collectables[4] = {
+		Collectable {
+			"meat",
+			vec3(-3.0f, 4.0f, -7.0f),
+			true
+		},
+		Collectable {
+			"cheese",
+			vec3(-6.0f, 3.0f, -5.0f),
+			true
+		},
+		Collectable {
+			"flower",
+			vec3(-1.0f, 4.0f, -3.0f),
+			true
+		},
+		Collectable {
+			"mushroom",
+			vec3(-2.0f, 4.0f, -4.0f),
+			true
+		}
+	};
+
+	vec3 cookingPotLocation = vec3(-2, 4, -4);
+	bool hasCookedItem = false;
+
 
 
 
@@ -238,6 +278,7 @@ private:
 	void processInput(GLFWwindow* window);
 	void setupFBO();
 	void setArrayUniforms();
+	void attemptPickup();
 	vec3 rgbToHsv(vec3 c);
 	vec3 hsvToRgb(vec3 hsv);
 	vec3 mixHSV(vec3 colorA, vec3 colorB, float t);
@@ -262,6 +303,6 @@ public:
 	void updateDayNightShaders(TimeOfDayInfo currentState, TimeOfDayInfo toState, float t);
 	void drawSolidSceneObjects();
 	void resize(int, int);
-};
+	};
 
 #endif // SCENEBASIC_UNIFORM_H

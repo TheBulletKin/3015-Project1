@@ -131,6 +131,12 @@ void SceneBasic_Uniform::update(float t)
 	deltaTime = t - lastFrameTime;
 	lastFrameTime = t;
 
+	//cout << t << endl;
+	if (t > gameEndTime && gameEnded == false) {
+		cout << "game over" << endl;
+		gameEnded = true;
+	}
+
 	processInput(window);
 
 	/*
@@ -251,7 +257,7 @@ void SceneBasic_Uniform::render()
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+	glEnable(GL_DEPTH_TEST);
 
 
 	view = camera.GetViewMatrix();
@@ -260,15 +266,15 @@ void SceneBasic_Uniform::render()
 
 
 	//renderFireflies();
-	
+
 
 	//view = mat4(1.0f);
 	//view = translate(view, vec3(0.0f, 3.0f, 7.0f));
 	//view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
 	PBRProg.use();
 
-	
-	
+
+
 	//Pass 1 shadow map gen
 	model = mat4(1.0f);
 	model = translate(model, lightFrustum.getOrigin());
@@ -347,23 +353,27 @@ void SceneBasic_Uniform::render()
 	//setMatrices(objectProg);
 	lightFrustum.render();
 
-	
+
 
 	//drawSceneObjects();
 
-	renderParticles();
+
 
 #pragma region Sky Rendering
 
+
 	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
-	glEnable(GL_DEPTH_TEST);
+	
 	skyProg.use();
 	glDepthMask(GL_FALSE);
 	model = mat4(1.0f);
 	setMatrices(skyProg);
 	sky.render();
 	glDepthMask(GL_TRUE);
-	glDepthFunc(GL_LESS);
+	
+	view = camera.GetViewMatrix();
+
+	renderParticles();
 
 #pragma endregion
 
@@ -541,7 +551,38 @@ void SceneBasic_Uniform::processInput(GLFWwindow* window)
 		camera.ProcessKeyboard(UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
 		camera.ProcessKeyboard(DOWN, deltaTime);
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+		attemptPickup();
 
+}
+
+void SceneBasic_Uniform::attemptPickup() {
+	
+	if (gameEnded) {
+		cout << "game ended, cannot collect any more!" << endl;
+		return;
+	}
+	for (Collectable& item : collectables)
+	{
+		float pickUpDistance = 5.0f;
+		float distance = length(item.location - camera.Position);
+		if (distance < pickUpDistance && item.isActive == true) {
+			item.isActive = false;
+			cout << "collected " + item.name << endl << endl;
+			collectedItems++;
+		}
+
+	}
+
+	if (collectedItems >= maxCollectables)
+	{
+		float interactDistance = 5.0f;
+		float distance = length(cookingPotLocation - camera.Position);
+		if (distance < interactDistance && hasCookedItem == false) {
+			cout << "cooked item from ingredients" << endl << endl;	
+			hasCookedItem = true;
+		}
+	}
 }
 
 void SceneBasic_Uniform::setupFBO() {
@@ -552,11 +593,11 @@ void SceneBasic_Uniform::setupFBO() {
 void SceneBasic_Uniform::initParticles() {
 	//For particles, it holds all the information about the position, velocity and age in buffers
 	//Currently works for only one particle emitter.
-	
-	
+
+
 	time = 0;
 	particleLifetime = 10.0f;
-	nParticles = 40;
+	nParticles = 80;
 
 	nEmitters = 4;
 	vec3 particleEmitters[4] = {
@@ -572,9 +613,9 @@ void SceneBasic_Uniform::initParticles() {
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0))
 	};
-	
 
-	
+
+
 
 	glActiveTexture(GL_TEXTURE7);
 	randomParticleTexID = ParticleUtils::createRandomTex1D(nParticles * 3);
@@ -593,7 +634,7 @@ void SceneBasic_Uniform::initParticles() {
 		arrayString = "EmitterBasis[" + to_string(i) + "]";
 		newParticleProg.setUniform(arrayString.c_str(), emitterBases[i]);
 	}
-	
+
 
 
 
@@ -717,7 +758,7 @@ void SceneBasic_Uniform::initParticles() {
 
 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 
-	
+
 }
 
 void SceneBasic_Uniform::initShadows() {
@@ -749,7 +790,7 @@ void SceneBasic_Uniform::initShadows() {
 	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
 
 	PBRProg.use();
-	
+
 	//shadowProg.setUniform("ShadowMap", 8);
 
 	vec3 shadowedObjColour = vec3(0.2f, 0.5f, 0.9f);
@@ -1162,9 +1203,9 @@ void SceneBasic_Uniform::renderFireflies()
 
 void SceneBasic_Uniform::renderParticles()
 {
-	
 
-	
+
+
 	/*
 	glDepthMask(GL_FALSE);
 	newParticleProg.use();
@@ -1220,7 +1261,7 @@ void SceneBasic_Uniform::renderParticles()
 	glDepthMask(GL_TRUE);
 
 	drawBuf = 1 - drawBuf;
-	
+
 }
 
 //Found online. Used to make the interpolation between colours better
@@ -1293,9 +1334,9 @@ void SceneBasic_Uniform::updateDayNightShaders(TimeOfDayInfo prevState, TimeOfDa
 	currentSunColour = mixHSV(prevState.lightColour, currentState.lightColour, t);
 	mainLightIntensity = mix(prevState.mainLightIntensity, currentState.mainLightIntensity, t);
 
-	cout << "time of day: " << timeOfDay << endl;
-	cout << "light intensity: " << mainLightIntensity << endl;
-	cout << currentState.name << endl << endl;
+	//cout << "time of day: " << timeOfDay << endl;
+	//cout << "light intensity: " << mainLightIntensity << endl;
+	//cout << currentState.name << endl << endl;
 
 
 	PBRProg.use();
@@ -1339,7 +1380,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 
 	if (nextStartTime < prevStartTime) {
 		// Wrapping from something like 1.8 to 0.1
-		if (timeOfDay >= nextStartTime && timeOfDay < prevStartTime) {	
+		if (timeOfDay >= nextStartTime && timeOfDay < prevStartTime) {
 			prevTimeOfDay = currentTimeOfDay;
 			currentTimeOfDay = nextTimeOfDay;
 			timeOfDayIndex = nextIndex;
@@ -1393,7 +1434,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 
 		t = (adjustedTime - currentStartTime) / rampUpDuration;
 		t = clamp(t, 0.0f, 1.0f);
-		cout << t << endl;
+		//cout << t << endl;
 	}
 
 
@@ -1499,7 +1540,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	}
 	else {
 		angle = radians(((timeOfDay - 1.0f) / 2.0f) * 360.0f);
-	}	
+	}
 
 	//float angle = radians((timeOfDay / 2.0f) * 360.0f);
 	vec3 sunElevationVector = normalize(vec3(0.0f, sin(angle), cos(angle)));
@@ -1516,16 +1557,13 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 
 	PBRProg.use();
 	PBRProg.setUniform("Light[3].Position", vec4(-sunLightDirection, 0.0f));
-	
+
 
 }
 
 
 
-void SceneBasic_Uniform::updateShaders()
-{
 
-}
 
 
 
