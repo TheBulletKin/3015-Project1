@@ -154,7 +154,9 @@ void SceneBasic_Uniform::update(float t)
 
 #pragma region DayNightcycle
 
-
+	skyProg.use();
+	skyProg.setUniform("Time", t);
+	skyProg.setUniform("FullCycleDuration", secondsInFullCycle);
 
 	updateDayNightCycle(deltaTime);
 
@@ -392,7 +394,7 @@ void SceneBasic_Uniform::render()
 
 	skyProg.use();
 	glDepthMask(GL_FALSE);
-	model = mat4(1.0f);
+	model = mat4(1.0f);	
 	setMatrices(skyProg);
 	sky.render();
 	glDepthMask(GL_TRUE);
@@ -1414,8 +1416,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 {
 
 	//+= deltatime will properly increment the timer by seconds
-	//Using values of 0-2 to interpolate sun position, so divide time passed by duration
-	float secondsInFullCycle = 60.0f;
+	//Using values of 0-2 to interpolate sun position, so divide time passed by duration	
 	timeOfDay += deltaTime / secondsInFullCycle;
 	if (timeOfDay >= 2.0f)
 	{

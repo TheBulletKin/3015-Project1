@@ -120,6 +120,7 @@ private:
 	vec3 sunLightDirection;
 	float mainLightIntensity = 0.2;
 	float ambientLightIntensity = 0.2;
+	float secondsInFullCycle = 60.0f;
 
 	struct FogInfo {
 		vec3 fogColour;
