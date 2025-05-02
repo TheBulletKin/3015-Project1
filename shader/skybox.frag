@@ -2,12 +2,14 @@
 
 layout (location = 0) out vec4 FragColour;
 
-layout(binding = 3) uniform samplerCube SkyboxTex;
+layout(binding = 0) uniform samplerCube SkyboxDay;
+layout(binding = 1) uniform samplerCube SkyboxNight;
 
 in vec3 Position;
 
 uniform float Time;
 uniform float FullCycleDuration;
+uniform float BlendFactor;
 
 
 void main() {    
@@ -21,10 +23,16 @@ void main() {
 
     vec3 rotatedDir = rotation * Position;
 
-    vec3 texColour = texture(SkyboxTex, rotatedDir).rgb;
-    texColour = pow(texColour, vec3(1.0 / 0.5));
+    // Sample both skyboxes
+    vec3 dayColour = texture(SkyboxDay, rotatedDir).rgb;
+    vec3 nightColour = texture(SkyboxNight, rotatedDir).rgb;
 
-    FragColour = vec4(texColour, 1.0);
+    // Blend and apply gamma correction if needed
+    vec3 blended = mix(dayColour, nightColour, BlendFactor);
+    float gammaCorrection = mix(1.0 / 0.9, 1.0 / 0.4, BlendFactor);
+    vec3 gammaCorrected = pow(blended, vec3(gammaCorrection));
+
+    FragColour = vec4(gammaCorrected, 1.0);
 }
 
 

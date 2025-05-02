@@ -180,7 +180,7 @@ void SceneBasic_Uniform::update(float t)
 		float normalized = (noiseVal + 1.0f) / 2.0f; // convert to [0, 1]
 		float mixed = mix(torchMinIntensity, torchMaxIntensity, normalized);
 
-		
+
 		//cout << mixed << endl;
 		string arrayString = "Light[" + to_string(i) + "].Intensity";
 		PBRProg.setUniform(arrayString.c_str(), torchBrightColour * mixed);
@@ -393,8 +393,12 @@ void SceneBasic_Uniform::render()
 	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
 
 	skyProg.use();
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, daySkyboxTexID);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, nightSkyBox);
 	glDepthMask(GL_FALSE);
-	model = mat4(1.0f);	
+	model = mat4(1.0f);
 	setMatrices(skyProg);
 	sky.render();
 	glDepthMask(GL_TRUE);
@@ -447,6 +451,8 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
 	setMatrices(PBRProg);
 	//setMatrices(objectProg);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, rockTexID);
 	RuinMesh->render();
 
 
@@ -457,7 +463,7 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 		model = translate(model, vec3(torch.position.x, torch.position.y, torch.position.z));
 		model = scale(model, vec3(0.1f, 0.1f, 0.1f));
 
-		glActiveTexture(GL_TEXTURE1);
+		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, torchTexID);
 		setMatrices(PBRProg);
 		PBRProg.setUniform("TextureScale", 1.0f);
@@ -1030,7 +1036,8 @@ void SceneBasic_Uniform::initTextures()
 
 	//Skybox texture
 	glActiveTexture(GL_TEXTURE3);
-	skyBoxTexID = Texture::loadCubeMap("media/texture/cubeMap/night");
+	daySkyboxTexID = Texture::loadCubeMap("media/texture/skyCubeMap/bluecloud");
+	nightSkyBox = Texture::loadCubeMap("media/texture/cubeMap/night");
 
 	//Firefly texture
 	glActiveTexture(GL_TEXTURE5);
@@ -1422,6 +1429,23 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	{
 		timeOfDay = 0;
 	}
+
+	float blend;
+	if (timeOfDay < 0.15f) //When sun rising
+	{
+		blend = clamp(1 - ((timeOfDay) / 0.15f), 0.0f, 1.0f); //0 is day, 1 is night
+	}
+	else if (timeOfDay >= 1.95){ //When sun setting
+		blend = clamp((1 - (timeOfDay - 1.95f) / 0.05f), 0.0f, 1.0f);
+		blend = 1; //Temporarily disabled
+	}
+	else { //During daytime
+		blend = clamp((timeOfDay - 0.9f) / 0.1f, 0.0f, 1.0f);
+	}
+	skyProg.use();
+
+
+	skyProg.setUniform("BlendFactor", blend);
 
 	// Dawn (0 - 0.25) 
 	// Day (0.25 - 0.75) 

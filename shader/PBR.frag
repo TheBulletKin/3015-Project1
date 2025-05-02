@@ -38,7 +38,7 @@ struct MaterialInfo{
 
 uniform MaterialInfo material;
 
-layout(binding = 1) uniform sampler2D MainTex;
+layout(binding = 0) uniform sampler2D MainTex;
 layout(binding = 8) uniform sampler2DShadow ShadowMap;
 
 //PBR works around using roughness, metalness and colour

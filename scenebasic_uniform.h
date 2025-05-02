@@ -27,7 +27,7 @@ class SceneBasic_Uniform : public Scene
 private:
 	//Textures and shaders
 	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg, shadowProg;
-	GLuint grassTexID, rockTexID, skyBoxTexID, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex, torchTexID;
+	GLuint grassTexID, rockTexID, nightSkyBox, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex, torchTexID, daySkyboxTexID, setRiseSkyboxID;
 
 	GLFWwindow* window;
 
@@ -120,7 +120,7 @@ private:
 	vec3 sunLightDirection;
 	float mainLightIntensity = 0.2;
 	float ambientLightIntensity = 0.2;
-	float secondsInFullCycle = 60.0f;
+	float secondsInFullCycle = 20.0f;
 
 	struct FogInfo {
 		vec3 fogColour;
