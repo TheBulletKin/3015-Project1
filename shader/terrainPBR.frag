@@ -248,10 +248,10 @@ void renderPass()
     }
 
     vec3 flireflyLit = vec3(0.0);
-    for (int i = 0; i < 3; i++){
-        //flireflyLit += microfacetModel(i, Position, n, baseColour, 1);
+    for (int i = 0; i < 1; i++){
+        flireflyLit += microfacetModel(0, Position, n, baseColour, 1);
     }
-flireflyLit += microfacetModel(0, Position, n, baseColour, 1);
+
     // Combine them
    // vec3 lit = dirLit + torchLit + flireflyLit;
    vec3 lit = flireflyLit;

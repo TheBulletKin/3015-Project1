@@ -71,9 +71,8 @@ void SceneBasic_Uniform::initScene()
 
 #pragma region Point Light Setup
 
-	fireFlySpawnTimer = 0.0f;
-	currentFireFlyCount = 0;
-	maxFireFlyCount = 3;
+	
+	
 	fireFlySpawnCooldown = 2.0f;
 
 	for (int i = 0; i < maxFireFlyCount; i++)
@@ -87,7 +86,34 @@ void SceneBasic_Uniform::initScene()
 
 	}
 
+	//Firefly setup
+	glGenBuffers(1, &fireflyPosBuf);	
 
+	//Create buffers to fit vec3s for vel and pos, just float for age.
+	int size = maxFireFlyCount * 3 * sizeof(GLfloat);
+	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf);
+	
+	
+	vector<GLfloat> fireflyPositions(maxFireFlyCount * 3);
+	for (int i = 0; i < maxFireFlyCount; i++)
+	{
+		fireflyPositions[i * 3] = 0.0f;
+		fireflyPositions[i * 3 + 1] = -10.0f;
+		fireflyPositions[i * 3 + 2] = 0.0f;
+	}
+
+	glBufferData(GL_ARRAY_BUFFER, size, fireflyPositions.data(), GL_DYNAMIC_DRAW); //Dynamic copy indicates that the buffer will be frequently changed by the CPU
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glGenVertexArrays(1, &fireflyVA);
+
+	glBindVertexArray(fireflyVA);
+	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf);	
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glVertexAttribDivisor(0, 1);
+	glEnableVertexAttribArray(0);
+	
 
 #pragma region Firefly Sprites
 	glGenVertexArrays(1, &spritesVAO);
@@ -145,6 +171,9 @@ void SceneBasic_Uniform::compile()
 		shadowProg.compileShader("shader/Shadow.vert");
 		shadowProg.compileShader("shader/Shadow.frag");
 		shadowProg.link();
+		fireflyParticleProg.compileShader("shader/fireflyParticle.vert");
+		fireflyParticleProg.compileShader("shader/fireflyParticle.frag");
+		fireflyParticleProg.link();
 
 	}
 	catch (GLSLProgramException& e) {
@@ -282,6 +311,7 @@ void SceneBasic_Uniform::update(float t)
 		fireFlySpawnTimer = 0.0f;
 		fireFlySpawnCooldown = linearRand(3.0f, 6.0f);
 		fireFlySpawnCooldown = 0.2f;
+		
 	}
 #pragma endregion
 
@@ -340,6 +370,8 @@ void SceneBasic_Uniform::update(float t)
 		fireFlyPositions.push_back(fireFly->Position);
 	}
 
+
+
 	//terrainProg.use();
 	//terrainProg.setUniform("FireflyLight[0].Position", vec4(-3.0, 2.0f, -8.0f, 1.0f));
 	//terrainProg.setUniform("FireflyLight[1].Position", vec4(2.0, 2.0f, 2.0f, 1.0f));
@@ -347,6 +379,8 @@ void SceneBasic_Uniform::update(float t)
 
 	terrainProg.setUniform("numberOfFireflies", static_cast<int>(fireFlies.size()));
 
+	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf);
+	glBufferData(GL_ARRAY_BUFFER, fireFlyPositions.size() * sizeof(vec3), fireFlyPositions.data(), GL_DYNAMIC_DRAW);
 }
 
 void SceneBasic_Uniform::render()
@@ -403,7 +437,7 @@ void SceneBasic_Uniform::render()
 	//glActiveTexture(GL_TEXTURE2);
 	//glBindTexture(GL_TEXTURE_2D, brickTexID);
 
-renderFireflies();
+
 	drawSolidSceneObjects();
 	//Draw scene
 
@@ -480,6 +514,7 @@ renderFireflies();
 	view = camera.GetViewMatrix();
 
 	renderParticles();
+	renderFireflies();
 
 #pragma endregion
 
@@ -1269,35 +1304,26 @@ void SceneBasic_Uniform::initPostProcessing()
 
 void SceneBasic_Uniform::renderFireflies()
 {
-	
-	/*
-	glBindVertexArray(spritesVAO);
-	glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, fireFlyPositions.size() * sizeof(vec3), fireFlyPositions.data());
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	particleProg.use();
+
+	glBindVertexArray(fireflyVA);
+
+	fireflyParticleProg.use();
+	fireflyParticleProg.setUniform("ParticleSize", 0.2f);
 	model = mat4(1.0f);
-	setMatrices(particleProg);
+	setMatrices(fireflyParticleProg);
 
-	glDrawArraysInstanced(GL_POINTS, 0, 1, fireFlies.size());
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDepthMask(GL_FALSE);
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, fireFlyTexID);
+	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, currentFireFlyCount);
+	
+	glBindVertexArray(0);
 
-	terrainProg.use();
-	terrainProg.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
-	terrainProg.setUniform("staticPointLights", numberOfStaticLights);
-
-	terrainProg.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
-	terrainProg.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
-	terrainProg.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
-	terrainProg.setUniform("Material.Shininess", 180.0f);
-
-	objectProg.use();
-	objectProg.setUniform("dynamicPointLights", fireFlyLightIndex - numberOfStaticLights);
-	objectProg.setUniform("staticPointLights", numberOfStaticLights);
-
-	objectProg.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
-	objectProg.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
-	objectProg.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
-	objectProg.setUniform("Material.Shininess", 180.0f);*/
+	glDepthMask(GL_TRUE);
+glDisable(GL_BLEND);
+	
 }
 
 void SceneBasic_Uniform::renderParticles()
@@ -1326,6 +1352,9 @@ void SceneBasic_Uniform::renderParticles()
 
 	glActiveTexture(GL_TEXTURE7);
 	glBindTexture(GL_TEXTURE_1D, randomParticleTexID);
+
+	glActiveTexture(GL_TEXTURE6);
+	glBindTexture(GL_TEXTURE_2D, particleTexID);
 
 	glEnable(GL_RASTERIZER_DISCARD); //Tells it to not render the result to the fragment shader. Good for just doing processing.
 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback[drawBuf]);

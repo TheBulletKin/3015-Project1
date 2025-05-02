@@ -26,7 +26,7 @@ class SceneBasic_Uniform : public Scene
 {
 private:
 	//Textures and shaders
-	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg, shadowProg;
+	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg, shadowProg, fireflyParticleProg;
 	GLuint grassTexID, rockTexID, nightSkyBox, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex, torchTexID, daySkyboxTexID, setRiseSkyboxID, meatTexID, cheeseTexID, mushroomTexID, campfireTexID;
 
 	GLFWwindow* window;
@@ -46,8 +46,10 @@ private:
 	GLuint emitterIndexBuf[2];
 	GLuint particleArray[2];
 	GLuint feedback[2];
-	vec3 topLeftSpawnBound = vec3(-2, 3.0f, -2.0f);
-	vec3 bottomRightSpawnBound = vec3(2, 3.0f, 2.0f);
+	vec3 topLeftSpawnBound = vec3(-20, 3.0f, -20.0f);
+	vec3 bottomRightSpawnBound = vec3(20, -1.0f, 20.0f);
+	GLuint fireflyPosBuf;
+	GLuint fireflyVA;
 
 	GLuint drawBuf;
 	GLuint initVel, startTime, particles, nParticles, nEmitters;
@@ -80,10 +82,10 @@ private:
 
 	//Fireflies
 	vector<FireFly*> fireFlies;
-	float fireFlySpawnTimer;
+	float fireFlySpawnTimer = 0;
 	int fireFlySpawnCooldown;
-	int currentFireFlyCount;
-	int maxFireFlyCount;
+	int currentFireFlyCount = 0;
+	int maxFireFlyCount = 3;
 	vec3 fireFlyLightColour = vec3(0.53, 0.67, 0.33);
 	vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.3f);
 
