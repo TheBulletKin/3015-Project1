@@ -8,11 +8,13 @@ in vec3 Position;
 in vec3 WorldPosition;
 in vec3 Normal;
 in vec2 TexCoord;
+in vec3 WorldNormal;
 
 uniform mat4 view;
 uniform vec3 ViewPos;
 uniform float TextureScale = 20.0;
 uniform int Pass;
+uniform float time;
 uniform int DirLightIndex;
 in vec4 ShadowCoord;
 
@@ -39,6 +41,8 @@ struct MaterialInfo{
 uniform MaterialInfo material;
 
 layout(binding = 0) uniform sampler2D MainTex;
+layout(binding = 1) uniform sampler2D CliffTex;
+layout(binding = 3) uniform sampler2D CloudTex;
 layout(binding = 8) uniform sampler2DShadow ShadowMap;
 
 //PBR works around using roughness, metalness and colour
@@ -164,41 +168,98 @@ void renderPass()
     vec3 sum = vec3(0.0);
     vec3 n = normalize(Normal);   
 
+    // ----- Cloud shadows
+    float noiseScale = 0.002f;
+    float speed = 0.5f;    
+
+    //Change the target coordinate to sample on the texture to move with time
+    float animatedX = time * speed + sin(time * 0.1f) * 0.1f;
+    float animatedY = time * speed + cos(time * 0.12f) * 0.1f;
+   
+    //Use the world position to determine the texture sample position to ensure uniformity with scene models
+    vec2 animatedCoord = WorldPosition.xz * noiseScale + vec2(animatedX, animatedY);
+    float noise = texture(CloudTex, animatedCoord).r;  
+
+    //Smooth gradient from 0 to shadow, and overall darkening of the shadow
+    float shadow = smoothstep(0.0, 0.05f, noise); 
+    shadow = mix(shadow, 1.0, 0.8);     
+    
+    
+    //Old
     mat2 rotationMatrix = mat2(0.0, -1.0, 1.0, 0.0);    
     vec2 rotatedTexCoord = rotationMatrix * TexCoord;
     vec3 textureColour = texture(MainTex, rotatedTexCoord * TextureScale).rgb;
     textureColour = texture(MainTex, TexCoord * TextureScale).rgb;
     
 
+    // -------- Slope texture blending
+    /* The fragment's normal is essentially representing a direction by it's colour
+    * Therefore the y component of worldNormal is high for flat surfaces, low for vertical ones 
+    * Slopefactor is a 0 - 1 value that describes the weighting of that blend between grass and cliff
+    * Determines the final texture by this blend value
+    */
+   
+    //If WorldNormal.y < 0.9, slopeFactor is 0, between 0.9 and 1.0 it smoothly blends from 0 to 1, and when WorldNormal.y > 1.0, slopeFactor is 1
+    float slopeFactor = smoothstep(0.85, 0.9, abs(WorldNormal.y));     
+
+    //Scale the textures
+    vec3 grassTex = texture(MainTex, TexCoord * TextureScale).rgb;
+    grassTex = pow(grassTex, vec3(1.0 / 0.4)); // gamma correction
+    vec3 rockTex = texture(CliffTex, TexCoord * TextureScale).rgb;
+    rockTex = pow(rockTex, vec3(1.0 / 0.6)); // gamma correction
+    vec3 blendedTex = mix(rockTex, grassTex, slopeFactor);
+
+
     vec3 baseColour = vec3(0.0);
     if (!material.Metal) {
-        baseColour = textureColour;
-        baseColour = pow(baseColour, vec3(1.0 / 0.9)); // gamma correction
+        baseColour = blendedTex;
+    }
+
+    vec3 adjustedNormal = Normal;
+    if (!gl_FrontFacing) {
+        //adjustedNormal = -Normal;
     }
     
     
     // Direction light (needs dirLight index)
-    vec3 dirLight = microfacetModel(-1, Position, n, baseColour);
-    vec3 lit = determineShadow(dirLight); // includes ambient + shadowing
-    
+    //vec3 dirLight = microfacetModel(-1, Position, n, baseColour);
+    //vec3 lit = determineShadow(dirLight); // includes ambient + shadowing
+    //lit = mix(lit, lit * shadow, 0.8);
     
     // All other lights
+    //for (int i = 0; i < numberOfTorches - 1; i++){
+       // lit += microfacetModel(i, Position, n, baseColour);
+    //}
+
+    vec3 dirLight = microfacetModel(-1, Position, n, baseColour);
+    vec3 dirLit = determineShadow(dirLight); // already includes shadow mapping
+    //dirLit = mix(dirLit, dirLit * shadow, 0.9);
+
+    
+    vec3 torchLit = vec3(0.0);
     for (int i = 0; i < numberOfTorches - 1; i++){
-        lit += microfacetModel(i, Position, n, baseColour);
+        torchLit += microfacetModel(i, Position, n, baseColour);
     }
 
+    // Combine them
+    vec3 lit = dirLit + torchLit;
+
     //Dir light index
-    lit += DirLight.Ambient;
+    lit += DirLight.Ambient;    
+
+
 
     
     float distanceToCamera = length(WorldPosition - ViewPos);   
     float fogFactor = calculateFogFactor(distanceToCamera);
 
-    vec3 finalColour = mix(lit, fogColour, fogFactor);
+    vec3 cloudShadowedColour = mix(lit, lit * shadow, 0.9);
+    vec3 finalColour = mix(cloudShadowedColour, fogColour, fogFactor);
+    
 
     FragColour = vec4(finalColour, 1.0);
    // FragColour = vec4(lit, 1.0);
-    //FragColour = pow(FragColour, vec4(1.0 / 2.2)); // gamma correction
+    //FragColour = pow(FragColour, vec4(1.0 / 0.4)); // gamma correction
 }
 
 

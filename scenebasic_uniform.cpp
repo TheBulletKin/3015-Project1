@@ -101,8 +101,8 @@ void SceneBasic_Uniform::compile()
 		particleProg.compileShader("shader/particle.frag");
 		particleProg.compileShader("shader/particle.geom");
 		particleProg.link();
-		terrainProg.compileShader("shader/terrain.vert");
-		terrainProg.compileShader("shader/terrain.frag");
+		terrainProg.compileShader("shader/terrainPBR.vert");
+		terrainProg.compileShader("shader/terrainPBR.frag");
 		terrainProg.link();
 		PBRProg.compileShader("shader/PBR.vert");
 		PBRProg.compileShader("shader/PBR.frag");
@@ -170,7 +170,7 @@ void SceneBasic_Uniform::update(float t)
 
 
 
-	PBRProg.use();
+	
 
 	int i = 0;
 	for (const TorchInfo& torch : torches)
@@ -180,13 +180,19 @@ void SceneBasic_Uniform::update(float t)
 		float normalized = (noiseVal + 1.0f) / 2.0f; // convert to [0, 1]
 		float mixed = mix(torchMinIntensity, torchMaxIntensity, normalized);
 
-
+		
 		//cout << mixed << endl;
 		string arrayString = "Light[" + to_string(i) + "].Intensity";
+		PBRProg.use();
 		PBRProg.setUniform(arrayString.c_str(), torchBrightColour * mixed);
+		terrainProg.use();
+		terrainProg.setUniform(arrayString.c_str(), torchBrightColour * mixed);
 		arrayString = "Light[" + to_string(i) + "].Position";
 		vec3 shiftedPos = torch.position + vec3(0, 0.7f, 0);
+		PBRProg.use();
 		PBRProg.setUniform(arrayString.c_str(), vec4(shiftedPos, 1.0f));
+		terrainProg.use();
+		terrainProg.setUniform(arrayString.c_str(), vec4(shiftedPos, 1.0f));
 		i++;
 	}
 
@@ -299,7 +305,7 @@ void SceneBasic_Uniform::render()
 	//view = mat4(1.0f);
 	//view = translate(view, vec3(0.0f, 3.0f, 7.0f));
 	//view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
-	PBRProg.use();
+	
 
 
 
@@ -312,8 +318,10 @@ void SceneBasic_Uniform::render()
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, shadowMapWidth, shadowMapHeight);
 	//Ensures the use of 'recordDepth' which does nothing as depth info is recorded
-
+	PBRProg.use();
 	PBRProg.setUniform("Pass", 1);
+	terrainProg.use();
+	terrainProg.setUniform("Pass", 1);
 	//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass2Index);
 	//GLuint activeIndex;
 	//glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
@@ -344,7 +352,7 @@ void SceneBasic_Uniform::render()
 
 
 	//Pass 2
-	PBRProg.use();
+	
 	view = camera.GetViewMatrix();
 
 	//shadowProg.setUniform("light.Position", vec4(lightPos, 1.0));
@@ -358,8 +366,10 @@ void SceneBasic_Uniform::render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, width, height);
 	//Ensures the use of 'shadeWithShadow', which uses phong and the shadow info
-
+	PBRProg.use();
 	PBRProg.setUniform("Pass", 2);
+	terrainProg.use();
+	terrainProg.setUniform("Pass", 2);
 	//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass1Index);
 
 	//glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
@@ -453,6 +463,7 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	//setMatrices(objectProg);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, rockTexID);
+	PBRProg.setUniform("TextureScale", 20.0f);
 	RuinMesh->render();
 
 
@@ -475,22 +486,21 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	//Terrain rendering
 	terrainProg.use();
 
-	//glActiveTexture(GL_TEXTURE0);
-	//glBindTexture(GL_TEXTURE_2D, grassTexID);
-	//glActiveTexture(GL_TEXTURE1);
-	//glBindTexture(GL_TEXTURE_2D, rockTexID);
-	//glActiveTexture(GL_TEXTURE4);
-	//glBindTexture(GL_TEXTURE_2D, cloudTexID);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, grassTexID);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, rockTexID);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, cloudTexID);
 
-	PBRProg.use();
+	terrainProg.use();
 	model = mat4(1.0f);
 	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
 	model = scale(model, vec3(0.25f, 0.25f, 0.25f));
 	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
-	setMatrices(PBRProg);
-	PBRProg.setUniform("TextureScale", 20.0f);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, rockTexID);
+	setMatrices(terrainProg);
+	terrainProg.setUniform("TextureScale", 20.0f);
+	
 	TerrainMesh->render();
 
 #pragma endregion
@@ -910,6 +920,11 @@ void SceneBasic_Uniform::initMaterials()
 	PBRProg.setUniform("material.Rough", 0.97f);
 	PBRProg.setUniform("material.Metal", 0);
 	PBRProg.setUniform("material.Colour", vec3(0.4f));
+
+	terrainProg.use();
+	terrainProg.setUniform("material.Rough", 0.97f);
+	terrainProg.setUniform("material.Metal", 0);
+	terrainProg.setUniform("material.Colour", vec3(0.4f));
 	/*
 	PBRProg.setUniform("Light[0].Intensity", vec3(0.2f));
 	PBRProg.setUniform("Light[0].Position", vec4(-2.5f, 2.0f, -8.5f, 1));
@@ -1417,6 +1432,13 @@ void SceneBasic_Uniform::updateDayNightShaders(TimeOfDayInfo prevState, TimeOfDa
 	PBRProg.setUniform("fogColour", fogColour);
 	PBRProg.setUniform("DirLight.Ambient", currentAmbientColour * ambientLightIntensity * 0.4f);
 	PBRProg.setUniform("DirLight.Intensity", currentSunColour * mainLightIntensity);
+
+	terrainProg.use();
+	terrainProg.setUniform("fogStart", fogStart);
+	terrainProg.setUniform("fogEnd", fogEnd);
+	terrainProg.setUniform("fogColour", fogColour);
+	terrainProg.setUniform("DirLight.Ambient", currentAmbientColour * ambientLightIntensity * 0.4f);
+	terrainProg.setUniform("DirLight.Intensity", currentSunColour * mainLightIntensity);
 }
 
 void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
@@ -1646,6 +1668,8 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 
 	PBRProg.use();
 	PBRProg.setUniform("DirLight.Position", vec4(-sunLightDirection, 0.0f));
+	terrainProg.use();
+	terrainProg.setUniform("DirLight.Position", vec4(-sunLightDirection, 0.0f));
 
 
 }

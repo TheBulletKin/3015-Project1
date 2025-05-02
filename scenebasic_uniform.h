@@ -91,8 +91,8 @@ private:
 
 	
 
-	float torchMaxIntensity = 1.0f;
-	float torchMinIntensity = 0.2f;
+	float torchMaxIntensity = 1.5f;
+	float torchMinIntensity = 1.0f;
 	vec3 torchBrightColour = vec3(1.0f, 0.6f, 0.4f);
 	vec3 torchDimColour = vec3(1.0f, 1.0f, 1.0f);
 	struct TorchInfo{
@@ -144,28 +144,28 @@ private:
 		vec3(0.6f, 0.45f, 0.3f),
 		vec3(1.0f, 0.8f, 0.6f),
 		{
-			vec3(0.6f, 0.45f, 0.3f) * 0.3f,
-			10.0f,
-			25.0f
+			vec3(0.6f, 0.45f, 0.3f) * 0.7f,
+			8.0f,
+			30.0f
 		},
 		0.17f, // Light intensity 
 		0.12f,
 		0.01f, //Start time
-		0.02f //Ramp up time
+		0.07f //Ramp up time
 	};
 
 	TimeOfDayInfo dayInfo = {
 		"day",
-		vec3(0.5f, 0.65f, 0.9f),
-		vec3(1.0f, 1.0f, 0.95f),
+		vec3(0.5f, 0.5f, 0.65f),
+		vec3(1.0f, 1.0f, 1.0f),
 		{
-			vec3(0.5f, 0.65f, 0.9f) * 0.3f,
-			25.0f,
-			60.0f
+			vec3(0.5f, 0.65f, 0.9f) * 0.5f,
+			10.0f,
+			30.0f
 		},
-		0.6f, // Light intensity
-		0.12f,
-		0.05f, //Start time
+		0.7f, // Light intensity
+		0.25f,
+		0.09f, //Start time
 		0.05f //Ramp up time
 	};
 
@@ -208,8 +208,8 @@ private:
 			10.0f,
 			40.0f
 		},
-		0.04f, //Light intensity
-		0.12f,
+		0.09f, //Light intensity
+		0.6f,
 		1.08f, //Start time
 		0.1f //Ramp up time
 	};
