@@ -14,7 +14,8 @@ public:
 	glm::vec3 GetPosition() const {
 		return currentPosition;
 	}	
-	
+
+		
 	PointLight* pointLight;
 private:
 	float lifeTimeMax;

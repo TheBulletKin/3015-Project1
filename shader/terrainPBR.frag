@@ -28,7 +28,9 @@ struct LightInfo {
     vec3 Ambient;
 }; 
 
+int numberOfFireflies = 3;
 int numberOfTorches = 9;
+uniform LightInfo FireflyLight[3];
 uniform LightInfo Light[10]; //Three points, one main
 uniform LightInfo DirLight;
 
@@ -77,7 +79,7 @@ vec3 schlickFresnel(float lDotH) {
 }
 
 //Computes the final light reflection for a point on a surface
-vec3 microfacetModel(int lightIdx, vec3 position, vec3 n, vec3 baseColour){
+vec3 microfacetModel(int lightIdx, vec3 position, vec3 n, vec3 baseColour, int type){
     //L is light direction.
     vec3 l = vec3(0.0);
     vec3 lightI = vec3(0.0);
@@ -85,10 +87,14 @@ vec3 microfacetModel(int lightIdx, vec3 position, vec3 n, vec3 baseColour){
     if (lightIdx == -1) { //Is directional
         lightI = DirLight.Intensity;        
         lightPosition = view * DirLight.Position;
-    } else {
+    } else if (type == 0) {
         lightI = Light[lightIdx].Intensity;
         //vec4 lightPosition = Light[lightIdx].Position;
         lightPosition = view * Light[lightIdx].Position;
+    } else if (type == 1) {
+         lightI = FireflyLight[lightIdx].Intensity;
+        //vec4 lightPosition = FireflyLight[lightIdx].Position;
+        lightPosition = view * FireflyLight[lightIdx].Position;
     }
     
     if(lightPosition.w == 0.0) {  //W = 0 for directional lights
@@ -231,18 +237,24 @@ void renderPass()
        // lit += microfacetModel(i, Position, n, baseColour);
     //}
 
-    vec3 dirLight = microfacetModel(-1, Position, n, baseColour);
+    vec3 dirLight = microfacetModel(-1, Position, n, baseColour, 0);
     vec3 dirLit = determineShadow(dirLight); // already includes shadow mapping
     //dirLit = mix(dirLit, dirLit * shadow, 0.9);
 
     
     vec3 torchLit = vec3(0.0);
     for (int i = 0; i < numberOfTorches; i++){
-        torchLit += microfacetModel(i, Position, n, baseColour);
+        torchLit += microfacetModel(i, Position, n, baseColour, 0);
+    }
+
+    vec3 flireflyLit = vec3(0.0);
+    for (int i = 0; i < 3; i++){
+        flireflyLit += microfacetModel(i, Position, n, baseColour, 1);
     }
 
     // Combine them
-    vec3 lit = dirLit + torchLit;
+   // vec3 lit = dirLit + torchLit + flireflyLit;
+   vec3 lit = flireflyLit;
 
     //Dir light index
     lit += DirLight.Ambient;    
@@ -257,7 +269,7 @@ void renderPass()
     vec3 finalColour = mix(cloudShadowedColour, fogColour, fogFactor);
     
 
-    FragColour = vec4(finalColour, 1.0);
+    FragColour = vec4(flireflyLit, 1.0);
    // FragColour = vec4(lit, 1.0);
     //FragColour = pow(FragColour, vec4(1.0 / 0.4)); // gamma correction
 }

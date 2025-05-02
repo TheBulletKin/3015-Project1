@@ -63,8 +63,29 @@ void SceneBasic_Uniform::initScene()
 	initMaterials();
 	initParticles();
 	initShadows();
+	initLights();
+
+	torchNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+	torchNoise.SetFrequency(0.5f);
 
 
+#pragma region Point Light Setup
+
+	fireFlySpawnTimer = 0.0f;
+	currentFireFlyCount = 0;
+	maxFireFlyCount = 3;
+	fireFlySpawnCooldown = 2.0f;
+
+	for (int i = 0; i < maxFireFlyCount; i++)
+	{
+		string lightUniformTag = "fireflyLight[" + to_string(i) + "]";
+
+		terrainProg.use();
+		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, 0.0f, 0.0f));
+		terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), vec3(0.0f, 0.0f, 0.0f));
+		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(0.0f, 0.0f, 0.0f));
+
+	}
 
 
 
@@ -145,14 +166,14 @@ void SceneBasic_Uniform::update(float t)
 
 	processInput(window);
 
-	/*
+	
 	if (currentFireFlyCount < maxFireFlyCount)
 	{
 		fireFlySpawnTimer += deltaTime;
 	}
 	else {
 		fireFlySpawnTimer = 0.0f;
-	}*/
+	}
 
 	terrainProg.use();
 	terrainProg.setUniform("time", t / 1000);
@@ -228,7 +249,7 @@ void SceneBasic_Uniform::update(float t)
 #pragma endregion
 
 #pragma region New Firefly Spawning
-	/*
+	
 	if (fireFlySpawnTimer >= fireFlySpawnCooldown && currentFireFlyCount < maxFireFlyCount)
 	{
 		PointLight* newLight = new PointLight(
@@ -260,53 +281,40 @@ void SceneBasic_Uniform::update(float t)
 
 		fireFlySpawnTimer = 0.0f;
 		fireFlySpawnCooldown = linearRand(3.0f, 6.0f);
-	}*/
+		fireFlySpawnCooldown = 0.2f;
+	}
 #pragma endregion
 
 #pragma region Firefly Update and Deletion
-	/*
+	
 	for (size_t i = 0; i < fireFlies.size(); i++)
 	{
 		FireFly* fireFly = fireFlies[i];
 		if (fireFly != NULL)
 		{
 			fireFly->Update(deltaTime);
-			if (fireFly->ShouldDestroy())
+			if (fireFly->ShouldDestroy()) 
 			{
-				int fireFlyLightIndex = i + numberOfStaticLights;
+				//Destroy firefly
 
-				string lightUniformTag = "pointLights[" + to_string(fireFlyLightIndex) + "]";
+				string lightUniformTag = "FireflyLight[" + to_string(i) + "]";
 
 				//Set deleted pointlights to a null value equivalent to be ignored in the shader
 				terrainProg.use();
-				terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, 0.0f, 0.0f));
-				terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), vec3(0.0f, 0.0f, 0.0f));
-				terrainProg.setUniform((lightUniformTag + ".La").c_str(), vec3(0.0f, 0.0f, 0.0f));
-				terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), false);
+				terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, -10.0f, 0.0f));				
+			
 
-				objectProg.use();
-				objectProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, 0.0f, 0.0f));
-				objectProg.setUniform((lightUniformTag + ".Ld").c_str(), vec3(0.0f, 0.0f, 0.0f));
-				objectProg.setUniform((lightUniformTag + ".La").c_str(), vec3(0.0f, 0.0f, 0.0f));
-				objectProg.setUniform((lightUniformTag + ".Enabled").c_str(), false);
-
+				
 				delete fireFly;
 				fireFlies.erase(fireFlies.begin() + i);
 				currentFireFlyCount--;
-
-
-				terrainProg.use();
-				terrainProg.setUniform("dynamicPointLights", currentFireFlyCount);
-
-				objectProg.use();
-				objectProg.setUniform("dynamicPointLights", currentFireFlyCount);
 
 				cout << "FireFly deleted   Number of lights: " << currentFireFlyCount << "\n";
 
 				i--;
 			}
 		}
-	}*/
+	}
 #pragma endregion
 
 }
@@ -323,7 +331,7 @@ void SceneBasic_Uniform::render()
 
 
 
-	//renderFireflies();
+	
 
 
 	//view = mat4(1.0f);
@@ -365,7 +373,7 @@ void SceneBasic_Uniform::render()
 	//glActiveTexture(GL_TEXTURE2);
 	//glBindTexture(GL_TEXTURE_2D, brickTexID);
 
-
+renderFireflies();
 	drawSolidSceneObjects();
 	//Draw scene
 
@@ -400,6 +408,8 @@ void SceneBasic_Uniform::render()
 
 	//Draw scene
 	drawSolidSceneObjects();
+
+	
 
 	objectProg.use();
 
@@ -1013,14 +1023,14 @@ void SceneBasic_Uniform::initMaterials()
 #pragma region Material Setup
 
 	terrainProg.use();
-	terrainProg.setUniform("staticPointLights", numberOfStaticLights);
+	terrainProg.setUniform("staticPointLights", 0);
 	terrainProg.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
 	terrainProg.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
 	terrainProg.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
 	terrainProg.setUniform("Material.Shininess", 180.0f);
 
 	objectProg.use();
-	objectProg.setUniform("staticPointLights", numberOfStaticLights);
+	objectProg.setUniform("staticPointLights", 0);
 	objectProg.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
 	objectProg.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
 	objectProg.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
@@ -1029,63 +1039,7 @@ void SceneBasic_Uniform::initMaterials()
 
 void SceneBasic_Uniform::initLights()
 {
-#pragma region Directional Light Setup
-
-	vec3 lightDirection = normalize(vec3(0.5f, -1.0f, 0.5f));
-	vec3 lightAmbient = vec3(0.2f, 0.2f, 0.4f);
-	vec3 lightDiffuse = vec3(0.3f, 0.3f, 0.5f);
-	vec3 lightSpecular = vec3(1.0f, 1.0f, 1.0f);
-
-	objectProg.use();
-	objectProg.setUniform("directionalLight.Direction", lightDirection);
-	objectProg.setUniform("directionalLight.La", lightAmbient * 0.8f);
-	objectProg.setUniform("directionalLight.Ld", lightDiffuse * 0.8f);
-	objectProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
-	objectProg.setUniform("directionalLight.Enabled", true);
-	objectProg.setUniform("FogStart", 5.0f);
-	objectProg.setUniform("FogEnd", 80.0f);
-	objectProg.setUniform("FogColour", vec3(0.25, 0.31, 0.46));
-
-	terrainProg.use();
-	terrainProg.setUniform("directionalLight.Direction", lightDirection);
-	terrainProg.setUniform("directionalLight.La", lightAmbient * 1.4f);
-	terrainProg.setUniform("directionalLight.Ld", lightDiffuse * 0.8f);
-	terrainProg.setUniform("directionalLight.Ls", lightSpecular * 0.1f);
-	terrainProg.setUniform("directionalLight.Enabled", true);
-	terrainProg.setUniform("FogStart", 5.0f);
-	terrainProg.setUniform("FogEnd", 80.0f);
-	terrainProg.setUniform("FogColour", vec3(0.25, 0.31, 0.46));
-
-#pragma endregion
-
-
-
-	torchNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-	torchNoise.SetFrequency(0.5f);
-
-
-#pragma region Point Light Setup
-
-	fireFlySpawnTimer = 0.0f;
-	currentFireFlyCount = 0;
-	maxFireFlyCount = 10;
-	fireFlySpawnCooldown = 2.0f;
-
-	for (int i = 0; i < maxFireFlyCount; i++)
-	{
-		string lightUniformTag = "pointLights[" + to_string(i) + "]";
-
-		terrainProg.use();
-		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, 0.0f, 0.0f));
-		terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), vec3(0.0f, 0.0f, 0.0f));
-		terrainProg.setUniform((lightUniformTag + ".La").c_str(), vec3(0.0f, 0.0f, 0.0f));
-
-		objectProg.use();
-		objectProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, 0.0f, 0.0f));
-		objectProg.setUniform((lightUniformTag + ".Ld").c_str(), vec3(0.0f, 0.0f, 0.0f));
-		objectProg.setUniform((lightUniformTag + ".La").c_str(), vec3(0.0f, 0.0f, 0.0f));
-
-	}
+	
 #pragma endregion
 }
 
@@ -1103,7 +1057,7 @@ void SceneBasic_Uniform::initTextures()
 	glActiveTexture(GL_TEXTURE1);
 	rockTexID = Texture::loadTexture("media/texture/cliff_rocks_02_1k/cliff_rocks_02_baseColor_1k.png");
 
-	//Rock texture
+	//Rock textures
 	glActiveTexture(GL_TEXTURE2);
 	brickTexID = Texture::loadTexture("media/texture/stone_bricks_wall_04_1k/stone_bricks_wall_04_color_1k.png");
 
@@ -1286,36 +1240,34 @@ void SceneBasic_Uniform::initPostProcessing()
 void SceneBasic_Uniform::renderFireflies()
 {
 	vector<vec3> fireFlyPositions;
-	fireFlyLightIndex = numberOfStaticLights;
+	
 	string lightUniformTag;
 	for (size_t i = 0; i < fireFlies.size(); i++) {
 		FireFly* fireFly = fireFlies[i];
 
-		lightUniformTag = ("pointLights[" + to_string(fireFlyLightIndex) + "]");
+		lightUniformTag = ("FireflyLight [" + to_string(i) + "]");
 		terrainProg.use();
-		terrainProg.setUniform((lightUniformTag + ".Constant").c_str(), fireFly->pointLight->constant);
-		terrainProg.setUniform((lightUniformTag + ".Linear").c_str(), fireFly->pointLight->linear);
-		terrainProg.setUniform((lightUniformTag + ".Quadratic").c_str(), fireFly->pointLight->quadratic);
+		terrainProg.setUniform((lightUniformTag + ".Postion").c_str(), fireFly->GetPosition());
+		terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), vec3(1.0f, 1.0f, 1.0f) * fireFly->pointLight->brightness);
+		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(1.0f, 1.0f, 1.0f) * fireFly->pointLight->brightness);
 
-		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
-		terrainProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
-		terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
-		terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
+		//terrainProg.setUniform("numberOfFireflies", (int)(fireFlies.size()));
 
-		objectProg.use();
-		objectProg.setUniform((lightUniformTag + ".Constant").c_str(), fireFly->pointLight->constant);
-		objectProg.setUniform((lightUniformTag + ".Linear").c_str(), fireFly->pointLight->linear);
-		objectProg.setUniform((lightUniformTag + ".Quadratic").c_str(), fireFly->pointLight->quadratic);
+		//terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
+		//terrainProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
+		////terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
+		//terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
 
-		objectProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
-		objectProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
-		objectProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
-		objectProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
 
-		fireFlyLightIndex++;
 		fireFlyPositions.push_back(fireFly->GetPosition());
 	}
 
+	terrainProg.use();
+	terrainProg.setUniform("FireflyLight[0].Postion", vec3(3.0, 2.0f, -4.0f));
+	terrainProg.setUniform("FireflyLight[1].Postion", vec3(2.0, 0.0f, -4.0f));
+	terrainProg.setUniform("FireflyLight[2].Postion", vec3(3.0, -2.0f, -4.0f));
+
+	/*
 	glBindVertexArray(spritesVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, fireFlyPositions.size() * sizeof(vec3), fireFlyPositions.data());
@@ -1342,7 +1294,7 @@ void SceneBasic_Uniform::renderFireflies()
 	objectProg.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
 	objectProg.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
 	objectProg.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
-	objectProg.setUniform("Material.Shininess", 180.0f);
+	objectProg.setUniform("Material.Shininess", 180.0f);*/
 }
 
 void SceneBasic_Uniform::renderParticles()

@@ -46,6 +46,8 @@ private:
 	GLuint emitterIndexBuf[2];
 	GLuint particleArray[2];
 	GLuint feedback[2];
+	vec3 topLeftSpawnBound = vec3(-20, 3.0f, -20.0f);
+	vec3 bottomRightSpawnBound = vec3(20, -3.0f, 20.0f);
 
 	GLuint drawBuf;
 	GLuint initVel, startTime, particles, nParticles, nEmitters;
@@ -81,11 +83,10 @@ private:
 	float fireFlySpawnTimer;
 	int fireFlySpawnCooldown;
 	int currentFireFlyCount;
-	int fireFlyLightIndex;
 	int maxFireFlyCount;
 	vec3 fireFlyLightColour = vec3(0.53, 0.67, 0.33);
 	vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.3f);
-	int numberOfStaticLights;
+
 	float timeOfDay = 0;
 	float gameTimer = 0;
 	float gameEndTime = 120;
@@ -170,7 +171,7 @@ private:
 			30.0f
 		},
 		0.7f, // Light intensity
-		0.25f,
+		0.55f,
 		0.09f, //Start time
 		0.05f //Ramp up time
 	};
@@ -292,9 +293,7 @@ private:
 	struct Point {
 		float x, y, z;
 	};
-
-	Point topLeftSpawnBound = { -7.0f, 23.0f, -14.0f }; //-X means left  -Z means forward
-	Point bottomRightSpawnBound = { 2.0f, 17.0f, -3.0 };
+	
 
 	//Random number gen
 	random_device rd;
