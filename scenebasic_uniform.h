@@ -46,8 +46,8 @@ private:
 	GLuint emitterIndexBuf[2];
 	GLuint particleArray[2];
 	GLuint feedback[2];
-	vec3 topLeftSpawnBound = vec3(-20, 3.0f, -20.0f);
-	vec3 bottomRightSpawnBound = vec3(20, -1.0f, 20.0f);
+	vec3 topLeftSpawnBound = vec3(-20, 1.0f, -20.0f);
+	vec3 bottomRightSpawnBound = vec3(20, -5.0f, 20.0f);
 	GLuint fireflyPosBuf;
 	GLuint fireflyVA;
 
@@ -85,9 +85,9 @@ private:
 	float fireFlySpawnTimer = 0;
 	int fireFlySpawnCooldown;
 	int currentFireFlyCount = 0;
-	int maxFireFlyCount = 3;
+	int maxFireFlyCount = 15;
 	vec3 fireFlyLightColour = vec3(0.53, 0.67, 0.33);
-	vec3 ambientLightColour = vec3(0.1f, 0.1f, 0.3f);
+	vec3 fireFlyAmbientColour = vec3(0.1f, 0.1f, 0.3f);
 
 	float timeOfDay = 0;
 	float gameTimer = 0;
@@ -173,7 +173,7 @@ private:
 			30.0f
 		},
 		0.7f, // Light intensity
-		0.55f,
+		0.2f,
 		0.09f, //Start time
 		0.05f //Ramp up time
 	};
@@ -218,7 +218,7 @@ private:
 			40.0f
 		},
 		0.09f, //Light intensity
-		0.6f,
+		0.09f,
 		1.08f, //Start time
 		0.1f //Ramp up time
 	};

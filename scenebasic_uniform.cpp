@@ -65,6 +65,8 @@ void SceneBasic_Uniform::initScene()
 	initShadows();
 	initLights();
 
+	glDisable(GL_DEBUG_OUTPUT);
+
 	torchNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	torchNoise.SetFrequency(0.5f);
 
@@ -196,7 +198,7 @@ void SceneBasic_Uniform::update(float t)
 	processInput(window);
 
 	
-	if (currentFireFlyCount < maxFireFlyCount)
+	if (currentFireFlyCount < maxFireFlyCount && timeOfDay >= 1.0)
 	{
 		fireFlySpawnTimer += deltaTime;
 	}
@@ -230,7 +232,7 @@ void SceneBasic_Uniform::update(float t)
 	int i = 0;
 	for (const TorchInfo& torch : torches)
 	{
-		float noiseInput = t * 25.0f + i; // time-based noise with index offset
+		float noiseInput = t * 2.0f; // time-based noise with index offset
 		float noiseVal = torchNoise.GetNoise(noiseInput, 0.0f); // returns value in [-1, 1]
 		float normalized = (noiseVal + 1.0f) / 2.0f; // convert to [0, 1]
 		float mixed = mix(torchMinIntensity, torchMaxIntensity, normalized);
@@ -253,7 +255,7 @@ void SceneBasic_Uniform::update(float t)
 
 	//Campfire light
 
-	float noiseInput = t * 25.0f + i; // time-based noise with index offset
+	float noiseInput = t * 2.0f; // time-based noise with index offset
 	float noiseVal = torchNoise.GetNoise(noiseInput, 0.0f); // returns value in [-1, 1]
 	float normalized = (noiseVal + 1.0f) / 2.0f; // convert to [0, 1]
 	float mixed = mix(torchMinIntensity, torchMaxIntensity, normalized);
@@ -281,15 +283,7 @@ void SceneBasic_Uniform::update(float t)
 	
 	if (fireFlySpawnTimer >= fireFlySpawnCooldown && currentFireFlyCount < maxFireFlyCount)
 	{
-		PointLight* newLight = new PointLight(
-			1.0f,
-			0.8f,
-			0.7f,
-			ambientLightColour * 0.5f,
-			fireFlyLightColour * 3.2f,
-			fireFlyLightColour * 2.6f
-
-		);
+		
 
 		//Random spawn location
 		float ySpawnValueMin = 1.5f;
@@ -309,8 +303,8 @@ void SceneBasic_Uniform::update(float t)
 		cout << "FireFly spawned   Number of lights: " << currentFireFlyCount << "\n";
 
 		fireFlySpawnTimer = 0.0f;
-		fireFlySpawnCooldown = linearRand(3.0f, 6.0f);
-		fireFlySpawnCooldown = 0.2f;
+		fireFlySpawnCooldown = linearRand(1.0f, 5.0f);
+	
 		
 	}
 #pragma endregion
@@ -347,17 +341,29 @@ void SceneBasic_Uniform::update(float t)
 	}
 #pragma endregion
 
+	string lightUniformTag;
+	//Clear fireflies list
+	for (size_t i = 0; i < maxFireFlyCount; i++)
+	{
+		lightUniformTag = ("FireflyLight[" + to_string(i) + "]");
+		terrainProg.use();
+		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec4(0.0f, 0.0f, 0.0f , 1.0f));
+		terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), vec3(0.0, 0.0, 0.0));
+		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(0.0,0.0,0.0));
+	}
+
+
 	vector<vec3> fireFlyPositions;
 
-	string lightUniformTag;
+	//Fill uniforms with updated values
 	for (size_t i = 0; i < fireFlies.size(); i++) {
 		FireFly* fireFly = fireFlies[i];
 
 		lightUniformTag = ("FireflyLight[" + to_string(i) + "]");
 		terrainProg.use();
 		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->Position);
-		terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), vec3(1.0f, 1.0f, 1.0f) * 3.0f);
-		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(1.0f, 1.0f, 1.0f) * 3.0f);
+		terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), fireFlyLightColour * fireFly->brightness * 1.2f);
+		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), fireFlyAmbientColour * fireFly->brightness * 1.0f);
 
 		//terrainProg.setUniform("numberOfFireflies", (int)(fireFlies.size()));
 
@@ -371,7 +377,6 @@ void SceneBasic_Uniform::update(float t)
 	}
 
 
-
 	//terrainProg.use();
 	//terrainProg.setUniform("FireflyLight[0].Position", vec4(-3.0, 2.0f, -8.0f, 1.0f));
 	//terrainProg.setUniform("FireflyLight[1].Position", vec4(2.0, 2.0f, 2.0f, 1.0f));
@@ -381,6 +386,8 @@ void SceneBasic_Uniform::update(float t)
 
 	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf);
 	glBufferData(GL_ARRAY_BUFFER, fireFlyPositions.size() * sizeof(vec3), fireFlyPositions.data(), GL_DYNAMIC_DRAW);
+
+		
 }
 
 void SceneBasic_Uniform::render()

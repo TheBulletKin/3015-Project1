@@ -7,7 +7,7 @@ using namespace glm;
 FireFly::FireFly(vec3 spawnPosition) {
 		
 	currentLifeTime = 0.0f;
-	lifeTimeMax = linearRand(12.0f, 32.0f);
+	lifeTimeMax = linearRand(8.0f, 16.0f);
 	Position = vec4(spawnPosition, 1.0);
 	velocity = vec3(0,0,0);
 	
@@ -20,7 +20,7 @@ FireFly::FireFly(vec3 spawnPosition) {
 
 	timeFactor = 0.0f;
 	brightness = 0.0f;
-	easeInOutDuration = 2.0f;
+	easeInOutDuration = 3.0f;
 }
 
 FireFly::~FireFly() {
