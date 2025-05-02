@@ -4,11 +4,12 @@
 using namespace std;
 using namespace glm;
 
-FireFly::FireFly(PointLight* pointLight, vec3 spawnPosition) {
-	this->pointLight = pointLight;	
+FireFly::FireFly(vec3 spawnPosition) {
+		
 	currentLifeTime = 0.0f;
 	lifeTimeMax = linearRand(12.0f, 32.0f);
-	currentPosition = spawnPosition;
+	Position = vec4(spawnPosition, 1.0);
+	velocity = vec3(0,0,0);
 	
 	noiseGen.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	noiseGen.SetFrequency(0.5f);
@@ -23,7 +24,7 @@ FireFly::FireFly(PointLight* pointLight, vec3 spawnPosition) {
 }
 
 FireFly::~FireFly() {
-	delete pointLight;
+
 }
 
 bool FireFly::ShouldDestroy() {
@@ -45,7 +46,10 @@ void FireFly::Update(float deltaTime) {
 
 	vec3 noiseOffset = vec3(noiseX, noiseY, noiseZ) * 0.2f;
 	velocity = mix(velocity, noiseOffset, 0.1f);
-	currentPosition += velocity * deltaTime;
+	vec3 lastPosition = vec3(Position);
+	lastPosition += velocity * deltaTime;
+	Position = vec4(lastPosition, 1.0f);
+	
 
 	
 	if (currentLifeTime < easeInOutDuration) {		
@@ -58,7 +62,4 @@ void FireFly::Update(float deltaTime) {
 		brightness = 1.0f;
 	}
 	
-	if (pointLight) {
-		pointLight->SetIntensity(brightness);
-	}
 }

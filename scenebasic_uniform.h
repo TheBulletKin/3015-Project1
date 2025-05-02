@@ -46,8 +46,8 @@ private:
 	GLuint emitterIndexBuf[2];
 	GLuint particleArray[2];
 	GLuint feedback[2];
-	vec3 topLeftSpawnBound = vec3(-20, 3.0f, -20.0f);
-	vec3 bottomRightSpawnBound = vec3(20, -3.0f, 20.0f);
+	vec3 topLeftSpawnBound = vec3(-2, 3.0f, -2.0f);
+	vec3 bottomRightSpawnBound = vec3(2, 3.0f, 2.0f);
 
 	GLuint drawBuf;
 	GLuint initVel, startTime, particles, nParticles, nEmitters;

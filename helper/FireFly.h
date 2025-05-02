@@ -7,23 +7,24 @@
 class FireFly
 {
 public:
-	FireFly(PointLight* pointLight, vec3 spawnPosition);
+	FireFly(vec3 spawnPosition);
 	~FireFly();
 	void Update(float deltaTime);
 	bool ShouldDestroy();
-	glm::vec3 GetPosition() const {
-		return currentPosition;
-	}	
+	
 
-		
-	PointLight* pointLight;
+	vec4 Position;
+	vec3 Intensity;
+	vec3 Ambient;
+	float brightness;		
+	
 private:
 	float lifeTimeMax;
 	float currentLifeTime;	
 	float easeInOutDuration;
-	float brightness;
 	
-	vec3 currentPosition;
+	
+	
 	vec3 velocity;
 	FastNoiseLite noiseGen;
 	float noiseOffsetX, noiseOffsetY, noiseOffsetZ;

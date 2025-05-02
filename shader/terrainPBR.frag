@@ -244,14 +244,14 @@ void renderPass()
     
     vec3 torchLit = vec3(0.0);
     for (int i = 0; i < numberOfTorches; i++){
-        torchLit += microfacetModel(i, Position, n, baseColour, 0);
+       // torchLit += microfacetModel(i, Position, n, baseColour, 0);
     }
 
     vec3 flireflyLit = vec3(0.0);
     for (int i = 0; i < 3; i++){
-        flireflyLit += microfacetModel(i, Position, n, baseColour, 1);
+        //flireflyLit += microfacetModel(i, Position, n, baseColour, 1);
     }
-
+flireflyLit += microfacetModel(0, Position, n, baseColour, 1);
     // Combine them
    // vec3 lit = dirLit + torchLit + flireflyLit;
    vec3 lit = flireflyLit;
@@ -268,7 +268,6 @@ void renderPass()
     vec3 cloudShadowedColour = mix(lit, lit * shadow, 0.95);
     vec3 finalColour = mix(cloudShadowedColour, fogColour, fogFactor);
     
-
     FragColour = vec4(flireflyLit, 1.0);
    // FragColour = vec4(lit, 1.0);
     //FragColour = pow(FragColour, vec4(1.0 / 0.4)); // gamma correction

@@ -78,12 +78,12 @@ void SceneBasic_Uniform::initScene()
 
 	for (int i = 0; i < maxFireFlyCount; i++)
 	{
-		string lightUniformTag = "fireflyLight[" + to_string(i) + "]";
+		//string lightUniformTag = "fireflyLight[" + to_string(i) + "]";
 
-		terrainProg.use();
-		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, 0.0f, 0.0f));
-		terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), vec3(0.0f, 0.0f, 0.0f));
-		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(0.0f, 0.0f, 0.0f));
+		//terrainProg.use();
+		//terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, 0.0f, 0.0f));
+		//terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), vec3(0.0f, 0.0f, 0.0f));
+		//terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(0.0f, 0.0f, 0.0f));
 
 	}
 
@@ -272,7 +272,7 @@ void SceneBasic_Uniform::update(float t)
 
 		vec3 spawnPosition = vec3(randomX, randomY, randomZ);
 
-		FireFly* newFireFly = new FireFly(newLight, spawnPosition);
+		FireFly* newFireFly = new FireFly(spawnPosition);
 
 		fireFlies.push_back(newFireFly);
 		currentFireFlyCount++;
@@ -301,7 +301,7 @@ void SceneBasic_Uniform::update(float t)
 
 				//Set deleted pointlights to a null value equivalent to be ignored in the shader
 				terrainProg.use();
-				terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, -10.0f, 0.0f));				
+				terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec4(0.0f, -10.0f, 0.0f, 1.0f));				
 			
 
 				
@@ -316,6 +316,36 @@ void SceneBasic_Uniform::update(float t)
 		}
 	}
 #pragma endregion
+
+	vector<vec3> fireFlyPositions;
+
+	string lightUniformTag;
+	for (size_t i = 0; i < fireFlies.size(); i++) {
+		FireFly* fireFly = fireFlies[i];
+
+		lightUniformTag = ("FireflyLight[" + to_string(i) + "]");
+		terrainProg.use();
+		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->Position);
+		terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), vec3(1.0f, 1.0f, 1.0f) * 3.0f);
+		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(1.0f, 1.0f, 1.0f) * 3.0f);
+
+		//terrainProg.setUniform("numberOfFireflies", (int)(fireFlies.size()));
+
+		//terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
+		//terrainProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
+		////terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
+		//terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
+
+
+		fireFlyPositions.push_back(fireFly->Position);
+	}
+
+	//terrainProg.use();
+	//terrainProg.setUniform("FireflyLight[0].Position", vec4(-3.0, 2.0f, -8.0f, 1.0f));
+	//terrainProg.setUniform("FireflyLight[1].Position", vec4(2.0, 2.0f, 2.0f, 1.0f));
+	//terrainProg.setUniform("FireflyLight[2].Position", vec4(3.0, 0.0f, -4.0f, 1.0f));
+
+	terrainProg.setUniform("numberOfFireflies", static_cast<int>(fireFlies.size()));
 
 }
 
@@ -1239,34 +1269,7 @@ void SceneBasic_Uniform::initPostProcessing()
 
 void SceneBasic_Uniform::renderFireflies()
 {
-	vector<vec3> fireFlyPositions;
 	
-	string lightUniformTag;
-	for (size_t i = 0; i < fireFlies.size(); i++) {
-		FireFly* fireFly = fireFlies[i];
-
-		lightUniformTag = ("FireflyLight [" + to_string(i) + "]");
-		terrainProg.use();
-		terrainProg.setUniform((lightUniformTag + ".Postion").c_str(), fireFly->GetPosition());
-		terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), vec3(1.0f, 1.0f, 1.0f) * fireFly->pointLight->brightness);
-		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(1.0f, 1.0f, 1.0f) * fireFly->pointLight->brightness);
-
-		//terrainProg.setUniform("numberOfFireflies", (int)(fireFlies.size()));
-
-		//terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
-		//terrainProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
-		////terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
-		//terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
-
-
-		fireFlyPositions.push_back(fireFly->GetPosition());
-	}
-
-	terrainProg.use();
-	terrainProg.setUniform("FireflyLight[0].Postion", vec3(3.0, 2.0f, -4.0f));
-	terrainProg.setUniform("FireflyLight[1].Postion", vec3(2.0, 0.0f, -4.0f));
-	terrainProg.setUniform("FireflyLight[2].Postion", vec3(3.0, -2.0f, -4.0f));
-
 	/*
 	glBindVertexArray(spritesVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
