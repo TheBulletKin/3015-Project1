@@ -26,8 +26,8 @@ struct LightInfo {
     vec3 Ambient;
 }; 
 
-int numberOfTorches = 5;
-uniform LightInfo Light[5]; //Three points, one main
+int numberOfTorches = 9;
+uniform LightInfo Light[10]; //Three points, one main
 uniform LightInfo DirLight;
 
 struct MaterialInfo{
@@ -95,7 +95,7 @@ vec3 microfacetModel(int lightIdx, vec3 position, vec3 n, vec3 baseColour){
         l = lightPosition.xyz - position;
         float dist = length(l);
         l = normalize(l);
-        lightI /= (dist * dist); //Inverse square falloff
+        lightI /= ((dist * dist) * 0.2f); //Inverse square falloff
     }
 
     //Position is the world space position of the fragment. V is the direction from that point to the camera.
@@ -183,7 +183,7 @@ void renderPass()
     
     
     // All other lights
-    for (int i = 0; i < numberOfTorches - 1; i++){
+    for (int i = 0; i < numberOfTorches; i++){
         lit += microfacetModel(i, Position, n, baseColour);
     }
 

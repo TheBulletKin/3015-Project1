@@ -28,8 +28,8 @@ struct LightInfo {
     vec3 Ambient;
 }; 
 
-int numberOfTorches = 5;
-uniform LightInfo Light[5]; //Three points, one main
+int numberOfTorches = 9;
+uniform LightInfo Light[10]; //Three points, one main
 uniform LightInfo DirLight;
 
 struct MaterialInfo{
@@ -99,7 +99,7 @@ vec3 microfacetModel(int lightIdx, vec3 position, vec3 n, vec3 baseColour){
         l = lightPosition.xyz - position;
         float dist = length(l);
         l = normalize(l);
-        lightI /= (dist * dist); //Inverse square falloff
+        lightI /= ((dist * dist) * 0.2f);
     }
 
     //Position is the world space position of the fragment. V is the direction from that point to the camera.
@@ -237,7 +237,7 @@ void renderPass()
 
     
     vec3 torchLit = vec3(0.0);
-    for (int i = 0; i < numberOfTorches - 1; i++){
+    for (int i = 0; i < numberOfTorches; i++){
         torchLit += microfacetModel(i, Position, n, baseColour);
     }
 
@@ -253,7 +253,7 @@ void renderPass()
     float distanceToCamera = length(WorldPosition - ViewPos);   
     float fogFactor = calculateFogFactor(distanceToCamera);
 
-    vec3 cloudShadowedColour = mix(lit, lit * shadow, 0.9);
+    vec3 cloudShadowedColour = mix(lit, lit * shadow, 0.95);
     vec3 finalColour = mix(cloudShadowedColour, fogColour, fogFactor);
     
 

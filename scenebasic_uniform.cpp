@@ -29,7 +29,8 @@ SceneBasic_Uniform::SceneBasic_Uniform() : sky(100.0f)
 	collectables[0].collectableMesh = ObjMesh::load("media/meat.obj", true);
 	collectables[1].collectableMesh = ObjMesh::load("media/cheese.obj", true);
 	collectables[2].collectableMesh = ObjMesh::load("media/mushroom.obj", true);
-	
+	campfireMesh = ObjMesh::load("media/campfire.obj", true);
+
 }
 
 void SceneBasic_Uniform::initScene()
@@ -174,7 +175,7 @@ void SceneBasic_Uniform::update(float t)
 
 
 
-	
+
 
 	int i = 0;
 	for (const TorchInfo& torch : torches)
@@ -184,7 +185,7 @@ void SceneBasic_Uniform::update(float t)
 		float normalized = (noiseVal + 1.0f) / 2.0f; // convert to [0, 1]
 		float mixed = mix(torchMinIntensity, torchMaxIntensity, normalized);
 
-		
+
 		//cout << mixed << endl;
 		string arrayString = "Light[" + to_string(i) + "].Intensity";
 		PBRProg.use();
@@ -199,6 +200,25 @@ void SceneBasic_Uniform::update(float t)
 		terrainProg.setUniform(arrayString.c_str(), vec4(shiftedPos, 1.0f));
 		i++;
 	}
+
+	//Campfire light
+
+	float noiseInput = t * 25.0f + i; // time-based noise with index offset
+	float noiseVal = torchNoise.GetNoise(noiseInput, 0.0f); // returns value in [-1, 1]
+	float normalized = (noiseVal + 1.0f) / 2.0f; // convert to [0, 1]
+	float mixed = mix(torchMinIntensity, torchMaxIntensity, normalized);
+
+	string arrayString = "Light[" + to_string(i) + "].Intensity";
+	PBRProg.use();
+	PBRProg.setUniform(arrayString.c_str(), torchBrightColour * mixed);
+	terrainProg.use();
+	terrainProg.setUniform(arrayString.c_str(), torchBrightColour * mixed);
+	arrayString = "Light[" + to_string(i) + "].Position";
+	vec3 shiftedPos = campfirePosition + vec3(0, 0.2f, 0);
+	PBRProg.use();
+	PBRProg.setUniform(arrayString.c_str(), vec4(shiftedPos, 1.0f));
+	terrainProg.use();
+	terrainProg.setUniform(arrayString.c_str(), vec4(shiftedPos, 1.0f));
 
 
 #pragma region new particles test
@@ -309,7 +329,7 @@ void SceneBasic_Uniform::render()
 	//view = mat4(1.0f);
 	//view = translate(view, vec3(0.0f, 3.0f, 7.0f));
 	//view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
-	
+
 
 
 
@@ -356,7 +376,7 @@ void SceneBasic_Uniform::render()
 
 
 	//Pass 2
-	
+
 	view = camera.GetViewMatrix();
 
 	//shadowProg.setUniform("light.Position", vec4(lightPos, 1.0));
@@ -461,26 +481,45 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	//glBindTexture(GL_TEXTURE_2D, brickTexID);
 	PBRProg.use();
 	model = mat4(1.0f);
+
+	model = translate(model, vec3(6.4f, -1.1f, 0.0f));
+	model = rotate(model, radians(-90.0f), vec3(0.0f, 1.0f, 0.0f));
 	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
-	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
 	setMatrices(PBRProg);
 	//setMatrices(objectProg);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, rockTexID);
 	PBRProg.setUniform("TextureScale", 20.0f);
 	RuinMesh->render();
-	
+
+	PBRProg.use();
+	model = mat4(1.0f);
+
+	model = translate(model, campfirePosition);
+	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
+	model = scale(model, vec3(0.08f, 0.08f, 0.08f));
+	setMatrices(PBRProg);
+	//setMatrices(objectProg);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, campfireTexID);
+	PBRProg.setUniform("TextureScale", 1.0f);
+	campfireMesh->render();
+
 
 	for (Collectable& item : collectables) {
-		model = mat4(1.0f);
-		model = translate(model, vec3(item.location.x, item.location.y, item.location.z));
-		model = scale(model, vec3(1.0f, 1.0f, 1.0f));
+		if (item.isActive == true)
+		{
+			model = mat4(1.0f);
+			model = translate(model, vec3(item.location.x, item.location.y, item.location.z));
+			model = scale(model, vec3(0.5f, 0.5f, 0.5f));
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, item.texID);
-		setMatrices(PBRProg);
-		PBRProg.setUniform("TextureScale", 1.0f);
-		item.collectableMesh->render();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, item.texID);
+			setMatrices(PBRProg);
+			PBRProg.setUniform("TextureScale", 1.0f);
+			item.collectableMesh->render();
+		}
+
 	}
 
 	for (TorchInfo& torch : torches) {
@@ -515,7 +554,7 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
 	setMatrices(terrainProg);
 	terrainProg.setUniform("TextureScale", 20.0f);
-	
+
 	TerrainMesh->render();
 
 #pragma endregion
@@ -640,31 +679,31 @@ void SceneBasic_Uniform::processInput(GLFWwindow* window)
 
 void SceneBasic_Uniform::attemptPickup() {
 
+	float interactDistance = 5.0f;
 	if (gameEnded) {
 		cout << "game ended, cannot collect any more!" << endl;
 		return;
 	}
 	for (Collectable& item : collectables)
-	{
-		float pickUpDistance = 5.0f;
+	{		
 		float distance = length(item.location - camera.Position);
-		if (distance < pickUpDistance && item.isActive == true) {
+		if (distance < interactDistance && item.isActive == true) {
 			item.isActive = false;
 			cout << "collected " + item.name << endl << endl;
 			collectedItems++;
 		}
 
 	}
-
-	if (collectedItems >= maxCollectables)
-	{
-		float interactDistance = 5.0f;
-		float distance = length(cookingPotLocation - camera.Position);
-		if (distance < interactDistance && hasCookedItem == false) {
-			cout << "cooked item from ingredients" << endl << endl;
-			hasCookedItem = true;
-		}
+	float distance = length(campfirePosition - camera.Position);
+	if (distance < interactDistance && hasCookedItem == false && collectedItems >= maxCollectables) {
+		cout << "cooked item from ingredients" << endl << "game won!" << endl;
+		hasCookedItem = true;
 	}
+	else if (distance < interactDistance && collectedItems < maxCollectables)
+	{
+		cout << "Not enough ingredients to cook item!" << endl << endl;
+	}
+
 }
 
 void SceneBasic_Uniform::setupFBO() {
@@ -840,8 +879,8 @@ void SceneBasic_Uniform::initParticles() {
 }
 
 void SceneBasic_Uniform::initShadows() {
-	shadowMapWidth = 1028;
-	shadowMapHeight = 1028;
+	shadowMapWidth = 2056;
+	shadowMapHeight = 2056;
 
 	shadowProg.use();
 	GLuint programHandle = shadowProg.getHandle();
@@ -860,7 +899,7 @@ void SceneBasic_Uniform::initShadows() {
 	//This is where the shadow is cast from
 	lightFrustum.orient(lightPos, vec3(-5.0f, 0.0f, -12.0f), vec3(0.0f, 1.0f, 0.0f));
 	//lightFrustum.setPerspective(50.0f, 1.0f, 5.0f, 10.0f);
-	lightFrustum.setOrtho(-10.0f, 10.0f, -10.0f, 10.0f, 2.0f, 100.0f);
+	lightFrustum.setOrtho(-20.0f, 20.0f, -20.0f, 20.0f, 2.0f, 100.0f);
 	//Light Project View matrix
 	//Shadow bias maps clip space coordinates of -1 to 1 to 0-1 texture space.
 	//Therefore used to transform any world space point to the shadowmap
@@ -1058,6 +1097,7 @@ void SceneBasic_Uniform::initTextures()
 	collectables[0].texID = Texture::loadTexture("media/meatTextures/Hunk_Of_Meat_Hunk_Of_Meat_BaseColor.png");
 	collectables[1].texID = Texture::loadTexture("media/cheeseTextures/cheese_piece_colors.png");
 	collectables[2].texID = Texture::loadTexture("media/mushroomTextures/Material_albedo.jpg");
+	campfireTexID = Texture::loadTexture("media/campfireTextures/Material.001_albedo.jpg");
 
 	//Rock texture
 	glActiveTexture(GL_TEXTURE1);
@@ -1112,7 +1152,7 @@ void SceneBasic_Uniform::initTextures()
 	}
 
 	glGenTextures(1, &cloudTexID);
-	glActiveTexture(GL_TEXTURE4);
+	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, cloudTexID);
 
 	//Upload the noise data to the texture
@@ -1475,7 +1515,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	{
 		blend = clamp(1 - ((timeOfDay) / 0.15f), 0.0f, 1.0f); //0 is day, 1 is night
 	}
-	else if (timeOfDay >= 1.95){ //When sun setting
+	else if (timeOfDay >= 1.95) { //When sun setting
 		blend = clamp((1 - (timeOfDay - 1.95f) / 0.05f), 0.0f, 1.0f);
 		blend = 1; //Temporarily disabled
 	}
@@ -1672,7 +1712,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 
 	//float angle = radians((timeOfDay / 2.0f) * 360.0f);
 	vec3 sunElevationVector = normalize(vec3(0.0f, sin(angle), cos(angle)));
-	sunTarget = vec3(-5.0f, 0.0f, -8.0f);
+	sunTarget = campfirePosition;
 	sunDistance = 15.0f;
 	sunPos = sunTarget + sunElevationVector * sunDistance;
 	sunPos.x += 10.0f;

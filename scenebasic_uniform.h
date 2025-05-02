@@ -27,7 +27,7 @@ class SceneBasic_Uniform : public Scene
 private:
 	//Textures and shaders
 	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg, shadowProg;
-	GLuint grassTexID, rockTexID, nightSkyBox, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex, torchTexID, daySkyboxTexID, setRiseSkyboxID, meatTexID, cheeseTexID, mushroomTexID;
+	GLuint grassTexID, rockTexID, nightSkyBox, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex, torchTexID, daySkyboxTexID, setRiseSkyboxID, meatTexID, cheeseTexID, mushroomTexID, campfireTexID;
 
 	GLFWwindow* window;
 
@@ -55,9 +55,8 @@ private:
 	unique_ptr<ObjMesh> TerrainMesh;
 	unique_ptr<ObjMesh> RuinMesh;
 	unique_ptr<ObjMesh> StandingTorch;	
-	unique_ptr<ObjMesh> cheeseMesh;
-	unique_ptr<ObjMesh> meatMesh;
-	unique_ptr<ObjMesh> mushroomMesh;
+	unique_ptr<ObjMesh> campfireMesh;	
+	vec3 campfirePosition = vec3(6.8f, -0.8f, 0.0f);
 
 	//Post processing
 	GLuint fsQuad;
@@ -89,13 +88,13 @@ private:
 	int numberOfStaticLights;
 	float timeOfDay = 0;
 	float gameTimer = 0;
-	float gameEndTime = 30;
+	float gameEndTime = 120;
 	bool gameEnded = false;
 
 	
 
-	float torchMaxIntensity = 1.5f;
-	float torchMinIntensity = 1.0f;
+	float torchMaxIntensity = 0.7f;
+	float torchMinIntensity = 0.4f;
 	vec3 torchBrightColour = vec3(1.0f, 0.6f, 0.4f);
 	vec3 torchDimColour = vec3(1.0f, 1.0f, 1.0f);
 	struct TorchInfo{
@@ -103,11 +102,15 @@ private:
 		float intensity;		
 	};
 
-	TorchInfo torches[4] = {
-	{ vec3(-2, 0.3, -7) },
-	{ vec3(-1, 0.1f, -6) },
-	{ vec3(-3, 0.3, -2) },
-	{ vec3(-4, 0.3, -3.5)}
+	TorchInfo torches[8] = {
+	{ vec3(1.0f, -3.8f, 5.4f) }, //By player spawn
+	{ vec3(-4, -2.7f, -11) }, //Front left valley
+	{ vec3(0, -0.7, -3.3) }, //Close ridge on spawn
+	{ vec3(-7, -0.15, -22)}, //Far left mound
+	{ vec3(-16, -2.5, -4) }, //Bottom left of map
+	{ vec3(9.55f, 3.9f, -12.7) }, //Top of mountain
+	{ vec3(14, -0.8, 10) }, //Bottom right of map
+	{ vec3(18, -4.0, 3)} //Close right valley
 	};
 
 	FastNoiseLite torchNoise;
@@ -261,19 +264,19 @@ private:
 	Collectable collectables[3] = {
 		Collectable {
 			"meat",
-			vec3(-3.0f, 4.0f, -7.0f),
+			vec3(9.55f, 3.6f, -12.4), //mountain
 			true,
 			meatTexID
 		},
 		Collectable {
 			"cheese",
-			vec3(-6.0f, 3.0f, -5.0f),
+			vec3(-16, -3.0, -3), //left of map
 			true,
 			cheeseTexID
 		},		
 		Collectable {
 			"mushroom",
-			vec3(-2.0f, 4.0f, -4.0f),
+			vec3(13.5, -0.8, 11), //right of map
 			true,
 			mushroomTexID
 		}
