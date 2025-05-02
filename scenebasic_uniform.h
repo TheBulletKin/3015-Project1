@@ -26,7 +26,7 @@ class SceneBasic_Uniform : public Scene
 {
 private:
 	//Textures and shaders
-	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg, shadowProg, fireFlyParticleProg;
+	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg, shadowProg;
 	GLuint grassTexID, rockTexID, nightSkyBox, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex, torchTexID, daySkyboxTexID, setRiseSkyboxID, meatTexID, cheeseTexID, mushroomTexID, campfireTexID;
 
 	GLFWwindow* window;
@@ -42,18 +42,14 @@ private:
 	vec3 lightPos;
 
 	//Particles
-	GLuint fireflyPosBuf[2], fireflyVelBuf[2], fireflyAgeBuf[2];
+	GLuint posBuf[2], velBuf[2], age[2];
 	GLuint emitterIndexBuf[2];
-	GLuint fireflyParticleArray[2];
-	GLuint fireflyFeedback[2];
-	GLuint fireParticleArray[2];
-	GLuint fireFeedback[2];
+	GLuint particleArray[2];
+	GLuint feedback[2];
 
 	GLuint drawBuf;
 	GLuint initVel, startTime, particles, nParticles, nEmitters;
 	float particleLifetime, time;
-	vec3 topLeftSpawnBound = vec3(-20, 5.0f, -20);
-	vec3 bottomRightSpawnBound = vec3(20, -5.0f, 20);
 
 	//Objects
 	unique_ptr<ObjMesh> TerrainMesh;
@@ -293,10 +289,12 @@ private:
 
 
 
-	
+	struct Point {
+		float x, y, z;
+	};
 
-	//Point topLeftSpawnBound = { -7.0f, 23.0f, -14.0f }; //-X means left  -Z means forward
-	//Point bottomRightSpawnBound = { 2.0f, 17.0f, -3.0 };
+	Point topLeftSpawnBound = { -7.0f, 23.0f, -14.0f }; //-X means left  -Z means forward
+	Point bottomRightSpawnBound = { 2.0f, 17.0f, -3.0 };
 
 	//Random number gen
 	random_device rd;
@@ -329,8 +327,7 @@ public:
 	void update(float t);
 	void render();
 	void drawSceneObjects();
-	void initFireParticles();
-	void initFireFlyParticles();
+	void initParticles();
 	void initShadows();
 	void initMaterials();
 	void initLights();
@@ -338,7 +335,6 @@ public:
 	void initPostProcessing();
 	void renderFireflies();
 	void renderParticles();
-	void renderFireflyParticles();
 	void updateDayNightCycle(float deltaTime);
 	void updateShaders();
 	void updateDayNightShaders(TimeOfDayInfo currentState, TimeOfDayInfo toState, float t);

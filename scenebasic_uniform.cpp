@@ -61,7 +61,7 @@ void SceneBasic_Uniform::initScene()
 	setupFBO();
 	initPostProcessing();
 	initMaterials();
-	initFireParticles();
+	initParticles();
 	initShadows();
 
 
@@ -112,8 +112,8 @@ void SceneBasic_Uniform::compile()
 		PBRProg.compileShader("shader/PBR.vert");
 		PBRProg.compileShader("shader/PBR.frag");
 		PBRProg.link();
-		newParticleProg.compileShader("shader/fireParticle.vert");
-		newParticleProg.compileShader("shader/fireParticle.frag");
+		newParticleProg.compileShader("shader/particleStream.vert");
+		newParticleProg.compileShader("shader/particleStream.frag");
 
 		//Transform feedback for newParticleProg
 		GLuint progHandle = newParticleProg.getHandle();
@@ -121,16 +121,6 @@ void SceneBasic_Uniform::compile()
 		glTransformFeedbackVaryings(progHandle, 3, outputNames, GL_SEPARATE_ATTRIBS);
 
 		newParticleProg.link();
-
-		fireFlyParticleProg.compileShader("shader/fireflyParticle.vert");
-		fireFlyParticleProg.compileShader("shader/fireflyParticle.frag");
-
-		//Transform feedback for fireFlyParticleProg
-		GLuint progHandle2 = fireFlyParticleProg.getHandle();
-		const char* outputNames2[] = { "Position", "Velocity", "Age" };
-		glTransformFeedbackVaryings(progHandle, 3, outputNames, GL_SEPARATE_ATTRIBS);
-
-		fireFlyParticleProg.link();
 		shadowProg.compileShader("shader/Shadow.vert");
 		shadowProg.compileShader("shader/Shadow.frag");
 		shadowProg.link();
@@ -449,8 +439,7 @@ void SceneBasic_Uniform::render()
 
 	view = camera.GetViewMatrix();
 
-	//renderParticles();
-	renderFireflyParticles();
+	renderParticles();
 
 #pragma endregion
 
@@ -696,7 +685,7 @@ void SceneBasic_Uniform::attemptPickup() {
 		return;
 	}
 	for (Collectable& item : collectables)
-	{
+	{		
 		float distance = length(item.location - camera.Position);
 		if (distance < interactDistance && item.isActive == true) {
 			item.isActive = false;
@@ -722,7 +711,7 @@ void SceneBasic_Uniform::setupFBO() {
 }
 
 
-void SceneBasic_Uniform::initFireParticles() {
+void SceneBasic_Uniform::initParticles() {
 	//For particles, it holds all the information about the position, velocity and age in buffers
 	//Currently works for only one particle emitter.
 
@@ -730,16 +719,12 @@ void SceneBasic_Uniform::initFireParticles() {
 	particleLifetime = 10.0f;
 	nParticles = 80;
 
-	nEmitters = 8;
+	nEmitters = 4;
 
 
 
 
-	mat3 emitterBases[8] = {
-		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
-		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
-		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
-		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
+	mat3 emitterBases[4] = {
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
@@ -771,9 +756,9 @@ void SceneBasic_Uniform::initFireParticles() {
 
 
 
-	glGenBuffers(2, fireflyPosBuf);
-	glGenBuffers(2, fireflyVelBuf);
-	glGenBuffers(2, fireflyAgeBuf);
+	glGenBuffers(2, posBuf);
+	glGenBuffers(2, velBuf);
+	glGenBuffers(2, age);
 	glGenBuffers(2, emitterIndexBuf);
 
 	vector<GLint> emitterIndices(nParticles);
@@ -783,17 +768,17 @@ void SceneBasic_Uniform::initFireParticles() {
 
 	//Create buffers to fit vec3s for vel and pos, just float for age.
 	int size = nParticles * 3 * sizeof(GLfloat);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, posBuf[0]);
 	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY); //Dynamic copy indicates that the buffer will be frequently changed by the CPU
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, posBuf[1]);
 	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyVelBuf[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, velBuf[0]);
 	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyVelBuf[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, velBuf[1]);
 	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyAgeBuf[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, age[0]);
 	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(float), 0, GL_DYNAMIC_COPY);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyAgeBuf[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, age[1]);
 	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(float), 0, GL_DYNAMIC_COPY);
 	glBindBuffer(GL_ARRAY_BUFFER, emitterIndexBuf[0]);
 	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(GLint), emitterIndices.data(), GL_STATIC_DRAW);
@@ -810,25 +795,25 @@ void SceneBasic_Uniform::initFireParticles() {
 		//tempData[i] = rate * (i - nParticles); 
 		tempData[i] = rate * i;
 	}
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyAgeBuf[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, age[0]);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, nParticles * sizeof(float), tempData.data());
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-	glGenVertexArrays(2, fireflyParticleArray);
+	glGenVertexArrays(2, particleArray);
 
 	//particle array 0
 	//Sets up the three buffers like i would vertex positions in a regular shader
-	glBindVertexArray(fireflyParticleArray[0]);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf[0]);
+	glBindVertexArray(particleArray[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, posBuf[0]);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyVelBuf[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, velBuf[0]);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(1);
 
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyAgeBuf[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, age[0]);
 	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(2);
 
@@ -837,16 +822,16 @@ void SceneBasic_Uniform::initFireParticles() {
 	glEnableVertexAttribArray(3);
 
 	//particle array 1
-	glBindVertexArray(fireflyParticleArray[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf[1]);
+	glBindVertexArray(particleArray[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, posBuf[1]);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyVelBuf[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, velBuf[1]);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(1);
 
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyAgeBuf[1]);
+	glBindBuffer(GL_ARRAY_BUFFER, age[1]);
 	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(2);
 
@@ -874,155 +859,19 @@ void SceneBasic_Uniform::initFireParticles() {
 
 
 	//Feedback objects
-	glGenTransformFeedbacks(2, fireflyFeedback);
+	glGenTransformFeedbacks(2, feedback);
 
 	//transform feedback 0
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, fireflyFeedback[0]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, fireflyPosBuf[0]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, fireflyVelBuf[0]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, fireflyAgeBuf[0]);
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback[0]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, posBuf[0]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, velBuf[0]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, age[0]);
 
 	//transform feedback 1
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, fireflyFeedback[1]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, fireflyPosBuf[1]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, fireflyVelBuf[1]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, fireflyAgeBuf[1]);
-
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
-
-
-}
-
-void SceneBasic_Uniform::initFireFlyParticles() {
-	//For particles, it holds all the information about the position, velocity and age in buffers
-	//Currently works for only one particle emitter.
-
-
-	particleLifetime = 10.0f;
-	nParticles = 80;
-
-	nEmitters = 8;
-
-
-
-
-
-	glActiveTexture(GL_TEXTURE7);
-	randomParticleTexID = ParticleUtils::createRandomTex1D(nParticles * 3);
-
-	fireFlyParticleProg.use();
-	fireFlyParticleProg.setUniform("ParticleLifetime", particleLifetime);
-	fireFlyParticleProg.setUniform("ParticleSize", 0.1f);
-	fireFlyParticleProg.setUniform("Accel", vec3(0.0f, -0.14f, 0.0f));
-
-	fireFlyParticleProg.setUniform("TopLeftSpawnBound", topLeftSpawnBound);
-	fireFlyParticleProg.setUniform("BottomRightSpawnBound", bottomRightSpawnBound);
-
-	
-
-	glGenBuffers(2, fireflyPosBuf);
-	glGenBuffers(2, fireflyVelBuf);
-	glGenBuffers(2, fireflyAgeBuf);
-
-	vector<GLint> emitterIndices(nParticles);
-	for (int i = 0; i < nParticles; ++i) {
-		emitterIndices[i] = i % nEmitters;
-	}
-
-	//Create buffers to fit vec3s for vel and pos, just float for age.
-	int size = nParticles * 3 * sizeof(GLfloat);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf[0]);
-	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY); //Dynamic copy indicates that the buffer will be frequently changed by the CPU
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf[1]);
-	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyVelBuf[0]);
-	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyVelBuf[1]);
-	glBufferData(GL_ARRAY_BUFFER, size, 0, GL_DYNAMIC_COPY);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyAgeBuf[0]);
-	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(float), 0, GL_DYNAMIC_COPY);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyAgeBuf[1]);
-	glBufferData(GL_ARRAY_BUFFER, nParticles * sizeof(float), 0, GL_DYNAMIC_COPY);
-	
-	//Particle age container
-	vector<GLfloat> tempData(nParticles);
-	//Time between each particle spawn
-	float rate = particleLifetime / nParticles;
-	//Create ages for each particle, this time it actually is how long the particle has been alive for
-	for (int i = 0; i < nParticles; i++)
-	{
-		//tempData[i] = rate * (i - nParticles); 
-		tempData[i] = rate * i;
-	}
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyAgeBuf[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, nParticles * sizeof(float), tempData.data());
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	glGenVertexArrays(2, fireflyParticleArray);
-
-	//particle array 0
-	//Sets up the three buffers like i would vertex positions in a regular shader
-	glBindVertexArray(fireflyParticleArray[0]);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf[0]);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyVelBuf[0]);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyAgeBuf[0]);
-	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(2);
-
-	//particle array 1
-	glBindVertexArray(fireflyParticleArray[1]);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf[1]);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyVelBuf[1]);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyAgeBuf[1]);
-	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(2);
-
-	glBindVertexArray(0);
-
-	/*Feedback transforms explanation
-	* Normally you would supply values on the cpu side at the start of rendering.
-	* Eg, applying the time or colour values of shader uniforms at the start of Render().
-	* It would then work from vertex, to geometry, to fragment and whatnot.
-	* Would only use the results of the previous step, so the vertex shader could only use the values passed in from the CPU.
-	* But with transform feedbacks, the GPU can write back data that is processed by shaders and write it back into buffer objects.
-	* This data can be read by the CPU, but doing so blocks the GPU.
-	* So, instead of calculating all the particle positions on the CPU and then passing that in as a uniform or adjusting buffer data before using the GPU,
-	* the GPU can instead do all the calculations and use those results to then render the updated particle positions.
-	*/
-
-	/* Here specifially, it's relating to this part of the shader
-	*	layout(xfb_buffer = 0, xfb_offset = 0) out vec3 Position;
-	* it says that the values assigned to the above variable in the shader will be put into the buffer defined below
-	*/
-
-
-	//Feedback objects
-	glGenTransformFeedbacks(2, fireflyFeedback);
-
-	//transform feedback 0
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, fireflyFeedback[0]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, fireflyPosBuf[0]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, fireflyVelBuf[0]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, fireflyAgeBuf[0]);
-
-	//transform feedback 1
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, fireflyFeedback[1]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, fireflyPosBuf[1]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, fireflyVelBuf[1]);
-	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, fireflyAgeBuf[1]);
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback[1]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, posBuf[1]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, velBuf[1]);
+	glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 2, age[1]);
 
 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 
@@ -1524,10 +1373,10 @@ void SceneBasic_Uniform::renderParticles()
 	glBindTexture(GL_TEXTURE_1D, randomParticleTexID);
 
 	glEnable(GL_RASTERIZER_DISCARD); //Tells it to not render the result to the fragment shader. Good for just doing processing.
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, fireflyFeedback[drawBuf]);
+	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, feedback[drawBuf]);
 	glBeginTransformFeedback(GL_POINTS);
 
-	glBindVertexArray(fireflyParticleArray[1 - drawBuf]);
+	glBindVertexArray(particleArray[1 - drawBuf]);
 	glVertexAttribDivisor(0, 0);
 	glVertexAttribDivisor(1, 0);
 	glVertexAttribDivisor(2, 0);
@@ -1544,70 +1393,7 @@ void SceneBasic_Uniform::renderParticles()
 	//glDepthFunc(GL_LEQUAL);
 
 	glDepthMask(GL_FALSE);
-	glBindVertexArray(fireflyParticleArray[drawBuf]);
-	glVertexAttribDivisor(0, 1);
-	glVertexAttribDivisor(1, 1);
-	glVertexAttribDivisor(2, 1);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, nParticles);
-	glBindVertexArray(0);
-
-	//glDepthFunc(GL_LESS);
-	glDisable(GL_BLEND);
-	glDepthMask(GL_TRUE);
-
-	drawBuf = 1 - drawBuf;
-
-}
-
-void SceneBasic_Uniform::renderFireflyParticles()
-{
-
-
-
-	/*
-	glDepthMask(GL_FALSE);
-	newParticleProg.use();
-	setMatrices(newParticleProg);
-	newParticleProg.setUniform("Time", time);
-	glBindVertexArray(particles);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, nParticles);
-	glBindVertexArray(0);
-	glDepthMask(GL_TRUE);*/
-
-
-	fireFlyParticleProg.use();
-	fireFlyParticleProg.setUniform("Time", time);
-	fireFlyParticleProg.setUniform("DeltaT", deltaTime);
-	model = mat4(1.0f);
-	model = translate(model, vec3(0.0f, 0.4f, 0.0f));
-	setMatrices(fireFlyParticleProg);
-	fireFlyParticleProg.setUniform("Pass", 1);
-
-	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_1D, randomParticleTexID);
-
-	glEnable(GL_RASTERIZER_DISCARD); //Tells it to not render the result to the fragment shader. Good for just doing processing.
-	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, fireflyFeedback[drawBuf]);
-	glBeginTransformFeedback(GL_POINTS);
-
-	glBindVertexArray(fireflyParticleArray[1 - drawBuf]);
-	glVertexAttribDivisor(0, 0);
-	glVertexAttribDivisor(1, 0);
-	glVertexAttribDivisor(2, 0);
-	glDrawArrays(GL_POINTS, 0, nParticles);
-	glBindVertexArray(0);
-
-	glEndTransformFeedback();
-	glDisable(GL_RASTERIZER_DISCARD);
-
-	//Render pass
-	fireFlyParticleProg.setUniform("Pass", 2);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glDepthFunc(GL_LEQUAL);
-
-	glDepthMask(GL_FALSE);
-	glBindVertexArray(fireflyParticleArray[drawBuf]);
+	glBindVertexArray(particleArray[drawBuf]);
 	glVertexAttribDivisor(0, 1);
 	glVertexAttribDivisor(1, 1);
 	glVertexAttribDivisor(2, 1);
