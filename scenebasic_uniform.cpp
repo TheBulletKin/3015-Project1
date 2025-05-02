@@ -26,6 +26,10 @@ SceneBasic_Uniform::SceneBasic_Uniform() : sky(100.0f)
 	TerrainMesh = ObjMesh::load("media/Terrain.obj", true);
 	RuinMesh = ObjMesh::load("media/Ruin.obj", true);
 	StandingTorch = ObjMesh::load("media/StandingTorch.obj", true);
+	collectables[0].collectableMesh = ObjMesh::load("media/meat.obj", true);
+	collectables[1].collectableMesh = ObjMesh::load("media/cheese.obj", true);
+	collectables[2].collectableMesh = ObjMesh::load("media/mushroom.obj", true);
+	
 }
 
 void SceneBasic_Uniform::initScene()
@@ -465,10 +469,21 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	glBindTexture(GL_TEXTURE_2D, rockTexID);
 	PBRProg.setUniform("TextureScale", 20.0f);
 	RuinMesh->render();
+	
 
+	for (Collectable& item : collectables) {
+		model = mat4(1.0f);
+		model = translate(model, vec3(item.location.x, item.location.y, item.location.z));
+		model = scale(model, vec3(1.0f, 1.0f, 1.0f));
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, item.texID);
+		setMatrices(PBRProg);
+		PBRProg.setUniform("TextureScale", 1.0f);
+		item.collectableMesh->render();
+	}
 
-	for (TorchInfo torch : torches) {
+	for (TorchInfo& torch : torches) {
 
 		model = mat4(1.0f);
 		model = translate(model, vec3(torch.position.x, torch.position.y, torch.position.z));
@@ -1040,6 +1055,9 @@ void SceneBasic_Uniform::initTextures()
 	//Grass texture
 	glActiveTexture(GL_TEXTURE0);
 	grassTexID = Texture::loadTexture("media/texture/grass_02_1k/grass_02_base_1k.png");
+	collectables[0].texID = Texture::loadTexture("media/meatTextures/Hunk_Of_Meat_Hunk_Of_Meat_BaseColor.png");
+	collectables[1].texID = Texture::loadTexture("media/cheeseTextures/cheese_piece_colors.png");
+	collectables[2].texID = Texture::loadTexture("media/mushroomTextures/Material_albedo.jpg");
 
 	//Rock texture
 	glActiveTexture(GL_TEXTURE1);

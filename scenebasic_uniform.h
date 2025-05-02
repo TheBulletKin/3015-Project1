@@ -27,7 +27,7 @@ class SceneBasic_Uniform : public Scene
 private:
 	//Textures and shaders
 	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg, shadowProg;
-	GLuint grassTexID, rockTexID, nightSkyBox, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex, torchTexID, daySkyboxTexID, setRiseSkyboxID;
+	GLuint grassTexID, rockTexID, nightSkyBox, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex, torchTexID, daySkyboxTexID, setRiseSkyboxID, meatTexID, cheeseTexID, mushroomTexID;
 
 	GLFWwindow* window;
 
@@ -55,6 +55,9 @@ private:
 	unique_ptr<ObjMesh> TerrainMesh;
 	unique_ptr<ObjMesh> RuinMesh;
 	unique_ptr<ObjMesh> StandingTorch;	
+	unique_ptr<ObjMesh> cheeseMesh;
+	unique_ptr<ObjMesh> meatMesh;
+	unique_ptr<ObjMesh> mushroomMesh;
 
 	//Post processing
 	GLuint fsQuad;
@@ -247,32 +250,32 @@ private:
 		string name;
 		vec3 location;
 		bool isActive;
+		GLuint texID;
+		unique_ptr<ObjMesh> collectableMesh;
 		//model (for rendering)
 	};
 
-	int maxCollectables = 4;
+	int maxCollectables = 3;
 	int collectedItems = 0;
 	bool collectedAllItems = false;
-	Collectable collectables[4] = {
+	Collectable collectables[3] = {
 		Collectable {
 			"meat",
 			vec3(-3.0f, 4.0f, -7.0f),
-			true
+			true,
+			meatTexID
 		},
 		Collectable {
 			"cheese",
 			vec3(-6.0f, 3.0f, -5.0f),
-			true
-		},
-		Collectable {
-			"flower",
-			vec3(-1.0f, 4.0f, -3.0f),
-			true
-		},
+			true,
+			cheeseTexID
+		},		
 		Collectable {
 			"mushroom",
 			vec3(-2.0f, 4.0f, -4.0f),
-			true
+			true,
+			mushroomTexID
 		}
 	};
 
