@@ -241,9 +241,9 @@ void SceneBasic_Uniform::update(float t)
 		//cout << mixed << endl;
 		string arrayString = "Light[" + to_string(i) + "].Intensity";
 		PBRProg.use();
-		PBRProg.setUniform(arrayString.c_str(), torchBrightColour * mixed);
+		PBRProg.setUniform(arrayString.c_str(), torchBrightColour * 2.0f * mixed);
 		terrainProg.use();
-		terrainProg.setUniform(arrayString.c_str(), torchBrightColour * mixed);
+		terrainProg.setUniform(arrayString.c_str(), torchBrightColour * 2.0f * mixed);
 		arrayString = "Light[" + to_string(i) + "].Position";
 		vec3 shiftedPos = torch.position + vec3(0, 0.7f, 0);
 		PBRProg.use();
@@ -290,7 +290,7 @@ void SceneBasic_Uniform::update(float t)
 		float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
 
 		float randomX = topLeftSpawnBound.x + (bottomRightSpawnBound.x - topLeftSpawnBound.x) * dis(gen);
-		float randomY = ySpawnValue;
+		float randomY = topLeftSpawnBound.y + (bottomRightSpawnBound.y - topLeftSpawnBound.y) * dis(gen);
 		float randomZ = topLeftSpawnBound.z + (bottomRightSpawnBound.z - topLeftSpawnBound.z) * dis(gen);
 
 		vec3 spawnPosition = vec3(randomX, randomY, randomZ);
@@ -300,10 +300,10 @@ void SceneBasic_Uniform::update(float t)
 		fireFlies.push_back(newFireFly);
 		currentFireFlyCount++;
 
-		cout << "FireFly spawned   Number of lights: " << currentFireFlyCount << "\n";
+		//cout << "FireFly spawned   Number of lights: " << currentFireFlyCount << "\n";
 
 		fireFlySpawnTimer = 0.0f;
-		fireFlySpawnCooldown = linearRand(1.0f, 5.0f);
+		fireFlySpawnCooldown = linearRand(1.0f, 2.0f);
 	
 		
 	}
@@ -333,7 +333,7 @@ void SceneBasic_Uniform::update(float t)
 				fireFlies.erase(fireFlies.begin() + i);
 				currentFireFlyCount--;
 
-				cout << "FireFly deleted   Number of lights: " << currentFireFlyCount << "\n";
+				//cout << "FireFly deleted   Number of lights: " << currentFireFlyCount << "\n";
 
 				i--;
 			}
@@ -362,8 +362,8 @@ void SceneBasic_Uniform::update(float t)
 		lightUniformTag = ("FireflyLight[" + to_string(i) + "]");
 		terrainProg.use();
 		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->Position);
-		terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), fireFlyLightColour * fireFly->brightness * 1.2f);
-		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), fireFlyAmbientColour * fireFly->brightness * 1.0f);
+		terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), fireFlyLightColour * fireFly->brightness * 0.5f);
+		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), fireFlyAmbientColour * fireFly->brightness * 0.5f);
 
 		//terrainProg.setUniform("numberOfFireflies", (int)(fireFlies.size()));
 
