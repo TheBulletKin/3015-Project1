@@ -877,26 +877,15 @@ void SceneBasic_Uniform::initParticleStream() {
 
 void SceneBasic_Uniform::initFireflies()
 {
-	fireFlySpawnCooldown = 2.0f;
+	fireFlySpawnCooldown = 2.0f;	
 
-	for (int i = 0; i < maxFireFlyCount; i++)
-	{
-		//string lightUniformTag = "fireflyLight[" + to_string(i) + "]";
-
-		//terrainProg.use();
-		//terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, 0.0f, 0.0f));
-		//terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), vec3(0.0f, 0.0f, 0.0f));
-		//terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(0.0f, 0.0f, 0.0f));
-
-	}
-
-	//Firefly setup
+	//Will use a buffer to hold the positions of fireflies.
+	//Will update the buffer on the CPU side each frame, but this allows for instanced rendering
 	glGenBuffers(1, &fireflyPosBuf);
 
-	//Create buffers to fit vec3s for vel and pos, just float for age.
+	
 	int size = maxFireFlyCount * 3 * sizeof(GLfloat);
 	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf);
-
 
 	vector<GLfloat> fireflyPositions(maxFireFlyCount * 3);
 	for (int i = 0; i < maxFireFlyCount; i++)
