@@ -912,39 +912,29 @@ void SceneBasic_Uniform::initShadows() {
 	shadowMapWidth = 2056;
 	shadowMapHeight = 2056;
 
-	shadowProg.use();
-	GLuint programHandle = shadowProg.getHandle();
-	//Get the subroutine indexes so that the method to run can be changed at runtime
-	//pass1Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "shadeWithShadow");
-	//pass2Index = glGetSubroutineIndex(programHandle, GL_FRAGMENT_SHADER, "recordDepth");
-
+	shadowProg.use();	
+	
 	shadowBias = mat4(vec4(0.5f, 0.0f, 0.0f, 0.0f),
 		vec4(0.0f, 0.5f, 0.0f, 0.0f),
 		vec4(0.0f, 0.0f, 0.5f, 0.0f),
 		vec4(0.5f, 0.5f, 0.5f, 1.0f));
 
-	//Position of the light source (frustum centre)
+	//Position of the light source (frustum centre). Temporary value for explanation
 	lightPos = vec3(4.0f, 5.0f, -4.5f);
+
 	//Sets the camera at the lightPos, looking at the second argument
 	//This is where the shadow is cast from
 	lightFrustum.orient(lightPos, vec3(-5.0f, 0.0f, -12.0f), vec3(0.0f, 1.0f, 0.0f));
-	//lightFrustum.setPerspective(50.0f, 1.0f, 5.0f, 10.0f);
+
 	lightFrustum.setOrtho(-20.0f, 20.0f, -20.0f, 20.0f, 2.0f, 100.0f);
+	
 	//Light Project View matrix
 	//Shadow bias maps clip space coordinates of -1 to 1 to 0-1 texture space.
 	//Therefore used to transform any world space point to the shadowmap
 	//Bit like MVP going from world to view to clip space, since the shadow texture is going to be in line with the camera, essentially its own view space
 	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
 
-	PBRProg.use();
-
-	//shadowProg.setUniform("ShadowMap", 8);
-
-	vec3 shadowedObjColour = vec3(0.2f, 0.5f, 0.9f);
-	PBRProg.setUniform("material.Ka", shadowedObjColour * 0.05f);
-	PBRProg.setUniform("material.Kd", shadowedObjColour);
-	PBRProg.setUniform("material.Ks", vec3(0.9f, 0.9f, 0.9f));
-	PBRProg.setUniform("material.Shininess", 150.0f);
+	PBRProg.use();		
 
 	//Colour used for sampling outside of the valid range
 	GLfloat border2[] = { 1.0f, 0.0f, 0.0f, 0.0f };
@@ -959,6 +949,7 @@ void SceneBasic_Uniform::initShadows() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); //Avoid wrapping
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border2);
+
 	//Compare mode essentially does the shadow calc for us. It enables depth comparison sampling for depth textures
 	/*Without this enabled, this would have to be in the shader:
 		float closestDepth = texture(shadowMap, shadowCoord.xy).r;
@@ -969,6 +960,7 @@ void SceneBasic_Uniform::initShadows() {
 	 It will automatically give it the xyz coords from above. Shadow will then be 0 or 1 depending on if the fragment is in shadow or not
 	*/
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+	
 	//If the reference point in world space (fragment being rendered) is less than the texel depth of that point on the shadow map,
 	// it is lit (1).
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);

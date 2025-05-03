@@ -317,7 +317,7 @@ public:
 	void update(float t);
 	void render();
 	void drawSceneObjects();
-	void initParticles();
+	void initParticleStream();
 	void initFireflies();
 	void initShadows();
 	void initMaterials();
