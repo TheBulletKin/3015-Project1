@@ -34,6 +34,9 @@ uniform LightInfo FireflyLight[15];
 uniform LightInfo Light[10]; //Specifically for torch lights
 uniform LightInfo DirLight;
 
+int x = 0;
+int y = 0;
+
 struct MaterialInfo{
     float Rough;
     bool Metal;
@@ -143,8 +146,8 @@ vec3 determineShadow(vec3 sum){
 
     if (ShadowCoord.z >= 0){
         //Anti alias shadows
-        for (int x = -1; x <= 1; ++x) {
-            for (int y = -1; y <= 1; ++y) {
+        for (x = -1; x <= 1; ++x) {
+            for (y = -1; y <= 1; ++y) {
                 pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2(x, y));
             }
         }
