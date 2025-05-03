@@ -59,8 +59,7 @@ void SceneBasic_Uniform::initScene()
 	initMaterials();
 	initParticleStream();
 	initFireflies();
-	initShadows();
-	initLights();
+	initShadows();	
 
 	glDisable(GL_DEBUG_OUTPUT);
 
@@ -117,18 +116,17 @@ void SceneBasic_Uniform::compile()
 
 void SceneBasic_Uniform::update(float t)
 {
+	//---- Time passage
 	deltaTime = t - lastFrameTime;
 	lastFrameTime = t;
 
-	//cout << t << endl;
+	updateDayNightCycle(deltaTime);
+	
 	if (t > gameEndTime && gameEnded == false) {
 		cout << "game over" << endl;
 		gameEnded = true;
 	}
 
-	processInput(window);
-
-	
 	if (currentFireFlyCount < maxFireFlyCount && timeOfDay >= 1.0)
 	{
 		fireFlySpawnTimer += deltaTime;
@@ -140,41 +138,32 @@ void SceneBasic_Uniform::update(float t)
 	terrainProg.use();
 	terrainProg.setUniform("time", t / 1000);
 
-#pragma region DayNightcycle
-
 	skyProg.use();
 	skyProg.setUniform("Time", t);
 	skyProg.setUniform("FullCycleDuration", secondsInFullCycle);
 
-	updateDayNightCycle(deltaTime);
 
+	//----------Input
+	processInput(window);
 
-
-	//cout << to_string(timeOfDay) << endl;
-
-#pragma endregion
-
-	//Update torch light intensities
-
-
-
-
-
+	
+	//------ Torch light and shader updates
+	
 	int i = 0;
 	for (const TorchInfo& torch : torches)
 	{
-		float noiseInput = t * 2.0f; // time-based noise with index offset
+		float noiseInput = t * 2.0f;
 		float noiseVal = torchNoise.GetNoise(noiseInput, 0.0f); // returns value in [-1, 1]
 		float normalized = (noiseVal + 1.0f) / 2.0f; // convert to [0, 1]
 		float mixed = mix(torchMinIntensity, torchMaxIntensity, normalized);
 
-
-		//cout << mixed << endl;
+		//Update PBR and terrain shaders with updated intensities and positions
 		string arrayString = "Light[" + to_string(i) + "].Intensity";
 		PBRProg.use();
 		PBRProg.setUniform(arrayString.c_str(), torchBrightColour * 1.0f * mixed);
 		terrainProg.use();
 		terrainProg.setUniform(arrayString.c_str(), torchBrightColour * 1.0f * mixed);
+
 		arrayString = "Light[" + to_string(i) + "].Position";
 		vec3 shiftedPos = torch.position + vec3(0, 0.7f, 0);
 		PBRProg.use();
@@ -185,8 +174,7 @@ void SceneBasic_Uniform::update(float t)
 	}
 
 	//Campfire light
-
-	float noiseInput = t * 2.0f; // time-based noise with index offset
+	float noiseInput = t * 2.0f;
 	float noiseVal = torchNoise.GetNoise(noiseInput, 0.0f); // returns value in [-1, 1]
 	float normalized = (noiseVal + 1.0f) / 2.0f; // convert to [0, 1]
 	float mixed = mix(torchMinIntensity, torchMaxIntensity, normalized);
@@ -196,6 +184,7 @@ void SceneBasic_Uniform::update(float t)
 	PBRProg.setUniform(arrayString.c_str(), torchBrightColour * mixed * 0.5f);
 	terrainProg.use();
 	terrainProg.setUniform(arrayString.c_str(), torchBrightColour * mixed * 0.5f);
+
 	arrayString = "Light[" + to_string(i) + "].Position";
 	vec3 shiftedPos = campfirePosition + vec3(0, 0.2f, 0);
 	PBRProg.use();
@@ -204,22 +193,10 @@ void SceneBasic_Uniform::update(float t)
 	terrainProg.setUniform(arrayString.c_str(), vec4(shiftedPos, 1.0f));
 
 
-#pragma region new particles test
 
-
-
-#pragma endregion
-
-#pragma region New Firefly Spawning
-	
+	//----------Firefly spawning	
 	if (fireFlySpawnTimer >= fireFlySpawnCooldown && currentFireFlyCount < maxFireFlyCount)
 	{
-		
-
-		//Random spawn location
-		float ySpawnValueMin = 1.5f;
-		float ySpawnValue = ySpawnValueMin + (2.0f - ySpawnValueMin) * dis(gen);
-
 		float randomX = topLeftSpawnBound.x + (bottomRightSpawnBound.x - topLeftSpawnBound.x) * dis(gen);
 		float randomY = topLeftSpawnBound.y + (bottomRightSpawnBound.y - topLeftSpawnBound.y) * dis(gen);
 		float randomZ = topLeftSpawnBound.z + (bottomRightSpawnBound.z - topLeftSpawnBound.z) * dis(gen);
@@ -230,25 +207,23 @@ void SceneBasic_Uniform::update(float t)
 
 		fireFlies.push_back(newFireFly);
 		currentFireFlyCount++;
-
-		//cout << "FireFly spawned   Number of lights: " << currentFireFlyCount << "\n";
-
-		fireFlySpawnTimer = 0.0f;
-		fireFlySpawnCooldown = linearRand(1.0f, 2.0f);
-	
 		
+		fireFlySpawnTimer = 0.0f;
+		fireFlySpawnCooldown = linearRand(1.0f, 2.0f);		
 	}
-#pragma endregion
 
-#pragma region Firefly Update and Deletion
-	
+
+
+	//-----Firefly update
 	for (size_t i = 0; i < fireFlies.size(); i++)
 	{
 		FireFly* fireFly = fireFlies[i];
 		if (fireFly != NULL)
 		{
+			//Moves firefly's position
 			fireFly->Update(deltaTime);
-			if (fireFly->ShouldDestroy()) 
+
+			if (fireFly->ShouldDestroy()) //Returns true when the particle age exceeds its limit
 			{
 				//Destroy firefly
 
@@ -257,9 +232,7 @@ void SceneBasic_Uniform::update(float t)
 				//Set deleted pointlights to a null value equivalent to be ignored in the shader
 				terrainProg.use();
 				terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec4(0.0f, -10.0f, 0.0f, 1.0f));				
-			
-
-				
+							
 				delete fireFly;
 				fireFlies.erase(fireFlies.begin() + i);
 				currentFireFlyCount--;
@@ -270,8 +243,8 @@ void SceneBasic_Uniform::update(float t)
 			}
 		}
 	}
-#pragma endregion
 
+	//------Firefly shader update
 	string lightUniformTag;
 	//Clear fireflies list
 	for (size_t i = 0; i < maxFireFlyCount; i++)
@@ -283,42 +256,27 @@ void SceneBasic_Uniform::update(float t)
 		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(0.0,0.0,0.0));
 	}
 
-
 	vector<vec3> fireFlyPositions;
-
+	terrainProg.use();
 	//Fill uniforms with updated values
 	for (size_t i = 0; i < fireFlies.size(); i++) {
 		FireFly* fireFly = fireFlies[i];
 
 		lightUniformTag = ("FireflyLight[" + to_string(i) + "]");
-		terrainProg.use();
+		
 		terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->Position);
 		terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), fireFlyLightColour * fireFly->brightness * 0.5f);
 		terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), fireFlyAmbientColour * fireFly->brightness * 0.5f);
 
-		//terrainProg.setUniform("numberOfFireflies", (int)(fireFlies.size()));
-
-		//terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
-		//terrainProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);
-		////terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
-		//terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
-
-
 		fireFlyPositions.push_back(fireFly->Position);
 	}
 
-
-	//terrainProg.use();
-	//terrainProg.setUniform("FireflyLight[0].Position", vec4(-3.0, 2.0f, -8.0f, 1.0f));
-	//terrainProg.setUniform("FireflyLight[1].Position", vec4(2.0, 2.0f, 2.0f, 1.0f));
-	//terrainProg.setUniform("FireflyLight[2].Position", vec4(3.0, 0.0f, -4.0f, 1.0f));
-
 	terrainProg.setUniform("numberOfFireflies", static_cast<int>(fireFlies.size()));
 
+	//Update the buffer with the new positions. Slight overhead but worth it
 	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf);
 	glBufferData(GL_ARRAY_BUFFER, fireFlyPositions.size() * sizeof(vec3), fireFlyPositions.data(), GL_DYNAMIC_DRAW);
 
-		
 }
 
 void SceneBasic_Uniform::render()
@@ -327,41 +285,25 @@ void SceneBasic_Uniform::render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
-
 	view = camera.GetViewMatrix();
 	projection = perspective(radians(70.0f), (float)width / height, 0.3f, 100.0f);
 
-
-
+	//------- Pass 1, shadow map pass
 	
-
-
-	//view = mat4(1.0f);
-	//view = translate(view, vec3(0.0f, 3.0f, 7.0f));
-	//view = rotate(view, radians(-45.0f), vec3(1.0f, 0.0f, 0.0f));
-
-
-
-
-	//Pass 1 shadow map gen
 	model = mat4(1.0f);
-	model = translate(model, lightFrustum.getOrigin());
+	model = translate(model, lightFrustum.getOrigin()); //Move camera to light position
 	view = lightFrustum.getViewMatrix();
 	projection = lightFrustum.getProjectionMatrix(true);
+
 	glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, shadowMapWidth, shadowMapHeight);
-	//Ensures the use of 'recordDepth' which does nothing as depth info is recorded
+	
 	PBRProg.use();
-	PBRProg.setUniform("Pass", 1);
+	PBRProg.setUniform("Pass", 1); //First pass renders depth only to a texture
 	terrainProg.use();
 	terrainProg.setUniform("Pass", 1);
-	//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass2Index);
-	//GLuint activeIndex;
-	//glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
-	//std::cout << "Active subroutine index: " << activeIndex << std::endl;
-	//Cull the front face of triangles instead of the usual back
-	//Helps prevent shadow artifacts
+	
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 	//Polygon offset shifts the depth values slightly so instances where the fragment sort of shadows itself
@@ -372,12 +314,8 @@ void SceneBasic_Uniform::render()
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, depthTex);
 
-	//glActiveTexture(GL_TEXTURE2);
-	//glBindTexture(GL_TEXTURE_2D, brickTexID);
-
-
-	drawSolidSceneObjects();
 	//Draw scene
+	drawSolidSceneObjects();	
 
 	glCullFace(GL_BACK);
 	glDisable(GL_CULL_FACE);
@@ -385,57 +323,37 @@ void SceneBasic_Uniform::render()
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
 
-	//Pass 2
+	//----- Pass 2, scene render
 
 	view = camera.GetViewMatrix();
-
-	//shadowProg.setUniform("light.Position", vec4(lightPos, 1.0));
-	//Set the directional light to point from the light frustum to the world centre
-
-
-	//PBRProg.setUniform("Light[3].Position", vec4(direction, 0.0f));
 	projection = perspective(radians(70.0f), (float)width / height, 0.01f, 100.0f);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, width, height);
-	//Ensures the use of 'shadeWithShadow', which uses phong and the shadow info
+	
 	PBRProg.use();
 	PBRProg.setUniform("Pass", 2);
 	terrainProg.use();
-	terrainProg.setUniform("Pass", 2);
-	//glUniformSubroutinesuiv(GL_FRAGMENT_SHADER, 1, &pass1Index);
-
-	//glGetUniformSubroutineuiv(GL_FRAGMENT_SHADER, 1, &activeIndex);
+	terrainProg.setUniform("Pass", 2);	
 
 	//Draw scene
 	drawSolidSceneObjects();
-
 	
 
+	//--------Light frustum render
 	objectProg.use();
-
-
-
 	model = mat4(1.0f);
 	model = translate(model, lightPos);
 
 	mat4 mv = view * lightFrustum.getInverseViewMatrix();
 	objectProg.setUniform("MVP", projection * mv);
-
-
 	//setMatrices(objectProg);
 	//lightFrustum.render();
 
 
 
-	//drawSceneObjects();
-
-
-
-#pragma region Sky Rendering
-
-
+	//-------Skybox render
 	view = lookAt(vec3(0.0f, 0.0f, 0.0f), camera.Front, camera.Up);
 
 	skyProg.use();
@@ -451,11 +369,9 @@ void SceneBasic_Uniform::render()
 
 	view = camera.GetViewMatrix();
 
+	//----Particle rendering
 	renderParticles();
 	renderFireflies();
-
-#pragma endregion
-
 
 #pragma region HDR Pass
 
@@ -1002,12 +918,6 @@ void SceneBasic_Uniform::initMaterials()
 	terrainProg.setUniform("material.Metal", 0);
 	terrainProg.setUniform("material.Colour", vec3(0.4f));
 	
-}
-
-void SceneBasic_Uniform::initLights()
-{
-	
-
 }
 
 void SceneBasic_Uniform::initTextures()

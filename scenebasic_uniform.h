@@ -320,8 +320,7 @@ public:
 	void initParticleStream();
 	void initFireflies();
 	void initShadows();
-	void initMaterials();
-	void initLights();
+	void initMaterials();	
 	void initTextures();
 	void initPostProcessing();
 	void renderFireflies();
