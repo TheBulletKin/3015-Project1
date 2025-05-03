@@ -35,6 +35,7 @@ SceneBasic_Uniform::SceneBasic_Uniform() : sky(100.0f)
 
 void SceneBasic_Uniform::initScene()
 {
+
 	//------ Window and openGL setup
 	window = glfwGetCurrentContext();
 	glfwSetWindowUserPointer(window, this);
@@ -66,16 +67,15 @@ void SceneBasic_Uniform::initScene()
 
 	torchNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	torchNoise.SetFrequency(0.5f);
-
 }
 
 void SceneBasic_Uniform::compile()
 {
 	try {
-		//Now unused. Phong lighting shaders
-		//objectProg.compileShader("shader/object.vert");
-		//objectProg.compileShader("shader/object.frag");
-		//objectProg.link();
+		//Used only for light frustum
+		objectProg.compileShader("shader/object.vert");
+		objectProg.compileShader("shader/object.frag");
+		objectProg.link();
 		skyProg.compileShader("shader/skybox.vert");
 		skyProg.compileShader("shader/skybox.frag");
 		skyProg.link();
@@ -1037,98 +1037,47 @@ void SceneBasic_Uniform::initMaterials()
 	terrainProg.setUniform("material.Rough", 0.97f);
 	terrainProg.setUniform("material.Metal", 0);
 	terrainProg.setUniform("material.Colour", vec3(0.4f));
-	/*
-	PBRProg.setUniform("Light[0].Intensity", vec3(0.2f));
-	PBRProg.setUniform("Light[0].Position", vec4(-2.5f, 2.0f, -8.5f, 1));
-	PBRProg.setUniform("Light[1].Intensity", vec3(0.2f));
-	PBRProg.setUniform("Light[1].Position", vec4(-0.2f, 2.0f, -8.5f, 1));
-	PBRProg.setUniform("Light[2].Intensity", vec3(0.2f));
-	PBRProg.setUniform("Light[2].Position", vec4(-1.0f, 0.5f, -6.8f, 1));
-	PBRProg.setUniform("Light[3].Intensity", vec3(0.2f));
-	PBRProg.setUniform("Light[3].Position", vec4(-1.0f, 0.5f, -6.8f, 1));
-
-	PBRProg.setUniform("Light[3].Intensity", vec3(0.2f));
-	PBRProg.setUniform("Light[3].Ambient", vec3(0.01f, 0.01f, 0.03f));
-	PBRProg.setUniform("Light[3].Position", vec4(lightPos, 1.0));*/
-
-	//Directional light
-	//PBRProg.setUniform("Light[4].Intensity", vec3(0.2f));
-	//PBRProg.setUniform("Light[4].Ambient", vec3(0.01f, 0.01f, 0.03f));
-	//PBRProg.setUniform("Light[4].Position", vec4(lightPos, 0.0f));
-
-	/* Example
-	PBRProg.setUniform("Light[0].L", vec3(45.0f));
-	PBRProg.setUniform("Light[0].Position", view * lightPos);
-	PBRProg.setUniform("Light[1].L", vec3(0.3f));
-	PBRProg.setUniform("Light[1].Position", vec4(0, 0.15f, -1.0f, 0));
-	PBRProg.setUniform("Light[2].L", vec3(45.0f));
-	PBRProg.setUniform("Light[2].Position", view * vec4(-7, 3, 7, 1));
-	*/
+	
 
 #pragma endregion
 
 
-#pragma region Material Setup
-
-	terrainProg.use();
-	terrainProg.setUniform("staticPointLights", 0);
-	terrainProg.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
-	terrainProg.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
-	terrainProg.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
-	terrainProg.setUniform("Material.Shininess", 180.0f);
-
-	objectProg.use();
-	objectProg.setUniform("staticPointLights", 0);
-	objectProg.setUniform("Material.Kd", 0.4f, 0.4f, 0.4f);
-	objectProg.setUniform("Material.Ks", 0.9f, 0.9f, 0.9f);
-	objectProg.setUniform("Material.Ka", 0.5f, 0.5f, 0.5f);
-	objectProg.setUniform("Material.Shininess", 180.0f);
+	
 }
 
 void SceneBasic_Uniform::initLights()
 {
 	
-#pragma endregion
+
 }
 
 void SceneBasic_Uniform::initTextures()
 {
-	//Grass texture
+	//-------------Main textures loading
 	glActiveTexture(GL_TEXTURE0);
 	grassTexID = Texture::loadTexture("media/texture/grass_02_1k/grass_02_base_1k.png");
 	collectables[0].texID = Texture::loadTexture("media/meatTextures/Hunk_Of_Meat_Hunk_Of_Meat_BaseColor.png");
 	collectables[1].texID = Texture::loadTexture("media/cheeseTextures/cheese_piece_colors.png");
 	collectables[2].texID = Texture::loadTexture("media/mushroomTextures/Material_albedo.jpg");
 	campfireTexID = Texture::loadTexture("media/campfireTextures/Material.001_albedo.jpg");
-
-	//Rock texture
-	glActiveTexture(GL_TEXTURE1);
+	torchTexID = Texture::loadTexture("media/texture/StandingTorchTextures/Merged_Cylinder_004_albedo.jpeg");
 	rockTexID = Texture::loadTexture("media/texture/cliff_rocks_02_1k/cliff_rocks_02_baseColor_1k.png");
-
-	//Rock textures
-	glActiveTexture(GL_TEXTURE2);
-	brickTexID = Texture::loadTexture("media/texture/stone_bricks_wall_04_1k/stone_bricks_wall_04_color_1k.png");
 
 	//Skybox texture
 	glActiveTexture(GL_TEXTURE3);
 	daySkyboxTexID = Texture::loadCubeMap("media/texture/skyCubeMap/bluecloud");
 	nightSkyBox = Texture::loadCubeMap("media/texture/cubeMap/night");
-
-	//Firefly texture
-	glActiveTexture(GL_TEXTURE5);
-	fireFlyTexID = Texture::loadTexture("media/texture/firefly/fireFlyTex.png");
-
+	
+	//Particle textures
 	glActiveTexture(GL_TEXTURE6);
 	particleTexID = Texture::loadTexture("media/texture/particle/fire.png");
+	fireFlyTexID = Texture::loadTexture("media/texture/firefly/fireFlyTex.png");
 
-	glActiveTexture(GL_TEXTURE8);
-	torchTexID = Texture::loadTexture("media/texture/StandingTorchTextures/Merged_Cylinder_004_albedo.jpeg");
+	//Texture 7 used for 1D random noise
 
-	//Texture 7 for random particle tex lower down
 
-#pragma region Cloud Texture
-
-//Used for random number generation
+	//---------------- Cloud texture generation
+	//Used for random number generation
 	gen = mt19937(rd());
 	uniform_real_distribution<> dis(0.0, 1.0);
 
@@ -1153,8 +1102,8 @@ void SceneBasic_Uniform::initTextures()
 		}
 	}
 
-	glGenTextures(1, &cloudTexID);
-	glActiveTexture(GL_TEXTURE3);
+	glGenTextures(1, &cloudTexID);	
+	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_2D, cloudTexID);
 
 	//Upload the noise data to the texture
@@ -1164,11 +1113,7 @@ void SceneBasic_Uniform::initTextures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, cloudTexID);
-
-#pragma endregion
+	
 }
 
 void SceneBasic_Uniform::initPostProcessing()
