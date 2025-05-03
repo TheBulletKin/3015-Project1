@@ -33,22 +33,22 @@ uniform mat4 projection;
 layout(binding = 7) uniform sampler1D RandomTex;
 
 const vec3 offsets[] = vec3[](
-    vec3(-0.5, -0.5, 0), // Triangle 1: Bottom-left
-    vec3(0.5, -0.5, 0), // Triangle 1: Bottom-right
-    vec3(0.5, 0.5, 0),  // Triangle 1: Top-right
+    vec3(-0.5, -0.5, 0), //Bottomleft
+    vec3(0.5, -0.5, 0), //Bottomright
+    vec3(0.5, 0.5, 0),  //Topright
     
-    vec3(-0.5, -0.5, 0), // Triangle 2: Bottom-left
-    vec3(0.5, 0.5, 0),  // Triangle 2: Top-right
-    vec3(-0.5, 0.5, 0) // Triangle 2: Top-left
+    vec3(-0.5, -0.5, 0), //Bottomleft
+    vec3(0.5, 0.5, 0),  //Topright
+    vec3(-0.5, 0.5, 0) //Topleft
 );
 
 const vec2 texCoords[] = vec2[](
-    vec2(0, 0),  // Bottom-left
-    vec2(1, 0),  // Bottom-right
-    vec2(1, 1),  // Top-right
-    vec2(0, 0),  // Bottom-left
-    vec2(1, 1),  // Top-right
-    vec2(0, 1)   // Top-left
+    vec2(0, 0),  //Bottomleft
+    vec2(1, 0),  //Bottomright
+    vec2(1, 1),  //Topright
+    vec2(0, 0),  //Bottomleft
+    vec2(1, 1),  //Topright
+    vec2(0, 1)   //Topleft
 );
 
 //Random texture is a 1D texture of random values, acts sort of like a seed.
@@ -112,15 +112,11 @@ void render(){
         else {
             Transp = 1.0f;
         }
-       
-        
     }
     TexCoord = texCoords[gl_VertexID];
 
     gl_Position = projection * vec4(viewSpacePos, 1);
 }
-
-
 
 void main(){
     if (Pass == 1)

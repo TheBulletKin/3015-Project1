@@ -148,11 +148,8 @@ vec3 determineShadow(vec3 sum){
     //vec3 ambient = Light[3].Ambient * 0.1;
     
     vec3 lit = sum * shadow;
-
-    // Gamma correct combining all lighting components
-    return pow(lit, vec3(1.0 / 2.2));
-    
    
+    return pow(lit, vec3(1.0 / 2.2)); //Gamma correction  
 }
 
 float calculateFogFactor(float distance){   
@@ -177,19 +174,17 @@ void renderPass()
     }
     
     
-    // Direction light (needs dirLight index)
+    //Direction light
     vec3 dirLight = microfacetModel(-1, Position, n, baseColour);
-    vec3 lit = determineShadow(dirLight); // includes ambient + shadowing
+    vec3 lit = determineShadow(dirLight);    
     
-    
-    // All other lights
+    //Torch lights
     for (int i = 0; i < numberOfTorches; i++){
         lit += microfacetModel(i, Position, n, baseColour);
     }
 
     //Dir light index
     lit += DirLight.Ambient;
-
     
     float distanceToCamera = length(WorldPosition - ViewPos);   
     float fogFactor = calculateFogFactor(distanceToCamera);

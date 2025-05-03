@@ -31,7 +31,7 @@ struct LightInfo {
 uniform int numberOfFireflies = 0;
 uniform int numberOfTorches = 9;
 uniform LightInfo FireflyLight[15];
-uniform LightInfo Light[10]; //Three points, one main
+uniform LightInfo Light[10]; //Specifically for torch lights
 uniform LightInfo DirLight;
 
 struct MaterialInfo{
@@ -130,8 +130,6 @@ vec3 microfacetModel(int lightIdx, vec3 position, vec3 n, vec3 baseColour, int t
     return (baseColour + PI * specBrdf) * lightI * nDotL;
 }
 
-
-
 void depthPass()
 {
     //debug
@@ -147,7 +145,7 @@ vec3 determineShadow(vec3 sum){
         //Anti alias shadows
         for (int x = -1; x <= 1; ++x) {
             for (int y = -1; y <= 1; ++y) {
-            pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2(x, y));
+                pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2(x, y));
             }
         }
         
@@ -159,10 +157,7 @@ vec3 determineShadow(vec3 sum){
     
     vec3 lit = sum * shadow;
 
-    // Gamma correct combining all lighting components
-    return pow(lit, vec3(1.0 / 2.2));
-    
-   
+    return pow(lit, vec3(1.0 / 2.2)); //Gamma correction   
 }
 
 float calculateFogFactor(float distance){   
@@ -190,14 +185,6 @@ void renderPass()
     float shadow = smoothstep(0.0, 0.05f, noise); 
     shadow = mix(shadow, 1.0, 0.8);     
     
-    
-    //Old
-    mat2 rotationMatrix = mat2(0.0, -1.0, 1.0, 0.0);    
-    vec2 rotatedTexCoord = rotationMatrix * TexCoord;
-    vec3 textureColour = texture(MainTex, rotatedTexCoord * TextureScale).rgb;
-    textureColour = texture(MainTex, TexCoord * TextureScale).rgb;
-    
-
     // -------- Slope texture blending
     /* The fragment's normal is essentially representing a direction by it's colour
     * Therefore the y component of worldNormal is high for flat surfaces, low for vertical ones 
@@ -208,7 +195,7 @@ void renderPass()
     //If WorldNormal.y < 0.9, slopeFactor is 0, between 0.9 and 1.0 it smoothly blends from 0 to 1, and when WorldNormal.y > 1.0, slopeFactor is 1
     float slopeFactor = smoothstep(0.85, 0.9, abs(WorldNormal.y));     
 
-    //Scale the textures
+    //------ Base texture sampling
     vec3 grassTex = texture(MainTex, TexCoord * TextureScale).rgb;
     grassTex = pow(grassTex, vec3(1.0 / 0.4)); // gamma correction
     vec3 rockTex = texture(CliffTex, TexCoord * TextureScale).rgb;
@@ -226,42 +213,28 @@ void renderPass()
         //adjustedNormal = -Normal;
     }
     
-    
-    // Direction light (needs dirLight index)
-    //vec3 dirLight = microfacetModel(-1, Position, n, baseColour);
-    //vec3 lit = determineShadow(dirLight); // includes ambient + shadowing
-    //lit = mix(lit, lit * shadow, 0.8);
-    
-    // All other lights
-    //for (int i = 0; i < numberOfTorches - 1; i++){
-       // lit += microfacetModel(i, Position, n, baseColour);
-    //}
-
+    //-----Direction light and shadow
     vec3 dirLight = microfacetModel(-1, Position, n, baseColour, 0);
     vec3 dirLit = determineShadow(dirLight); // already includes shadow mapping
     //dirLit = mix(dirLit, dirLit * shadow, 0.9);
 
-    
+    //----Torch lights
     vec3 torchLit = vec3(0.0);
     for (int i = 0; i < numberOfTorches; i++){
        torchLit += microfacetModel(i, Position, n, baseColour, 0);
     }
 
+    //-----Firefly lights
     vec3 flireflyLit = vec3(0.0);
     for (int i = 0; i < numberOfFireflies; i++){
         flireflyLit += microfacetModel(i, Position, n, baseColour, 1);
     }
 
-    // Combine them
+    //Combined light output to fix issue present with old mutiight soution
     vec3 lit = dirLit + torchLit + flireflyLit;
    
-
-    //Dir light index
     lit += DirLight.Ambient;    
 
-
-
-    
     float distanceToCamera = length(WorldPosition - ViewPos);   
     float fogFactor = calculateFogFactor(distanceToCamera);
 
@@ -272,7 +245,6 @@ void renderPass()
    // FragColour = vec4(lit, 1.0);
     //FragColour = pow(FragColour, vec4(1.0 / 0.4)); // gamma correction
 }
-
 
 
 void main(){   

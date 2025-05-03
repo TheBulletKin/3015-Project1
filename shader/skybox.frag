@@ -23,11 +23,11 @@ void main() {
 
     vec3 rotatedDir = rotation * Position;
 
-    // Sample both skyboxes
+  
     vec3 dayColour = texture(SkyboxDay, rotatedDir).rgb;
     vec3 nightColour = texture(SkyboxNight, rotatedDir).rgb;
 
-    // Blend and apply gamma correction if needed
+    //Will use a blend value provided by the cpu code
     vec3 blended = mix(dayColour, nightColour, BlendFactor);
     float gammaCorrection = mix(1.0 / 0.9, 1.0 / 0.4, BlendFactor);
     vec3 gammaCorrected = pow(blended, vec3(gammaCorrection));
