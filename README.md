@@ -3,7 +3,7 @@ By Oliver Warry
 
 old demo video [here](https://youtu.be/KHnyvOIJeQM)
 
-New demo video here
+New demo video [here](https://youtu.be/xtAyVjFPfzc)
 
 ## Overview
 Inspired by Tears of the Kingdom, I wanted to recreate the terrain and visual style of a place in the game with this old ruin perched on a hill. 
@@ -11,6 +11,7 @@ Inspired by Tears of the Kingdom, I wanted to recreate the terrain and visual st
 
 And this is my project outcome.
 ![Demo image](Documentation_images/DEMO.png)
+![Demo image](Documentation_images/DEMO2.png)
 
 This is a continuation of the first stage project for this module, aiming to expand on the existing feature set with some more advanced features. The old readme for the previous version can be found in the repository files.
 
@@ -22,7 +23,7 @@ Developed with Visual Studio 2022 and OpenGL 4.4.
 ### Asset declaration
 Some textures were not directly created by me, being sources from other sites. All citations and sources are held in [TextureSources.txt](media/texture/TextureSources.txt)
 
-The ruin model present in the scene as well as the terrain were both modelled by me. Used textures are held in the textures folder.
+The ruin model present in the scene as well as the terrain were both modelled by me. Used textures are held in the textures folder. Asset sources also held in the media folder.
 
 # Main features
 ## PBR
