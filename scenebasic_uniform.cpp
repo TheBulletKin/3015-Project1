@@ -109,9 +109,9 @@ void SceneBasic_Uniform::compile()
 		glTransformFeedbackVaryings(progHandle, 3, outputNames, GL_SEPARATE_ATTRIBS);
 
 		particleStreamProg.link();
-		shadowProg.compileShader("shader/Shadow.vert");
-		shadowProg.compileShader("shader/Shadow.frag");
-		shadowProg.link();
+		//shadowProg.compileShader("shader/Shadow.vert");
+		//shadowProg.compileShader("shader/Shadow.frag");
+		//shadowProg.link();
 		fireflyParticleProg.compileShader("shader/fireflyParticle.vert");
 		fireflyParticleProg.compileShader("shader/fireflyParticle.frag");
 		fireflyParticleProg.link();
@@ -793,9 +793,7 @@ void SceneBasic_Uniform::initFireflies()
 
 void SceneBasic_Uniform::initShadows() {
 	shadowMapWidth = 2056;
-	shadowMapHeight = 2056;
-
-	shadowProg.use();	
+	shadowMapHeight = 2056;	
 	
 	shadowBias = mat4(vec4(0.5f, 0.0f, 0.0f, 0.0f),
 		vec4(0.0f, 0.5f, 0.0f, 0.0f),

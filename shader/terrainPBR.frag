@@ -37,6 +37,8 @@ uniform LightInfo DirLight;
 int x = 0;
 int y = 0;
 
+
+
 struct MaterialInfo{
     float Rough;
     bool Metal;
@@ -140,17 +142,27 @@ void depthPass()
     FragColour = vec4(depth, depth, depth, 1.0);
 }
 
+
+
+
+
 vec3 determineShadow(vec3 sum){
     float pcfSum = 0;
     float shadow = 1.0;
 
+    
+
     if (ShadowCoord.z >= 0){
         //Anti alias shadows
-        for (x = -1; x <= 1; ++x) {
-            for (y = -1; y <= 1; ++y) {
-                pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2(x, y));
-            }
-        }
+        pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2(-1, -1));
+        pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2( 0, -1));
+        pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2( 1, -1));
+        pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2(-1,  0));
+        pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2( 0,  0));
+        pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2( 1,  0));
+        pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2(-1,  1));
+        pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2( 0,  1));
+        pcfSum += textureProjOffset(ShadowMap, ShadowCoord, ivec2( 1,  1));       
         
         shadow = pcfSum / 9.0;
     }
