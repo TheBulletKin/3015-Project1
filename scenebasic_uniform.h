@@ -91,13 +91,13 @@ private:
 
 	float timeOfDay = 0;
 	float gameTimer = 0;
-	float gameEndTime = 120;
+	float gameEndTime = 240;
 	bool gameEnded = false;
 
 	
 
-	float torchMaxIntensity = 0.7f;
-	float torchMinIntensity = 0.4f;
+	float torchMaxIntensity = 0.9f;
+	float torchMinIntensity = 0.32f;
 	vec3 torchBrightColour = vec3(1.0f, 0.6f, 0.4f);
 	vec3 torchDimColour = vec3(1.0f, 1.0f, 1.0f);
 	struct TorchInfo{
@@ -129,7 +129,7 @@ private:
 	vec3 sunLightDirection;
 	float mainLightIntensity = 0.2;
 	float ambientLightIntensity = 0.2;
-	float secondsInFullCycle = 60.0f;
+	float secondsInFullCycle = 45.0f;
 
 	struct FogInfo {
 		vec3 fogColour;
@@ -165,15 +165,15 @@ private:
 
 	TimeOfDayInfo dayInfo = {
 		"day",
-		vec3(0.5f, 0.5f, 0.65f),
-		vec3(1.0f, 1.0f, 1.0f),
+		vec3(0.5f, 0.5f, 0.65f), //Ambient light colour
+		vec3(1.0f, 1.0f, 1.0f), //Light colour
 		{
-			vec3(0.5f, 0.65f, 0.9f) * 0.5f,
-			10.0f,
-			30.0f
+			vec3(0.5f, 0.65f, 0.9f) * 0.5f, //Fog colour
+			10.0f, //Fog start
+			30.0f //Fog end
 		},
-		0.7f, // Light intensity
-		0.2f,
+		0.7f, //Light intensity
+		0.2f, //Ambient light intensity
 		0.09f, //Start time
 		0.05f //Ramp up time
 	};

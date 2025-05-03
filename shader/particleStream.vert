@@ -10,8 +10,8 @@ layout (location = 3) in int EmitterIndex;
 //Which pass of the shader is currently being ran
 uniform int Pass;
 
-uniform vec3 EmitterPos[4];
-uniform mat3 EmitterBasis[4];
+uniform vec3 EmitterPos[8];
+uniform mat3 EmitterBasis[8];
 
 //Output to transform feedback buffers update pass
 layout(xfb_buffer = 0, xfb_offset = 0) out vec3 Position;
@@ -80,7 +80,7 @@ void update(){
         
         
         float respawnChance = DeltaT / ParticleLifetime;
-        //Get a random texture value
+        //Acts as getting a random float
         float r2 = texelFetch(RandomTex, 3 * gl_VertexID + 2, 0).r;
         if (r2 < respawnChance) {
             

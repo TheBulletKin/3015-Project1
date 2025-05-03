@@ -123,7 +123,7 @@ void SceneBasic_Uniform::initScene()
 
 	glBindVertexArray(spritesVAO);
 
-	// Firefly positions (instance buffer)
+	//Firefly positions
 	glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
 	glBufferData(GL_ARRAY_BUFFER, maxFireFlyCount * sizeof(vec3), nullptr, GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -241,9 +241,9 @@ void SceneBasic_Uniform::update(float t)
 		//cout << mixed << endl;
 		string arrayString = "Light[" + to_string(i) + "].Intensity";
 		PBRProg.use();
-		PBRProg.setUniform(arrayString.c_str(), torchBrightColour * 2.0f * mixed);
+		PBRProg.setUniform(arrayString.c_str(), torchBrightColour * 1.0f * mixed);
 		terrainProg.use();
-		terrainProg.setUniform(arrayString.c_str(), torchBrightColour * 2.0f * mixed);
+		terrainProg.setUniform(arrayString.c_str(), torchBrightColour * 1.0f * mixed);
 		arrayString = "Light[" + to_string(i) + "].Position";
 		vec3 shiftedPos = torch.position + vec3(0, 0.7f, 0);
 		PBRProg.use();
@@ -262,9 +262,9 @@ void SceneBasic_Uniform::update(float t)
 
 	string arrayString = "Light[" + to_string(i) + "].Intensity";
 	PBRProg.use();
-	PBRProg.setUniform(arrayString.c_str(), torchBrightColour * mixed);
+	PBRProg.setUniform(arrayString.c_str(), torchBrightColour * mixed * 0.5f);
 	terrainProg.use();
-	terrainProg.setUniform(arrayString.c_str(), torchBrightColour * mixed);
+	terrainProg.setUniform(arrayString.c_str(), torchBrightColour * mixed * 0.5f);
 	arrayString = "Light[" + to_string(i) + "].Position";
 	vec3 shiftedPos = campfirePosition + vec3(0, 0.2f, 0);
 	PBRProg.use();
@@ -494,7 +494,7 @@ void SceneBasic_Uniform::render()
 
 
 	//setMatrices(objectProg);
-	lightFrustum.render();
+	//lightFrustum.render();
 
 
 
@@ -799,18 +799,22 @@ void SceneBasic_Uniform::initParticles() {
 
 
 	particleLifetime = 10.0f;
-	nParticles = 80;
+	nParticles = 360;
 
-	nEmitters = 4;
-
-
+	nEmitters = 8;
 
 
-	mat3 emitterBases[4] = {
+
+
+	mat3 emitterBases[8] = {
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
-		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0))
+		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
+		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
+		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
+		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
+		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0))		
 	};
 
 
@@ -833,10 +837,6 @@ void SceneBasic_Uniform::initParticles() {
 		arrayString = "EmitterBasis[" + to_string(i) + "]";
 		newParticleProg.setUniform(arrayString.c_str(), emitterBases[i]);
 	}
-
-
-
-
 
 	glGenBuffers(2, posBuf);
 	glGenBuffers(2, velBuf);
@@ -1329,7 +1329,7 @@ void SceneBasic_Uniform::renderFireflies()
 	glBindVertexArray(0);
 
 	glDepthMask(GL_TRUE);
-glDisable(GL_BLEND);
+	glDisable(GL_BLEND);
 	
 }
 
@@ -1501,6 +1501,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		timeOfDay = 0;
 	}
 
+	//----Blending for skybox
 	float blend;
 	if (timeOfDay < 0.15f) //When sun rising
 	{
@@ -1518,6 +1519,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 
 	skyProg.setUniform("BlendFactor", blend);
 
+	
 	// Dawn (0 - 0.25) 
 	// Day (0.25 - 0.75) 
 	// Dusk (0.75 - 1) 

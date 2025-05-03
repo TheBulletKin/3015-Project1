@@ -1,9 +1,7 @@
-# 3015 Coursework 2 - Breath of the wild inpired scene 
+# 3015 Coursework 1 - Breath of the Mild 
 By Oliver Warry
 
-old demo video [here](https://youtu.be/KHnyvOIJeQM)
-
-New demo video here
+Demo video [here](https://youtu.be/KHnyvOIJeQM)
 
 ## Overview
 Inspired by Tears of the Kingdom, I wanted to recreate the terrain and visual style of a place in the game with this old ruin perched on a hill. 
@@ -11,8 +9,6 @@ Inspired by Tears of the Kingdom, I wanted to recreate the terrain and visual st
 
 And this is my project outcome.
 ![Demo image](Documentation_images/DEMO.png)
-
-This is a continuation of the first stage project for this module, aiming to expand on the existing feature set with some more advanced features. The old readme for the previous version can be found in the repository files.
 
 ## Technical
 Developed with Visual Studio 2022 and OpenGL 4.4.
@@ -25,60 +21,12 @@ Some textures were not directly created by me, being sources from other sites. A
 The ruin model present in the scene as well as the terrain were both modelled by me. Used textures are held in the textures folder.
 
 # Main features
-## PBR
-As visible in the scene, I use fragment based phong lighting. The fragment shaders [terrainPBR.frag](shader/terrainPBR.frag) and [PBR.frag](shader/PBR.frag) are good demonstrations. Uses the microfacet model explained on the [learnOpenGl site](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping) to implement physics based rendering. Uses the light's intensity value to attenuate the light source, an improvement over the Phong lighting model requiring specific attentuation values to achieve similar results.
+## Phong Lighting
+As visible in the scene, I use fragment based phong lighting. The fragment shader [Terrain.frag](shader/terrain.frag) is a good demonstration. The [vertex shader](shader/terrain.vert) sets gl-Position to the projected vertex position, but also passes in the world position and view space position for later use. 
 
-## Shadow mapping
-Visible in [PBR.frag](shader/PBR.frag) and [terrainPBR.frag](shader/terrainPBR.frag), shadow mapping allows for objects to obscure the light on others, creating cascading shadows across the terrain. It works by performing two passes of rendering. The first pass involved effectively moving the camera to the position of the light source (the sun in this case), and rendering the scene from that point of view, holding depth information in a texture. A second pass will render the scene from the intended camera position. Whenever a fragment is being rendered it's world position will be transformed using a matrix that places it on the previously aquired depth texture. The depths of the texel sampled and the world position of the fragment relative to the *light* then controls whether the fragment is in shadow or not.
+The phongModel method takes in the necessary arguments and returns a colour vector which is added to the existing colour so the output is the culmination of multiple lights.  This method works in view space, but the light position is passed in as world space, so it is first converted into view space, alongside the view position. 
 
-In this project the light moves across the sky. It's angle is determined by the time of day, and it's angle is determined by rotating it to look at the centre of the scene. The result is a sun or moon light that changes the orientation of shadows as it moves.
-
-## Animated skybox
-The skybox follows the camera and rotates too, making it look like an infinitely expanding backdrop, rendered with [skybox.frag](shader/skybox.frag). It will rotate to match the defined length of a day, so the rotation of the skybox matches that of the sun, even if no visible sun can be seen. When it enters night time the texture will change to that of a night sky by mixing between both textures by a blend factor provided through uniforms.
-
-## Fire particles
-Each torch emits a stream of fire particles handled in [particleStream.vert](shader/particleStream.vert). This shader uses transform feedback to move the position and velocity calculations entierly to the GPU, avoiding the overhead caused by feeding data from the CPU to the GPU using approaches like uniforms or buffer sub data.
-
-During initialisation several buffers are created to hold information pertaining to position, velocity and age of all existing particles. There are currently 8 emitters in the scene, so given that a single shader and buffer is used, the positions for all particles can exist in one buffer but it can be split based on the number of emitters. Each instance of a particle is therefore assigned an index that determines which emitter it belongs to.
-
-The transform feedback approach allows the shader to perform calculations on the position to move to next frame, and feeds that back into it's own buffer. This avoids the need to calculate the positions on the CPU (which is how the firefly particles work), great for when there are many particles at any given time. It will render the first pass as an update pass, then use the new positions to render the vertices for particles. Then when the particle needs to spawn it calculates a new initial velocity within the shader itself, using that in the next update run.
-
-## Firefly particles
-Fireflies use a less optimised version of the above solution. A custom fireFly class will create a new velocity on each frame, which then passes that to the shader via uniforms. It made more sense to use this approach for fireflies since there are far fewer particles, roughly 15 in contrast to the 360 active for fire effects. It also allows for other shaders to use information about the position of fireflies to create new light sources.
-
-## Day night cycle
-The time of day will increment over time from 0-2, where 0 is dawn, 1 is sunset and 2 is 'moonset'. A collection of structs that detail information about each time of day (example below) allows 
-```C++
-TimeOfDayInfo dayInfo = {
-	"day",
-	vec3(0.5f, 0.5f, 0.65f), //Ambient light colour
-	vec3(1.0f, 1.0f, 1.0f), //Light colour
-	{
-		vec3(0.5f, 0.65f, 0.9f) * 0.5f, //Fog colour
-		10.0f, //Fog start
-		30.0f //Fog end
-	},
-	0.7f, //Light intensity
-	0.2f, //Ambient light intensity
-	0.09f, //Start time
-	0.05f //Ramp up time
-};
-```
-As time passes, whenever the start time for the next time of day is passed it will change the lighting of the scene to match that time of day. So in daytime it will br brighter with high ambient light intensity, at night there will be less fog and less light but said light will be a more purple-y colour. Other aspects like sun movement and skybox rotation also rely on this value.
-
-## Gamification
-The project has some rudementary game systems. There is a cooking pot in the ruin, reminiscient of the cooking system in Breath of The Wild. It requires you to collect some ingredients. Scattered around the map are several ingredients. Move over to them and press E when near them to pick them up. After collecting all 3 items you can return to the pot and press the key again to 'cook' an item, beating the game.
-
-There is a time limit too. If you do not find all the ingredients before the start of the next day, you lose and cannot continue picking items up. (but the scene will continue to allow for visualisation of the scene without a time limit)
-
-# Missed features
-There were a few features I wanted to implement but couldn't due to time constraints. The biggest one being the ability to walk on the actual terrain. As it stands (pun intended) you move through the scene by flying around it, I would have preferred it if you could walk on it. I know that if I were to implement this, I would take a similar approach to the shadow map. I'd have a top down orthographic camera that renders the terrain and save its depth information to a texture. Then if I come up with a matrix that I can use to transform my world position into a texture coord on that texture, I could sample the height of the pixel I am standing on and change the camera height based on the value it returns.
-
-That idea works in my head, and could be used for things like object scattering where I could determine the x and z coords for objects randomly and use the depth map to place it on the surface.
-
-A few other things would have been music, cooking animations, in game ui elements to make it clear when you've won and so forth.
-
-# Old Features
+This lighting model also features attenuation, using the Constant, Linear and Quadratic values to determine light falloff range and intensity, which has been tuned in code to fit the scene. Said model considers ambient, diffuse and specular, which uses the view space positions calculated prior to alter the colour of the current fragment.
 
 ## Basic Texture Sampling
 Objects (the ruin in this case) has a simple texture sampling approach. UVs have been defined in Blender after unwrapping, so in [object.frag](shader/object.frag) the texture colour for the fragment is sampled with a slight alteration to the texCoord it will be sampling from. The texture was improperly rotated when I first imported it, and ended up using a rotation matrix to rotate it 90 degrees to get the proper rotation while also scaling it to the correct size. The phongModel then uses this texture colour in it's lighting calculations.
@@ -90,8 +38,47 @@ Two lighting subtechiques were used for this scene - fog and multilight.
 Fog is a fairly simple implementation and can be seen in [Terrain.frag](shader/terrain.frag). I get the position of the fragment in world space and the position of the view in world space and calculate the distance between them. Fogfactor is a 0 - 1 value that linearly interpolates between the fogStart value and fogEnd value, where the fog starts to become visible and when the fog is strongest, respectively. It then just mixes what would be the final colour of the fragment with this fog colour.
 
 ### Multilight
-Shaders hold collections of multiple lights that are assigned through uniforms in code. By iterating through each light, the actual lighting value of the currently observed fragment can be accumulated by adding the result of each lighting calculation.
+To achieve multiple lights I have a structure for individual lights held in the shader defining position, light intensity and attenuation. I've hard coded a size of 13 for the maximum number of point lights that can affect a surface, and created an array of pointlights of that size.
+```GLSL
+#define MAX_NUMBER_OF_LIGHTS 13
 
+struct LightInfo{
+    vec3 Position;
+    vec3 La; //Ambient light intensity
+    vec3 Ld; //Diffuse and spec light intensity
+    //Attenuation
+    float Constant;
+    float Linear;
+    float Quadratic; 
+
+    bool Enabled;
+};
+
+uniform LightInfo pointLights[MAX_NUMBER_OF_LIGHTS];
+```
+Then instead of just calling phongModel once, it iterates for every point light and adds the newly calculated light to the fragment's output colour
+```GLSL
+vec3 colour = vec3(0.0);    
+    for (int i = 0; i < MAX_NUMBER_OF_LIGHTS; i++)
+    {        
+        colour += phongModel(i, Position, adjustedNormal, blendedTex.rgb);
+    }   
+```
+
+Then I just update that array of pointLights in code like as shown below (found in [scenebasic_uniform.cpp](scenebasic_uniform.cpp)) by setting the uniforms.
+
+```GLSL
+lightUniformTag = ("pointLights[" + to_string(fireFlyLightIndex) + "]");
+terrainProg.use();		
+terrainProg.setUniform((lightUniformTag + ".Constant").c_str(), fireFly->pointLight->constant);
+terrainProg.setUniform((lightUniformTag + ".Linear").c_str(), fireFly->pointLight->linear);
+terrainProg.setUniform((lightUniformTag + ".Quadratic").c_str(), fireFly->pointLight->quadratic);
+
+terrainProg.setUniform((lightUniformTag + ".Position").c_str(), fireFly->GetPosition());
+terrainProg.setUniform((lightUniformTag + ".La").c_str(), fireFly->pointLight->ambient * fireFly->pointLight->brightness);		
+terrainProg.setUniform((lightUniformTag + ".Ld").c_str(), fireFly->pointLight->diffuse * fireFly->pointLight->brightness);
+terrainProg.setUniform((lightUniformTag + ".Enabled").c_str(), true);
+```
 
 ## Texturing subtechniques
 Two texturing techniques were used here alongside basic texture sampling - Texture mixing and alpha discard
@@ -172,7 +159,8 @@ void main() {
 }
 ```
 
-
+## Skybox
+The skybox follows the camera and rotates too, making it look like an infinitely expanding backdrop, rendered with [skybox.frag](shader/skybox.frag)
 
 ## Light Animation
 My fireflies spawn in dynamically, move around and then despawn. In the update method of [scenebasic_uniform.cpp](scenebasic_uniform.cpp) a timer will count up when there are fewer than the max number of fireflies present, which will spawn a new one once it reaches a spawnCooldown value. It chooses a random location with a set region, creates a new fireFly and pointLight object and adds it to a container holding all active fireflies. The same update method then also iterates through all active firflies and checks `shouldDestroy`, destroying the light and disabling it in the shader. Render will then iterate through active fireFlies and update the shader light array so it matches their current state.
@@ -209,3 +197,43 @@ HDR on with exposure set to 0.5
 
 This renders to a texture and then renders onto a full screen quad as is required for HDR, handled in the [screenHdr.frag](shader/screenHdr.frag) shader. The functionality is there, just disabled as I figure out how to fix the skybox.
 
+## Keyboard and mouse controls
+Present in the scene are mouse and keyboard controls, with a camera object that holds a position which is manipulated in response to key presses or mouse movement. 
+
+# Unique Features
+## Firefly particles - geometry shaders
+While the dynamic lighting has already been discussed, I also made use of geometry shaders to create point sprites for my firefly particles. To achieve this I set up a new VAO for sprites which has one attribute for instanced vertex positions.
+
+```GLSL
+glGenVertexArrays(1, &spritesVAO);
+glGenBuffers(1, &spritesInstanceVBO);
+
+glBindVertexArray(spritesVAO);
+
+
+//Firefly positions (instance buffer)
+glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
+glBufferData(GL_ARRAY_BUFFER, maxFireFlyCount * sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
+glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+glEnableVertexAttribArray(1);
+glVertexAttribDivisor(1, 1);
+
+glBindVertexArray(0);
+```
+
+Then after all the fireFly objects have been updated and the shader uniforms passed, it rebinds the VAO and alters the data in this first attribute location on the VAO to a new array of light positions.
+
+```GLSL
+glBindVertexArray(spritesVAO);
+glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
+glBufferSubData(GL_ARRAY_BUFFER, 0, fireFlyPositions.size() * sizeof(glm::vec3), fireFlyPositions.data());
+glBindBuffer(GL_ARRAY_BUFFER, 0);
+particleProg.use();
+model = mat4(1.0f);
+setMatrices(particleProg);
+
+
+glDrawArraysInstanced(GL_POINTS, 0, 1, fireFlies.size());
+```
+
+When drawn it uses [particle.vert](shader/particle.vert), [particle.geom](shader/particle.geom) and [particle.frag](shader/particle.frag) to render the firefly sprites. The geometry shader generates a quad around the position of the firefly, which then has the new texture coordinates passed to the fragment shader to render the texture on this new geometry.
