@@ -44,7 +44,7 @@ private:
 	GLuint emitterIndexBuf[2];
 	GLuint particleArray[2];
 	GLuint feedback[2];	
-	GLSLProgram  newParticleProg;
+	GLSLProgram  particleStreamProg;
 	GLuint particleTexID, randomParticleTexID;
 	GLuint drawBuf;
 	GLuint initVel, startTime, particles, nParticles, nEmitters;
@@ -315,6 +315,7 @@ public:
 	void render();
 	void drawSceneObjects();
 	void initParticles();
+	void initFireflies();
 	void initShadows();
 	void initMaterials();
 	void initLights();

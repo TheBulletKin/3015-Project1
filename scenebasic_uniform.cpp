@@ -35,6 +35,7 @@ SceneBasic_Uniform::SceneBasic_Uniform() : sky(100.0f)
 
 void SceneBasic_Uniform::initScene()
 {
+	//------ Window and openGL setup
 	window = glfwGetCurrentContext();
 	glfwSetWindowUserPointer(window, this);
 	glfwSetCursorPosCallback(window, SceneBasic_Uniform::mouseCallback);
@@ -47,21 +48,17 @@ void SceneBasic_Uniform::initScene()
 
 	compile();
 
-
-	glEnable(GL_DEPTH_TEST);
-
-	model = mat4(1.0f);
-	model = rotate(model, radians(-35.0f), vec3(1.0f, 0.0f, 0.0f));
-	view = lookAt(vec3(0.0f, 1.0f, 2.0f), vec3(0.0f, 1.0f, -4.0f), vec3(0.0f, 1.0f, 0.0f)); //First is where the eye is, second is the coordinate it is looking at, last is up vector
-	projection = perspective(radians(70.0f), (float)width / height, 0.3f, 100.0f);
+	glEnable(GL_DEPTH_TEST);	
 
 	timeOfDay = 0;
 
+	//------ General initialisation
 	initTextures();
 	setupFBO();
 	initPostProcessing();
 	initMaterials();
 	initParticles();
+	initFireflies();
 	initShadows();
 	initLights();
 
@@ -70,87 +67,41 @@ void SceneBasic_Uniform::initScene()
 	torchNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 	torchNoise.SetFrequency(0.5f);
 
-
-#pragma region Point Light Setup
-
-	
-	
-	fireFlySpawnCooldown = 2.0f;
-
-	for (int i = 0; i < maxFireFlyCount; i++)
-	{
-		//string lightUniformTag = "fireflyLight[" + to_string(i) + "]";
-
-		//terrainProg.use();
-		//terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, 0.0f, 0.0f));
-		//terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), vec3(0.0f, 0.0f, 0.0f));
-		//terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(0.0f, 0.0f, 0.0f));
-
-	}
-
-	//Firefly setup
-	glGenBuffers(1, &fireflyPosBuf);	
-
-	//Create buffers to fit vec3s for vel and pos, just float for age.
-	int size = maxFireFlyCount * 3 * sizeof(GLfloat);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf);
-	
-	
-	vector<GLfloat> fireflyPositions(maxFireFlyCount * 3);
-	for (int i = 0; i < maxFireFlyCount; i++)
-	{
-		fireflyPositions[i * 3] = 0.0f;
-		fireflyPositions[i * 3 + 1] = -10.0f;
-		fireflyPositions[i * 3 + 2] = 0.0f;
-	}
-
-	glBufferData(GL_ARRAY_BUFFER, size, fireflyPositions.data(), GL_DYNAMIC_DRAW); //Dynamic copy indicates that the buffer will be frequently changed by the CPU
-
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	glGenVertexArrays(1, &fireflyVA);
-
-	glBindVertexArray(fireflyVA);
-	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf);	
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	glVertexAttribDivisor(0, 1);
-	glEnableVertexAttribArray(0);
-	
-
-
 }
 
 void SceneBasic_Uniform::compile()
 {
 	try {
-		objectProg.compileShader("shader/object.vert");
-		objectProg.compileShader("shader/object.frag");
-		objectProg.link();
+		//Now unused. Phong lighting shaders
+		//objectProg.compileShader("shader/object.vert");
+		//objectProg.compileShader("shader/object.frag");
+		//objectProg.link();
 		skyProg.compileShader("shader/skybox.vert");
 		skyProg.compileShader("shader/skybox.frag");
 		skyProg.link();
 		screenHdrProg.compileShader("shader/screenHdr.vert");
 		screenHdrProg.compileShader("shader/screenHdr.frag");
 		screenHdrProg.link();
-		particleProg.compileShader("shader/particle.vert");
-		particleProg.compileShader("shader/particle.frag");
-		particleProg.compileShader("shader/particle.geom");
-		particleProg.link();
+		//Old particle shaders
+		//particleProg.compileShader("shader/particle.vert");
+		//particleProg.compileShader("shader/particle.frag");
+		//particleProg.compileShader("shader/particle.geom");
+		//particleProg.link();
 		terrainProg.compileShader("shader/terrainPBR.vert");
 		terrainProg.compileShader("shader/terrainPBR.frag");
 		terrainProg.link();
 		PBRProg.compileShader("shader/PBR.vert");
 		PBRProg.compileShader("shader/PBR.frag");
 		PBRProg.link();
-		newParticleProg.compileShader("shader/particleStream.vert");
-		newParticleProg.compileShader("shader/particleStream.frag");
+		particleStreamProg.compileShader("shader/particleStream.vert");
+		particleStreamProg.compileShader("shader/particleStream.frag");
 
 		//Transform feedback for newParticleProg
-		GLuint progHandle = newParticleProg.getHandle();
+		GLuint progHandle = particleStreamProg.getHandle();
 		const char* outputNames[] = { "Position", "Velocity", "Age" };
 		glTransformFeedbackVaryings(progHandle, 3, outputNames, GL_SEPARATE_ATTRIBS);
 
-		newParticleProg.link();
+		particleStreamProg.link();
 		shadowProg.compileShader("shader/Shadow.vert");
 		shadowProg.compileShader("shader/Shadow.frag");
 		shadowProg.link();
@@ -804,19 +755,19 @@ void SceneBasic_Uniform::initParticles() {
 	glActiveTexture(GL_TEXTURE7);
 	randomParticleTexID = ParticleUtils::createRandomTex1D(nParticles * 3);
 
-	newParticleProg.use();
-	newParticleProg.setUniform("ParticleLifetime", particleLifetime);
-	newParticleProg.setUniform("ParticleSize", 0.1f);
-	newParticleProg.setUniform("Accel", vec3(0.0f, -0.14f, 0.0f));
+	particleStreamProg.use();
+	particleStreamProg.setUniform("ParticleLifetime", particleLifetime);
+	particleStreamProg.setUniform("ParticleSize", 0.1f);
+	particleStreamProg.setUniform("Accel", vec3(0.0f, -0.14f, 0.0f));
 
 
 
 	for (int i = 0; i < nEmitters; i++)
 	{
 		string arrayString = "EmitterPos[" + to_string(i) + "]";
-		newParticleProg.setUniform(arrayString.c_str(), vec3(torches[i].position));
+		particleStreamProg.setUniform(arrayString.c_str(), vec3(torches[i].position));
 		arrayString = "EmitterBasis[" + to_string(i) + "]";
-		newParticleProg.setUniform(arrayString.c_str(), emitterBases[i]);
+		particleStreamProg.setUniform(arrayString.c_str(), emitterBases[i]);
 	}
 
 	glGenBuffers(2, posBuf);
@@ -939,6 +890,50 @@ void SceneBasic_Uniform::initParticles() {
 	glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
 
 
+}
+
+void SceneBasic_Uniform::initFireflies()
+{
+	fireFlySpawnCooldown = 2.0f;
+
+	for (int i = 0; i < maxFireFlyCount; i++)
+	{
+		//string lightUniformTag = "fireflyLight[" + to_string(i) + "]";
+
+		//terrainProg.use();
+		//terrainProg.setUniform((lightUniformTag + ".Position").c_str(), vec3(0.0f, 0.0f, 0.0f));
+		//terrainProg.setUniform((lightUniformTag + ".Intensity").c_str(), vec3(0.0f, 0.0f, 0.0f));
+		//terrainProg.setUniform((lightUniformTag + ".Ambient").c_str(), vec3(0.0f, 0.0f, 0.0f));
+
+	}
+
+	//Firefly setup
+	glGenBuffers(1, &fireflyPosBuf);
+
+	//Create buffers to fit vec3s for vel and pos, just float for age.
+	int size = maxFireFlyCount * 3 * sizeof(GLfloat);
+	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf);
+
+
+	vector<GLfloat> fireflyPositions(maxFireFlyCount * 3);
+	for (int i = 0; i < maxFireFlyCount; i++)
+	{
+		fireflyPositions[i * 3] = 0.0f;
+		fireflyPositions[i * 3 + 1] = -10.0f;
+		fireflyPositions[i * 3 + 2] = 0.0f;
+	}
+
+	glBufferData(GL_ARRAY_BUFFER, size, fireflyPositions.data(), GL_DYNAMIC_DRAW); //Dynamic copy indicates that the buffer will be frequently changed by the CPU
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	glGenVertexArrays(1, &fireflyVA);
+
+	glBindVertexArray(fireflyVA);
+	glBindBuffer(GL_ARRAY_BUFFER, fireflyPosBuf);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glVertexAttribDivisor(0, 1);
+	glEnableVertexAttribArray(0);
 }
 
 void SceneBasic_Uniform::initShadows() {
@@ -1330,13 +1325,13 @@ void SceneBasic_Uniform::renderParticles()
 	glDepthMask(GL_TRUE);*/
 
 
-	newParticleProg.use();
-	newParticleProg.setUniform("Time", time);
-	newParticleProg.setUniform("DeltaT", deltaTime);
+	particleStreamProg.use();
+	particleStreamProg.setUniform("Time", time);
+	particleStreamProg.setUniform("DeltaT", deltaTime);
 	model = mat4(1.0f);
 	model = translate(model, vec3(0.0f, 0.4f, 0.0f));
-	setMatrices(newParticleProg);
-	newParticleProg.setUniform("Pass", 1);
+	setMatrices(particleStreamProg);
+	particleStreamProg.setUniform("Pass", 1);
 
 	glActiveTexture(GL_TEXTURE7);
 	glBindTexture(GL_TEXTURE_1D, randomParticleTexID);
@@ -1359,7 +1354,7 @@ void SceneBasic_Uniform::renderParticles()
 	glDisable(GL_RASTERIZER_DISCARD);
 
 	//Render pass
-	newParticleProg.setUniform("Pass", 2);
+	particleStreamProg.setUniform("Pass", 2);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	//glDepthFunc(GL_LEQUAL);
