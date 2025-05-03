@@ -398,42 +398,43 @@ void SceneBasic_Uniform::render()
 }
 
 void SceneBasic_Uniform::drawSolidSceneObjects() {
-#pragma region Object Rendering
 
-	//Ruin Rendering
-	//objectProg.use();
+	//---------Ruin Rendering
 
 	glActiveTexture(GL_TEXTURE8);
 	glBindTexture(GL_TEXTURE_2D, depthTex);
-
-	//glActiveTexture(GL_TEXTURE2);
-	//glBindTexture(GL_TEXTURE_2D, brickTexID);
+	;
 	PBRProg.use();
-	model = mat4(1.0f);
 
+	model = mat4(1.0f);
 	model = translate(model, vec3(6.4f, -1.1f, 0.0f));
 	model = rotate(model, radians(-90.0f), vec3(0.0f, 1.0f, 0.0f));
 	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
 	setMatrices(PBRProg);
-	//setMatrices(objectProg);
+	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, rockTexID);
+
 	PBRProg.setUniform("TextureScale", 20.0f);
 	RuinMesh->render();
 
-	PBRProg.use();
-	model = mat4(1.0f);
+	//------ Campfire render
 
+	PBRProg.use();
+
+	model = mat4(1.0f);
 	model = translate(model, campfirePosition);
 	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
 	model = scale(model, vec3(0.08f, 0.08f, 0.08f));
 	setMatrices(PBRProg);
-	//setMatrices(objectProg);
+	
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, campfireTexID);
+
 	PBRProg.setUniform("TextureScale", 1.0f);
 	campfireMesh->render();
 
+	//------ Collectables rendering
 
 	for (Collectable& item : collectables) {
 		if (item.isActive == true)
@@ -444,29 +445,30 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, item.texID);
+
 			setMatrices(PBRProg);
 			PBRProg.setUniform("TextureScale", 1.0f);
 			item.collectableMesh->render();
 		}
-
 	}
 
-	for (TorchInfo& torch : torches) {
+	///------- Torch rendering
 
+	for (TorchInfo& torch : torches) 
+	{
 		model = mat4(1.0f);
 		model = translate(model, vec3(torch.position.x, torch.position.y, torch.position.z));
 		model = scale(model, vec3(0.1f, 0.1f, 0.1f));
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, torchTexID);
+
 		setMatrices(PBRProg);
 		PBRProg.setUniform("TextureScale", 1.0f);
 		StandingTorch->render();
 	}
 
-
-
-	//Terrain rendering
+	//-------- Terrain rendering
 	terrainProg.use();
 
 	glActiveTexture(GL_TEXTURE0);
@@ -486,47 +488,6 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 
 	TerrainMesh->render();
 
-#pragma endregion
-}
-
-void SceneBasic_Uniform::drawSceneObjects() {
-#pragma region Object Rendering
-
-	//Ruin Rendering
-	//objectProg.use();
-	objectProg.use();
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, brickTexID);
-
-	model = mat4(1.0f);
-	model = scale(model, vec3(0.3f, 0.3f, 0.3f));
-	model = translate(model, vec3(-7.0f, 4.0f, -27.0f));
-	setMatrices(objectProg);
-	//setMatrices(objectProg);
-	//RuinMesh->render();
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, torchTexID);
-	StandingTorch->render();
-
-	//Terrain rendering
-	terrainProg.use();
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, grassTexID);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, rockTexID);
-	glActiveTexture(GL_TEXTURE4);
-	glBindTexture(GL_TEXTURE_2D, cloudTexID);
-
-	model = mat4(1.0f);
-	model = rotate(model, radians(0.0f), vec3(0.0f, 1.0f, 0.0f));
-	model = scale(model, vec3(0.1f, 0.1f, 0.1f));
-	model = translate(model, vec3(0.0f, -3.0f, -15.0f));
-	setMatrices(terrainProg);
-	//TerrainMesh->render();
-
-#pragma endregion
 }
 
 void SceneBasic_Uniform::resize(int w, int h)
