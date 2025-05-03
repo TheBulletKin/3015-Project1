@@ -370,7 +370,7 @@ void SceneBasic_Uniform::render()
 	view = camera.GetViewMatrix();
 
 	//----Particle rendering
-	renderParticles();
+	renderFireParticles();
 	renderFireflies();
 
 #pragma region HDR Pass
@@ -487,7 +487,6 @@ void SceneBasic_Uniform::drawSolidSceneObjects() {
 	terrainProg.setUniform("TextureScale", 20.0f);
 
 	TerrainMesh->render();
-
 }
 
 void SceneBasic_Uniform::resize(int w, int h)
@@ -541,7 +540,6 @@ void SceneBasic_Uniform::mouseCallback(GLFWwindow* window, double xposIn, double
 	instance->lastX = xpos;
 	instance->lastY = ypos;
 
-
 	instance->camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
@@ -564,12 +562,11 @@ void SceneBasic_Uniform::processInput(GLFWwindow* window)
 		camera.ProcessKeyboard(DOWN, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		attemptPickup();
-
 }
 
 void SceneBasic_Uniform::attemptPickup() {
 
-	float interactDistance = 5.0f;
+	float interactDistance = 3.0f;
 	if (gameEnded) {
 		cout << "game ended, cannot collect any more!" << endl;
 		return;
@@ -1060,7 +1057,6 @@ void SceneBasic_Uniform::initPostProcessing()
 
 void SceneBasic_Uniform::renderFireflies()
 {
-
 	glBindVertexArray(fireflyVA);
 
 	fireflyParticleProg.use();
@@ -1082,28 +1078,17 @@ void SceneBasic_Uniform::renderFireflies()
 	
 }
 
-void SceneBasic_Uniform::renderParticles()
+void SceneBasic_Uniform::renderFireParticles()
 {
-
-
-
-	/*
-	glDepthMask(GL_FALSE);
-	newParticleProg.use();
-	setMatrices(newParticleProg);
-	newParticleProg.setUniform("Time", time);
-	glBindVertexArray(particles);
-	glDrawArraysInstanced(GL_TRIANGLES, 0, 6, nParticles);
-	glBindVertexArray(0);
-	glDepthMask(GL_TRUE);*/
-
-
 	particleStreamProg.use();
 	particleStreamProg.setUniform("Time", time);
 	particleStreamProg.setUniform("DeltaT", deltaTime);
+
 	model = mat4(1.0f);
 	model = translate(model, vec3(0.0f, 0.4f, 0.0f));
 	setMatrices(particleStreamProg);
+
+	//Position update pass
 	particleStreamProg.setUniform("Pass", 1);
 
 	glActiveTexture(GL_TEXTURE7);

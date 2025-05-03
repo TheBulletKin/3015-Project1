@@ -323,7 +323,7 @@ public:
 	void initTextures();
 	void initPostProcessing();
 	void renderFireflies();
-	void renderParticles();
+	void renderFireParticles();
 	void updateDayNightCycle(float deltaTime);	
 	void updateDayNightShaders(TimeOfDayInfo currentState, TimeOfDayInfo toState, float t);
 	void drawSolidSceneObjects();
