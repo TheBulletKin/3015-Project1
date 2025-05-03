@@ -54,11 +54,10 @@ void SceneBasic_Uniform::initScene()
 	timeOfDay = 0;
 
 	//------ General initialisation
-	initTextures();
-	setupFBO();
+	initTextures();	
 	initPostProcessing();
 	initMaterials();
-	initParticles();
+	initParticleStream();
 	initFireflies();
 	initShadows();
 	initLights();
@@ -720,24 +719,11 @@ void SceneBasic_Uniform::attemptPickup() {
 
 }
 
-void SceneBasic_Uniform::setupFBO() {
-
-}
 
 
-void SceneBasic_Uniform::initParticles() {
+void SceneBasic_Uniform::initParticleStream() {
 	//For particles, it holds all the information about the position, velocity and age in buffers
-	//Currently works for only one particle emitter.
-
-
-	particleLifetime = 10.0f;
-	nParticles = 360;
-
-	nEmitters = 8;
-
-
-
-
+	
 	mat3 emitterBases[8] = {
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0)),
@@ -749,9 +735,7 @@ void SceneBasic_Uniform::initParticles() {
 		ParticleUtils::makeArbitraryBasis(vec3(0, 1, 0))		
 	};
 
-
-
-
+	
 	glActiveTexture(GL_TEXTURE7);
 	randomParticleTexID = ParticleUtils::createRandomTex1D(nParticles * 3);
 
@@ -760,8 +744,7 @@ void SceneBasic_Uniform::initParticles() {
 	particleStreamProg.setUniform("ParticleSize", 0.1f);
 	particleStreamProg.setUniform("Accel", vec3(0.0f, -0.14f, 0.0f));
 
-
-
+	//The shader holds a collection of positions particles can emit from, held as a uniform
 	for (int i = 0; i < nEmitters; i++)
 	{
 		string arrayString = "EmitterPos[" + to_string(i) + "]";
@@ -770,6 +753,7 @@ void SceneBasic_Uniform::initParticles() {
 		particleStreamProg.setUniform(arrayString.c_str(), emitterBases[i]);
 	}
 
+	//Generate bufers to hold data and swap between
 	glGenBuffers(2, posBuf);
 	glGenBuffers(2, velBuf);
 	glGenBuffers(2, age);
@@ -805,8 +789,7 @@ void SceneBasic_Uniform::initParticles() {
 	float rate = particleLifetime / nParticles;
 	//Create ages for each particle, this time it actually is how long the particle has been alive for
 	for (int i = 0; i < nParticles; i++)
-	{
-		//tempData[i] = rate * (i - nParticles); 
+	{		 
 		tempData[i] = rate * i;
 	}
 	glBindBuffer(GL_ARRAY_BUFFER, age[0]);
@@ -1038,11 +1021,6 @@ void SceneBasic_Uniform::initMaterials()
 	terrainProg.setUniform("material.Metal", 0);
 	terrainProg.setUniform("material.Colour", vec3(0.4f));
 	
-
-#pragma endregion
-
-
-	
 }
 
 void SceneBasic_Uniform::initLights()
@@ -1140,7 +1118,7 @@ void SceneBasic_Uniform::initPostProcessing()
 		0.0f, 1.0f,
 	};
 
-	//Creates a VBOs for this quad. Vertex positions and then texture coords passed in
+	//Creates a VBO for this quad. Vertex positions and then texture coords passed in
 	unsigned int handle[2];
 	glGenBuffers(2, handle);
 	glBindBuffer(GL_ARRAY_BUFFER, handle[0]);
@@ -1159,8 +1137,6 @@ void SceneBasic_Uniform::initPostProcessing()
 	glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(2); //Texture coord as in shader
 	glBindVertexArray(0);
-
-
 
 	//Set up sampler objects for linear and nearest filtering
 	GLuint samplers[2];

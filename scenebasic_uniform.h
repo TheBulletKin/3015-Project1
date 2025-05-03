@@ -47,8 +47,12 @@ private:
 	GLSLProgram  particleStreamProg;
 	GLuint particleTexID, randomParticleTexID;
 	GLuint drawBuf;
-	GLuint initVel, startTime, particles, nParticles, nEmitters;
-	float particleLifetime, time;
+	GLuint initVel, startTime, particles;
+	GLuint nParticles = 360;
+	GLuint nEmitters = 8;
+	float particleLifetime = 10.0f;
+	float time;	
+	
 
 	//---------Fireflies
 	vector<FireFly*> fireFlies;
@@ -301,8 +305,7 @@ private:
 	void setMatrices(GLSLProgram& program);
 	void compile();
 	static void mouseCallback(GLFWwindow* window, double xposIn, double yposIn);
-	void processInput(GLFWwindow* window);
-	void setupFBO();	
+	void processInput(GLFWwindow* window);		
 	void attemptPickup();
 	vec3 rgbToHsv(vec3 c);
 	vec3 hsvToRgb(vec3 hsv);
