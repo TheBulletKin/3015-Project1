@@ -1,4 +1,4 @@
-# 3015 Coursework 2 - Breath of the wild inpired scene 
+# 3015 Coursework 2 - Breath of the wild inspired scene 
 By Oliver Warry
 
 old demo video [here](https://youtu.be/KHnyvOIJeQM)
@@ -11,7 +11,7 @@ Inspired by Tears of the Kingdom, I wanted to recreate the terrain and visual st
 
 And this is my project outcome.
 ![Demo image](Documentation_images/DEMO.png)
-![Demo image](Documentation_images/DEMO2.png)
+![Demo image2](Documentation_images/DEMO2.png)
 
 This is a continuation of the first stage project for this module, aiming to expand on the existing feature set with some more advanced features. The old readme for the previous version can be found in the repository files.
 
