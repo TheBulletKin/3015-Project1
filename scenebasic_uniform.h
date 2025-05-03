@@ -25,38 +25,49 @@
 class SceneBasic_Uniform : public Scene
 {
 private:
-	//Textures and shaders
-	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg, newParticleProg, shadowProg, fireflyParticleProg;
-	GLuint grassTexID, rockTexID, nightSkyBox, cloudTexID, brickTexID, fireFlyTexID, particleTexID, randomParticleTexID, depthTex, torchTexID, daySkyboxTexID, setRiseSkyboxID, meatTexID, cheeseTexID, mushroomTexID, campfireTexID;
-
+	//----------Textures and shaders
+	GLSLProgram skyProg, screenHdrProg, particleProg, terrainProg, objectProg, PBRProg;
+	GLuint  nightSkyBox, depthTex, torchTexID, daySkyboxTexID, meatTexID, cheeseTexID, mushroomTexID, campfireTexID;
 	GLFWwindow* window;
 
-	float tPrev, lightAngle, lightRotationSpeed;
 
-
-	//Shadows
+	//--------------Shadows
 	GLuint shadowFBO, pass1Index, pass2Index;
 	int shadowMapWidth, shadowMapHeight;
 	mat4 lightPV, shadowBias;
 	Frustum lightFrustum;
 	vec3 lightPos;
+	GLSLProgram shadowProg;
 
-	//Particles
+	//-----------Particles
 	GLuint posBuf[2], velBuf[2], age[2];
 	GLuint emitterIndexBuf[2];
 	GLuint particleArray[2];
-	GLuint feedback[2];
-	vec3 topLeftSpawnBound = vec3(-20, 2.2f, -20.0f);
-	vec3 bottomRightSpawnBound = vec3(20, -3.4f, 20.0f);
-	GLuint fireflyPosBuf;
-	GLuint fireflyVA;
-
+	GLuint feedback[2];	
+	GLSLProgram  newParticleProg;
+	GLuint particleTexID, randomParticleTexID;
 	GLuint drawBuf;
 	GLuint initVel, startTime, particles, nParticles, nEmitters;
 	float particleLifetime, time;
 
+	//---------Fireflies
+	vector<FireFly*> fireFlies;
+	vec3 topLeftSpawnBound = vec3(-20, 2.2f, -20.0f);
+	vec3 bottomRightSpawnBound = vec3(20, -3.4f, 20.0f);
+	GLuint fireflyPosBuf;
+	GLuint fireflyVA;
+	GLSLProgram fireflyParticleProg;
+	GLuint fireFlyTexID;
+	float fireFlySpawnTimer = 0;
+	int fireFlySpawnCooldown;
+	int currentFireFlyCount = 0;
+	int maxFireFlyCount = 20;
+	vec3 fireFlyLightColour = vec3(0.53, 0.70, 0.33);
+	vec3 fireFlyAmbientColour = vec3(0.1f, 0.1f, 0.3f);
+
 	//Objects
 	unique_ptr<ObjMesh> TerrainMesh;
+	GLuint grassTexID, rockTexID, cloudTexID, brickTexID;
 	unique_ptr<ObjMesh> RuinMesh;
 	unique_ptr<ObjMesh> StandingTorch;	
 	unique_ptr<ObjMesh> campfireMesh;	
@@ -72,30 +83,14 @@ private:
 	bool hdr = true;
 	float exposure = 1.5f;
 
-	//Particle effects
-	GLuint spritesVAO, spritesQuadVBO, spritesInstanceVBO;
-	GLuint lightPositionsBuffer;
-
+	//-------Other
 	Camera camera;
-
 	SkyBox sky;
-
-	//Fireflies
-	vector<FireFly*> fireFlies;
-	float fireFlySpawnTimer = 0;
-	int fireFlySpawnCooldown;
-	int currentFireFlyCount = 0;
-	int maxFireFlyCount = 20;
-	vec3 fireFlyLightColour = vec3(0.53, 0.70, 0.33);
-	vec3 fireFlyAmbientColour = vec3(0.1f, 0.1f, 0.3f);
-
-	float timeOfDay = 0;
-	float gameTimer = 0;
-	float gameEndTime = 240;
-	bool gameEnded = false;
+	float deltaTime = 0.0f;
+	float lastFrameTime = 0.0f;
 
 	
-
+	//------Torch lights
 	float torchMaxIntensity = 0.9f;
 	float torchMinIntensity = 0.32f;
 	vec3 torchBrightColour = vec3(1.0f, 0.6f, 0.4f);
@@ -117,9 +112,12 @@ private:
 	};
 
 	FastNoiseLite torchNoise;
-	
 
-
+	//---------Sun light and times of day
+	float timeOfDay = 0;
+	float gameTimer = 0;
+	float gameEndTime = 240;
+	bool gameEnded = false;
 
 	vec3 currentAmbientColour;
 	vec3 currentSunColour;
@@ -252,13 +250,14 @@ private:
 	TimeOfDayInfo nextTimeOfDay = timesOfDay[1];
 	int timeOfDayIndex;
 
+	//-------Collectables
 	struct Collectable {
 		string name;
 		vec3 location;
 		bool isActive;
 		GLuint texID;
 		unique_ptr<ObjMesh> collectableMesh;
-		//model (for rendering)
+		//model
 	};
 
 	int maxCollectables = 3;
@@ -288,24 +287,13 @@ private:
 	vec3 cookingPotLocation = vec3(-2, 4, -4);
 	bool hasCookedItem = false;
 
-
-
-
-
-	struct Point {
-		float x, y, z;
-	};
-	
-
-	//Random number gen
+	//---------Random number gen
 	random_device rd;
 	mt19937 gen;
 	uniform_real_distribution<float> dis;
 
-	float deltaTime = 0.0f;
-	float lastFrameTime = 0.0f;
-
-	//Input
+	
+	//-----Input
 	float lastX;
 	float lastY;
 	bool firstMouse;
@@ -314,14 +302,12 @@ private:
 	void compile();
 	static void mouseCallback(GLFWwindow* window, double xposIn, double yposIn);
 	void processInput(GLFWwindow* window);
-	void setupFBO();
-	void setArrayUniforms();
+	void setupFBO();	
 	void attemptPickup();
 	vec3 rgbToHsv(vec3 c);
 	vec3 hsvToRgb(vec3 hsv);
 	vec3 mixHSV(vec3 colorA, vec3 colorB, float t);
 public:
-
 
 	SceneBasic_Uniform();
 	void initScene();
@@ -336,8 +322,7 @@ public:
 	void initPostProcessing();
 	void renderFireflies();
 	void renderParticles();
-	void updateDayNightCycle(float deltaTime);
-	void updateShaders();
+	void updateDayNightCycle(float deltaTime);	
 	void updateDayNightShaders(TimeOfDayInfo currentState, TimeOfDayInfo toState, float t);
 	void drawSolidSceneObjects();
 	void resize(int, int);

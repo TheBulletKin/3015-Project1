@@ -117,25 +117,6 @@ void SceneBasic_Uniform::initScene()
 	glEnableVertexAttribArray(0);
 	
 
-#pragma region Firefly Sprites
-	glGenVertexArrays(1, &spritesVAO);
-	glGenBuffers(1, &spritesInstanceVBO);
-
-	glBindVertexArray(spritesVAO);
-
-	//Firefly positions
-	glBindBuffer(GL_ARRAY_BUFFER, spritesInstanceVBO);
-	glBufferData(GL_ARRAY_BUFFER, maxFireFlyCount * sizeof(vec3), nullptr, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribDivisor(1, 1);
-
-	glBindVertexArray(0);
-
-	particleProg.use();
-	particleProg.setUniform("Size2", 0.15f);
-#pragma endregion
-
 
 }
 
