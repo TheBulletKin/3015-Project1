@@ -61,6 +61,15 @@ void SceneBasic_Uniform::initScene()
 	initFireflies();
 	initShadows();	
 
+
+	//----Console message
+	cout << endl << endl << "-----WECOME------" << endl << "Welcome to this serene stylised landscape, enjoy the view and atmosphere as the sun rolls across the sky." << endl;
+	cout << "There is a cooking pot in the nearby ruin, as well as 3 ingredients scattered around the map:" << endl;
+	cout << "- One mushroom" << endl << "- One meat" << endl << "- One slice of cheese" << endl;
+	cout << "Move around and collect these items. When near one, press E to collect it." << endl;
+	cout << "Find all 3 ingredients and then return to the pot, press E again to cook something and win the game!" << endl;
+	cout << "However, you only have until the next morning to find these items. Get searching!" << endl << endl;
+
 	glDisable(GL_DEBUG_OUTPUT);
 
 	torchNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);

@@ -120,7 +120,7 @@ private:
 	//---------Sun light and times of day
 	float timeOfDay = 0;
 	float gameTimer = 0;
-	float gameEndTime = 240;
+	float gameEndTime = 94;
 	bool gameEnded = false;
 
 	vec3 currentAmbientColour;

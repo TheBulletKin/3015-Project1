@@ -18,7 +18,7 @@ const vec3 offsets[] = vec3[](
     vec3(0.5, -0.5, 0), //Bottomright
     vec3(0.5, 0.5, 0),  //Topright
     
-    vec3(-0.5, -0.5, 0), /Bottomleft
+    vec3(-0.5, -0.5, 0), //Bottomleft
     vec3(0.5, 0.5, 0),  //Topright
     vec3(-0.5, 0.5, 0) //Topleft
 );
