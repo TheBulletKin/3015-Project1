@@ -1092,7 +1092,7 @@ void SceneBasic_Uniform::renderFireParticles()
 	particleStreamProg.setUniform("Pass", 1);
 
 	glActiveTexture(GL_TEXTURE7);
-	glBindTexture(GL_TEXTURE_1D, randomParticleTexID);
+	glBindTexture(GL_TEXTURE_1D, randomParticleTexID); //Uses a texture to generate random values in the shader
 
 	glActiveTexture(GL_TEXTURE6);
 	glBindTexture(GL_TEXTURE_2D, particleTexID);
@@ -1195,6 +1195,9 @@ vec3 SceneBasic_Uniform::mixHSV(vec3 colorA, vec3 colorB, float t) {
 }
 
 void SceneBasic_Uniform::updateDayNightShaders(TimeOfDayInfo prevState, TimeOfDayInfo currentState, float t) {
+	//Interpolates between the previous state and the current state
+	//Allows for smooth transition between times of day
+	
 	float fogStart = mix(prevState.fogInfo.fogStart, currentState.fogInfo.fogStart, t);
 	float fogEnd = mix(prevState.fogInfo.fogEnd, currentState.fogInfo.fogEnd, t);
 	vec3 fogColour = mixHSV(prevState.fogInfo.fogColour, currentState.fogInfo.fogColour, t);
@@ -1207,7 +1210,6 @@ void SceneBasic_Uniform::updateDayNightShaders(TimeOfDayInfo prevState, TimeOfDa
 	//cout << "time of day: " << timeOfDay << endl;
 	//cout << "light intensity: " << mainLightIntensity << endl;
 	//cout << currentState.name << endl << endl;
-
 
 	PBRProg.use();
 	PBRProg.setUniform("fogStart", fogStart);
@@ -1226,7 +1228,6 @@ void SceneBasic_Uniform::updateDayNightShaders(TimeOfDayInfo prevState, TimeOfDa
 
 void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 {
-
 	//+= deltatime will properly increment the timer by seconds
 	//Using values of 0-2 to interpolate sun position, so divide time passed by duration	
 	timeOfDay += deltaTime / secondsInFullCycle;
@@ -1248,11 +1249,12 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	else { //During daytime
 		blend = clamp((timeOfDay - 0.9f) / 0.1f, 0.0f, 1.0f);
 	}
+
 	skyProg.use();
-
-
 	skyProg.setUniform("BlendFactor", blend);
 
+	
+	//-----Time of day update
 	
 	// Dawn (0 - 0.25) 
 	// Day (0.25 - 0.75) 
@@ -1260,12 +1262,8 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	// Night(1 - 1.75) 
 	// Dawn night (1.75 - 2)
 
-	//Get the next index to look at
-	//get the next start time to wait for
-	//get the start time of the current day segment
-	//if the current time exceeds next start time, change day segment
-	//For interpolation, instead of looking at current start time to next, look at current start time
-	//  to that, plus the ramp up time
+	//Look at the next start index
+	//If the current time exceeds that, swap to the next time of day
 
 	int prevIndex = (timeOfDayIndex - 1 + 6) % 6;
 	int nextIndex = (timeOfDayIndex + 1) % 6;
@@ -1291,7 +1289,6 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		}
 	}
 
-
 	float currentStartTime = timesOfDay[timeOfDayIndex].startTime;
 	float rampUpDuration = timesOfDay[timeOfDayIndex].rampUpTime;
 
@@ -1300,19 +1297,12 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	//Change the current index to the target index
 	//Target is the next index
 
-
 	prevIndex = (timeOfDayIndex - 1) % 6;
 	nextStartTime = timesOfDay[prevIndex].startTime;
 	currentStartTime = timesOfDay[timeOfDayIndex].startTime;
 	rampUpDuration = timesOfDay[timeOfDayIndex].rampUpTime;
 
-
-
-
-
-
-
-
+	//Takes the ramp up duration for that time of day to smoothly blend between times
 	float t;
 	if (rampUpDuration == 0) //Set duration to 0 when there is no ramp up
 	{
@@ -1332,98 +1322,9 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 		//cout << t << endl;
 	}
 
-
 	updateDayNightShaders(prevTimeOfDay, currentTimeOfDay, t);
 
-
-	float dawnStart = 0.01f;
-	float dayStart = 0.08;
-	float dayFull = 0.12;
-	float duskStart = 0.8f;
-	float nightStart = 0.9;
-	float nightFull = 1.0;
-	float moonSetStart = 1.9;
-
-	float dawnDuration = dayStart - dawnStart;
-	float dayStartDuration = dayFull - dayStart;
-	float dayDuration = duskStart - dayFull;
-	float duskDuration = nightStart - duskStart;
-	float nightStartDuration = nightFull - nightStart;
-	float nightDuration = moonSetStart - nightFull;
-	float moonSetDuration = 2.0f - moonSetStart;
-
-	float dayLightIntensity = 0.3f;
-	float dawnLightIntensity = 0.08f;
-	float moonLightIntensity = 0.08f;
-
-	//Rough solution but it works
-	//Bear in mind timeOfDay goes from 0-2
-	//Need to interpolate between 0 and 1, so shift the values of time and threshold to that scale
-	//Interpolate between colour values using this
-	/*
-	cout << timeOfDay << endl;
-	if (timeOfDay < dayStart) {
-		//Dawn has started, slowly moving to dawn colour
-		float localT = (timeOfDay - dawnStart) / dawnDuration;
-		cout << "Dawning" << endl;
-		cout << localT << endl << endl;
-		currentAmbientColour = mixHSV(ambientNightColour, ambientDawnColour, localT);
-		mainLightIntensity = mix(0.0f, dawnLightIntensity, localT);
-		updateDayNightShaders(nightFog, dawnFog, localT);
-	}
-	else if (timeOfDay < dayFull) {
-		//Day starting, moving from dawn colour to day colour
-		float localT = (timeOfDay - dayStart) / dayStartDuration;
-		cout << "Moving to day" << endl;
-		cout << localT << endl << endl;
-		currentAmbientColour = mixHSV(ambientDawnColour, ambientDayColour, localT);
-		mainLightIntensity = mix(dawnLightIntensity, dayLightIntensity, localT);
-		updateDayNightShaders(dawnFog, dayFog, localT);
-	}
-	else if (timeOfDay < duskStart) {
-		//Day began, keep day colour
-		float localT = (timeOfDay - dayFull) / dayDuration;
-		cout << "Full day" << endl;
-		cout << localT << endl << endl;
-		currentAmbientColour = mixHSV(ambientDayColour, ambientDayColour, localT);
-	}
-	else if (timeOfDay < nightStart) {
-		// Transition from day to dusk
-		float localT = (timeOfDay - duskStart) / duskDuration;
-		cout << "Sun setting" << endl;
-		cout << localT << endl << endl;
-		currentAmbientColour = mixHSV(ambientDayColour, ambientDuskColour, localT);
-		mainLightIntensity = mix(dayLightIntensity, 0.0f, localT);
-		updateDayNightShaders(dayFog, duskFog, localT);
-	}
-	else if (timeOfDay < nightFull) {
-		// Transition from dusk to night
-		float localT = (timeOfDay - nightStart) / nightStartDuration;
-		cout << "Moving to night" << endl;
-		cout << localT << endl << endl;
-		currentAmbientColour = mixHSV(ambientDuskColour, ambientNightColour, localT);
-		updateDayNightShaders(duskFog, nightFog, localT);
-
-	}
-	else if (timeOfDay < moonSetStart) {
-		//Day starting, moving from dawn colour to day colour
-		float localT = (timeOfDay - nightFull) / nightDuration;
-		cout << "Full night" << endl;
-		cout << localT << endl << endl;
-		currentAmbientColour = mixHSV(ambientNightColour, ambientNightColour, localT);
-		mainLightIntensity = mix(0.0f, moonLightIntensity, localT);
-
-	}
-	else {
-		//Day starting, moving from dawn colour to day colour
-		float localT = (timeOfDay - moonSetStart) / moonSetDuration;
-		cout << "Moon setting" << endl;
-		cout << localT << endl << endl;
-		currentAmbientColour = mixHSV(ambientNightColour, ambientNightColour, localT);
-		mainLightIntensity = mix(moonLightIntensity, 0.0f, localT);
-	}*/
-
-
+	//------- Sun position update
 
 	/* Will first need an angle from the horizon to place the light
 	* Since time of day is 0-2, can potentially divide by 2 to use as an interpolation value
@@ -1436,8 +1337,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	else {
 		angle = radians(((timeOfDay - 1.0f) / 2.0f) * 360.0f);
 	}
-
-	//float angle = radians((timeOfDay / 2.0f) * 360.0f);
+	
 	vec3 sunElevationVector = normalize(vec3(0.0f, sin(angle), cos(angle)));
 	sunTarget = campfirePosition;
 	sunDistance = 15.0f;
@@ -1447,7 +1347,7 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	sunLightDirection = normalize(sunTarget - sunPos);
 
 	vec3 viewDir = normalize(mat3(view) * -sunLightDirection);
-	//Place at first argument, look at second argument
+	//Position at first argument, look at second argument
 	lightFrustum.orient(sunPos, sunTarget, vec3(0.0f, 1.0f, 0.0f));
 	lightPV = shadowBias * lightFrustum.getProjectionMatrix(true) * lightFrustum.getViewMatrix();
 
@@ -1455,8 +1355,6 @@ void SceneBasic_Uniform::updateDayNightCycle(float deltaTime)
 	PBRProg.setUniform("DirLight.Position", vec4(-sunLightDirection, 0.0f));
 	terrainProg.use();
 	terrainProg.setUniform("DirLight.Position", vec4(-sunLightDirection, 0.0f));
-
-
 }
 
 
